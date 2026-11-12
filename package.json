@@ -1,0 +1,29 @@
+{
+  "name": "benchopedia",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "node --import tsx scripts/check.ts",
+    "test": "node --import tsx --test \"test/**/*.test.ts\"",
+    "typecheck": "astro check",
+    "fetch-sources": "sh scripts/fetch-sources.sh",
+    "import-scores": "node --import tsx scripts/import-scores.ts"
+  },
+  "dependencies": {
+    "astro": "^7.4.11",
+    "marked": "^18.2.0",
+    "yaml": "^2.9.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "@types/node": "^26.6.6",
+    "csv-parse": "^7.0.3",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3"
+  }
+}
