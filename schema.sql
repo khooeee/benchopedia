@@ -21,8 +21,6 @@ CREATE TABLE question (
     -- What the model is given.
     prompt       TEXT NOT NULL CHECK (trim(prompt) <> ''),
     source_url   TEXT CHECK (source_url LIKE 'https://%'),
-    -- Benchmark-specific fields, validated by data/<benchmark>/checks/*.sql.
-    attrs        TEXT NOT NULL CHECK (json_valid(attrs) AND json_type(attrs) = 'object'),
     PRIMARY KEY (benchmark_id, key)
 ) STRICT;
 

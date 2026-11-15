@@ -18,18 +18,16 @@ class Element {
   focus() {}
 }
 
-async function library(search = '', fail = false) {
+async function library(search = '', fail = false, records = data) {
   const elements = Object.fromEntries([
-    '#question-search','#filter-benchmark','#filter-repo','#filter-difficulty','#question-sort',
+    '#question-search','#filter-benchmark','#question-sort',
     '#question-results','#question-empty','#question-count','#page-status','#page-prev',
     '#page-next','.pagination','#clear-filters','[data-clear-questions]','.library-summary',
   ].map((key) => [key, new Element()]));
   elements['#question-search'].tagName = 'INPUT';
   for (const [key, values] of Object.entries({
-    '#filter-benchmark':['',...new Set(data.map((q) => q.benchmark_id))],
-    '#filter-repo':['',...new Set(data.map((q) => q.attrs.repo))],
-    '#filter-difficulty':['','<15 min fix','15 min - 1 hour','1-4 hours','>4 hours'],
-    '#question-sort':['id','title','difficulty'],
+    '#filter-benchmark':['',...new Set(records.map((q) => q.benchmark_id))],
+    '#question-sort':['id','title'],
   })) {
     elements[key].tagName = 'SELECT';
     elements[key].value = values[0];
@@ -38,7 +36,7 @@ async function library(search = '', fail = false) {
   const context = {
     URLSearchParams, location:{search}, document:{querySelector:(key) => elements[key] || null,addEventListener(){}},
     history:{replaceState(_a,_b,url){context.url = url;}},
-    fetch:async () => ({ok:!fail,json:async () => data}),
+    fetch:async () => ({ok:!fail,json:async () => records}),
     setTimeout(fn){fn();return 1;},clearTimeout(){},matchMedia:() => ({matches:true}),
   };
   vm.runInNewContext(source,context);
@@ -83,16 +81,6 @@ function catalog(search = '') {
   assert.equal(e['#question-count'].textContent,'26–50 of 500 questions');
   assert.ok(e['#question-results'].innerHTML.includes('start="26"'));
   assert.equal(c.url,'/questions/?page=2');
-  e['#filter-repo'].value = 'pallets/flask';
-  e['#filter-repo'].emit('change');
-  assert.equal(e['#question-count'].textContent,'1–1 of 1 questions');
-  assert.equal(e['#page-next'].disabled,true);
-  e['#filter-difficulty'].value = '>4 hours';
-  e['#filter-difficulty'].emit('change');
-  assert.equal(e['#question-count'].textContent,'0 questions');
-  assert.equal(e['#question-empty'].hidden,false);
-  e['[data-clear-questions]'].emit('click');
-  assert.equal(e['#question-count'].textContent,'1–25 of 500 questions');
   e['#question-search'].value = 'separability_matrix';
   e['#question-search'].emit('input');
   assert.ok(e['#question-results'].innerHTML.includes('astropy__astropy-12907'));
@@ -100,15 +88,24 @@ function catalog(search = '') {
   e['#question-search'].value = 'zzzz-no-such-prompt-zzzz';
   e['#question-search'].emit('input');
   assert.equal(e['#question-count'].textContent,'0 questions');
-  e['#clear-filters'].emit('click');
+  assert.equal(e['#question-empty'].hidden,false);
+  e['[data-clear-questions]'].emit('click');
+  assert.equal(e['#question-count'].textContent,'1–25 of 500 questions');
   e['#question-sort'].value = 'title';
   e['#question-sort'].emit('change');
   const first = [...data].sort((a,b) => a.title.localeCompare(b.title))[0];
   assert.ok(e['#question-results'].innerHTML.indexOf(first.url) >= 0);
-  const deep = await library('?repo=sympy%2Fsympy&difficulty=%3E4+hours&page=999');
-  const expected = data.filter((q) => q.attrs.repo === 'sympy/sympy' && q.attrs.difficulty === '>4 hours').length;
-  assert.ok(deep.elements['#question-count'].textContent.includes(`of ${expected} questions`));
+  const other = {benchmark_id:'another-benchmark',key:'example-1',title:'Example task',prompt:'Example prompt',url:'/example-1/'};
+  const deep = await library('?benchmark=another-benchmark&page=999',false,[...data,other]);
+  assert.equal(deep.elements['#question-count'].textContent,'1–1 of 1 questions');
   assert.equal(deep.elements['#page-status'].textContent,'Page 1 of 1');
+  assert.ok(deep.elements['#question-results'].innerHTML.includes('Example task'));
+  assert.ok(!deep.elements['#question-results'].innerHTML.includes('astropy__astropy-12907'));
+  deep.elements['#question-search'].value = 'no-match';
+  deep.elements['#question-search'].emit('input');
+  assert.equal(deep.elements['#question-count'].textContent,'0 questions');
+  deep.elements['#clear-filters'].emit('click');
+  assert.equal(deep.elements['#question-count'].textContent,'1–25 of 501 questions');
   const failed = await library('',true);
   assert.ok(failed.elements['#question-count'].innerHTML.includes('/questions/all/'));
   console.log('OK: benchmark search/subjects, numbered question lists, combined filters, empty/reset states, sorting, pagination, deep links and fetch failure fallback');

@@ -49,7 +49,6 @@ def load_benchmark(db, benchmark_dir, errors):
         for line_number, line in enumerate(f, start=1):
             question = json.loads(line)
             question["benchmark_id"] = benchmark["id"]
-            question["attrs"] = json.dumps(question["attrs"], ensure_ascii=False)
             origin = f"{questions_file.relative_to(ROOT)}:{line_number}"
             insert(db, "question", question, origin, errors)
 

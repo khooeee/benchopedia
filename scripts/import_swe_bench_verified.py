@@ -53,15 +53,6 @@ def to_question(row):
         "key": row["instance_id"],
         "prompt": row["problem_statement"],
         "source_url": f"https://github.com/{row['repo']}/pull/{pull_number}",
-        "attrs": {
-            "repo": row["repo"],
-            "base_commit": row["base_commit"],
-            "version": row["version"],
-            "created_at": row["created_at"],
-            "difficulty": row["difficulty"],
-            "fail_to_pass": json.loads(row["FAIL_TO_PASS"]),
-            "pass_to_pass_count": len(json.loads(row["PASS_TO_PASS"])),
-        },
     }
 
 

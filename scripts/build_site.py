@@ -3,25 +3,18 @@
 Run `python3 scripts/build_site.py`; no third-party packages are required.
 """
 
-import collections
 import html
 import json
 import re
 import shutil
 import sqlite3
-from datetime import date
 from pathlib import Path
-from urllib.parse import quote, urlencode
+from urllib.parse import quote
 
 from build import main as build_database
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "dist"
-DIFFICULTIES = ["<15 min fix", "15 min - 1 hour", "1-4 hours", ">4 hours"]
-DIFFICULTY_LABELS = {
-    "<15 min fix": "Under 15 min", "15 min - 1 hour": "15 min–1 hour",
-    "1-4 hours": "1–4 hours", ">4 hours": "Over 4 hours",
-}
 
 
 def esc(value):
@@ -130,12 +123,10 @@ def layout(title, body, active="benchmarks", description="Descriptions, datasets
 def task_list(rows, start=1):
     entries = []
     for q in rows:
-        attrs = q['attrs']
         url = question_url(q)
         source = f' · <a href="{esc(q["source_url"])}">source</a>' if q.get('source_url') else ''
         entries.append(f'''<li><div class="entry-links"><a href="{url}">{esc(q['key'])}</a> [<a href="{url}">question</a>{source}]</div>
-<div class="entry-title"><a href="{url}">{esc(q['title'])}</a></div>
-<div class="entry-meta">Repository: {esc(attrs.get('repo','—'))} · Human fix time: {esc(DIFFICULTY_LABELS.get(attrs.get('difficulty'),'Not annotated'))}</div></li>''')
+<div class="entry-title"><a href="{url}">{esc(q['title'])}</a></div></li>''')
     return f'<ol class="entry-list" start="{start}">' + ''.join(entries) + '</ol>'
 
 
@@ -161,21 +152,8 @@ def home():
     write('index.html',layout('AI benchmarks',body))
 
 
-def distribution(counter, total, labels=None, b_id=None):
-    rows = []
-    for name,count in counter.items():
-        label = esc((labels or {}).get(name,name))
-        if b_id:
-            label = f'<a href="/questions/?{esc(urlencode({"benchmark":b_id,"repo":name}))}">{label}</a>'
-        rows.append(f'<tr><th scope="row">{label}</th><td>{count}</td><td>{count/total:.1%}</td></tr>')
-    heading = 'Repository' if b_id else 'Human fix time'
-    return f'<table class="data-table"><thead><tr><th scope="col">{heading}</th><th scope="col">Questions</th><th scope="col">Share</th></tr></thead><tbody>' + ''.join(rows) + '</tbody></table>'
-
-
 def benchmark_page(b):
     qs = [q for q in QUESTIONS if q['benchmark_id']==b['id']]
-    repos = collections.Counter(q['attrs'].get('repo','Unknown') for q in qs)
-    difficulty = collections.Counter(q['attrs'].get('difficulty','Not annotated') for q in qs)
     facts = [('Subject',b.get('category','Not documented')),('Task',b.get('task','Not documented')),('Language',b.get('language','Not documented')),('Released',b['released_on']),('Questions',f'{len(qs):,}'),('Metric',b.get('metric','Not documented'))]
     sources = json.loads(b.get('sources','[]'))
     source_list = ''.join(f'<li><a href="{esc(s["url"])}">{esc(s["title"])}</a></li>' for s in sources)
@@ -186,50 +164,37 @@ def benchmark_page(b):
 <article class="prose"><section id="overview"><h2>Overview</h2>{markdown(b.get('overview',b['summary']))}</section>
 <section id="methodology"><h2>Methodology</h2>{markdown(b.get('methodology','Not yet documented.'))}</section>
 <section id="scoring"><h2>Scoring</h2>{markdown(b.get('scoring','Not yet documented.'))}</section>
-<section id="dataset"><h2>Dataset</h2><p>{len(qs):,} questions from {len(repos)} repositories in this snapshot. <a href="/questions/?benchmark={quote(b['id'])}">Browse questions</a>.</p>
-<h3>By repository</h3>{distribution(dict(repos.most_common()),len(qs),b_id=b['id'])}
-<h3>Estimated human fix time</h3><p class="annotation">Upstream difficulty labels describe human fix time, not model completion time.</p>{distribution({k:difficulty[k] for k in DIFFICULTIES if difficulty[k]},len(qs),DIFFICULTY_LABELS)}</section>
+<section id="dataset"><h2>Dataset</h2><p>{len(qs):,} questions in this snapshot. <a href="/questions/?benchmark={quote(b['id'])}">Browse questions</a> or visit <a href="{esc(b['dataset_url'])}">the upstream dataset</a>.</p></section>
 <section id="limitations"><h2>Limitations</h2>{markdown(b.get('limitations','Not yet documented.'))}</section>
 <section id="sources"><h2>Sources</h2><ol>{source_list}</ol><details class="snapshot"><summary>Dataset revision</summary><p>Snapshot of <a href="{esc(b['dataset_url'])}">the upstream dataset</a> at revision <code>{esc(b['dataset_revision'])}</code>.</p></details></section></article>'''
     write(f'benchmarks/{b["id"]}/index.html',layout(b['name'],body,description=b['summary']))
 
 
 def library():
-    repos = sorted({q['attrs']['repo'] for q in QUESTIONS if 'repo' in q['attrs']})
     option = lambda val,label: f'<option value="{esc(val)}">{esc(label)}</option>'
-    selectors = f'''<label>Benchmark: <select id="filter-benchmark"><option value="">All benchmarks</option>{''.join(option(b['id'],b['name']) for b in BENCHMARKS)}</select></label>
-<label>Repository: <select id="filter-repo"><option value="">All repositories</option>{''.join(option(r,r) for r in repos)}</select></label>
-<label>Human fix time: <select id="filter-difficulty"><option value="">Any duration</option>{''.join(option(k,DIFFICULTY_LABELS[k]) for k in DIFFICULTIES)}</select></label>'''
+    selectors = f'<label>Benchmark: <select id="filter-benchmark"><option value="">All benchmarks</option>{"".join(option(b["id"],b["name"]) for b in BENCHMARKS)}</select></label>'
     body = f'''<h1>Questions</h1><p class="page-description">Original tasks from the benchmark datasets.</p>
-<section class="question-library" aria-label="Browse questions"><label class="question-search-label" for="question-search">Search:</label> <input type="search" id="question-search" placeholder="Question text, task ID, or repository">
+<section class="question-library" aria-label="Browse questions"><label class="question-search-label" for="question-search">Search:</label> <input type="search" id="question-search" placeholder="Question text or task ID">
 <div class="filter-bar">{selectors}<button type="button" id="clear-filters">Clear filters</button></div>
-<div class="library-summary"><p id="question-count" role="status" aria-live="polite">1–{min(25,len(QUESTIONS))} of {len(QUESTIONS):,} questions</p><label>Sort: <select id="question-sort"><option value="id">Task ID</option><option value="title">Title A–Z</option><option value="difficulty">Human fix time</option></select></label></div>
+<div class="library-summary"><p id="question-count" role="status" aria-live="polite">1–{min(25,len(QUESTIONS))} of {len(QUESTIONS):,} questions</p><label>Sort: <select id="question-sort"><option value="id">Task ID</option><option value="title">Title A–Z</option></select></label></div>
 <nav class="pagination" aria-label="Question pages"><button type="button" id="page-prev" disabled>Previous</button> <span id="page-status">Page 1 of {max(1,(len(QUESTIONS)+24)//25)}</span> <button type="button" id="page-next">Next</button></nav>
 <div id="question-results">{task_list(QUESTIONS[:25])}</div><div id="question-empty" hidden><p>No questions match your search.</p><button type="button" data-clear-questions>Clear filters</button></div>
 <p class="all-questions-link"><a href="/questions/all/">View all {len(QUESTIONS):,} questions on one page</a></p><noscript><p>Search and filters require JavaScript. Use the complete question index above to browse without it.</p></noscript></section>'''
     write('questions/index.html',layout('Questions',body,'questions'))
     write('questions/all/index.html',layout('All questions','<h1>All questions</h1><p><a href="/questions/">Search and filter questions</a></p>'+task_list(QUESTIONS),'questions'))
-    search_data = [{k:q[k] for k in ('benchmark_id','key','title','prompt','attrs','source_url')} | {'url':question_url(q)} for q in QUESTIONS]
+    search_data = [{k:q[k] for k in ('benchmark_id','key','title','prompt','source_url')} | {'url':question_url(q)} for q in QUESTIONS]
     write('assets/questions.json',json.dumps(search_data,ensure_ascii=False,separators=(',',':')))
 
 
 def question_page(q, previous, following):
     b = next(b for b in BENCHMARKS if b['id']==q['benchmark_id'])
-    attrs = q['attrs']
     prev_link = f'<a href="{question_url(previous)}">Previous question</a>' if previous else '<span></span>'
     next_link = f'<a href="{question_url(following)}">Next question</a>' if following else '<span></span>'
-    facts = [('Benchmark',f'<a href="{benchmark_url(b)}">{esc(b["name"])}</a>'),('Repository',f'<a href="/questions/?{esc(urlencode({"repo":attrs.get("repo","")}))}">{esc(attrs.get("repo","—"))}</a>'),('Human fix time',esc(DIFFICULTY_LABELS.get(attrs.get('difficulty'),'Not annotated'))),('Pull request created',esc(attrs.get('created_at','—')[:10])),('Installation version',esc(attrs.get('version','—')))]
-    base_commit = attrs.get('base_commit','')
-    if base_commit and attrs.get('repo'):
-        facts.append(('Base commit',f'<a href="https://github.com/{esc(attrs["repo"])}/tree/{esc(base_commit)}"><code>{esc(base_commit)}</code></a>'))
-    tests = ''.join(f'<li><code>{esc(t)}</code></li>' for t in attrs.get('fail_to_pass',[]))
     source_link = f'<a href="{esc(q["source_url"])}">source pull request</a> · ' if q.get('source_url') else ''
     body = f'''<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Benchmarks</a> &gt; <a href="{benchmark_url(b)}">{esc(b['name'])}</a> &gt; <a href="/questions/?benchmark={quote(b['id'])}">Questions</a></nav>
 <p class="task-id">{esc(q['key'])}</p><h1>{esc(q['title'])}</h1>
 <p class="resource-links">[{source_link}<a href="prompt.txt" download>download prompt</a> · <button type="button" id="copy-prompt" class="link-button">copy prompt</button>]</p><p class="sr-only" role="status" id="copy-status"></p>
-<dl class="metadata">{''.join(f'<div><dt>{esc(k)}:</dt><dd>{v}</dd></div>' for k,v in facts)}</dl>
-<article class="prose"><section><h2>Problem statement</h2><div class="prompt-content">{markdown(q['prompt'])}</div></section>
-<section><h2>Evaluation</h2><details><summary>{len(attrs.get('fail_to_pass',[]))} failing test(s) to resolve</summary><ul class="test-list">{tests}</ul></details><p class="annotation">The dataset also records {attrs.get('pass_to_pass_count',0):,} previously passing tests.</p></section></article>
+<article class="prose"><section><h2>Problem statement</h2><div class="prompt-content">{markdown(q['prompt'])}</div></section></article>
 <nav class="question-adjacent" aria-label="Adjacent questions">{prev_link}<a href="/questions/?benchmark={quote(b['id'])}">Question index</a>{next_link}</nav>
 <script type="application/json" id="prompt-data">{json.dumps(q['prompt'],ensure_ascii=False).replace('<',chr(92)+'u003c')}</script>'''
     relative = question_url(q).lstrip('/')
@@ -255,7 +220,6 @@ def main():
         BENCHMARKS = [{k:v for k,v in b.items() if v is not None} for b in BENCHMARKS]
         QUESTIONS = [dict(r) for r in db.execute('SELECT * FROM question ORDER BY benchmark_id, key')]
     for q in QUESTIONS:
-        q['attrs'] = json.loads(q['attrs'])
         q['title'] = question_title(q['prompt'])
     OUT.mkdir(exist_ok=True)
     # Only this generator's output directory is cleared.
