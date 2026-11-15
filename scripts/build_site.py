@@ -140,7 +140,7 @@ def home():
         for b in (b for b in ordered if b['released_on'].startswith(year)):
             url = benchmark_url(b)
             entries.append(f'''<li data-benchmark data-category="{esc(b.get('category','Other'))}" data-search="{esc((b['name']+' '+b['id']+' '+b['summary']+' '+b.get('category','')).lower())}">
-<div class="entry-links"><a href="{url}">{esc(b['id'])}</a> [<a href="{url}">article</a> · <a href="/questions/?benchmark={quote(b['id'])}">questions</a> · <a href="{esc(b['homepage_url'])}">website</a> · <a href="{esc(b['dataset_url'])}">dataset</a>]</div>
+<div class="entry-links"><a href="{url}">{esc(b['id'])}</a> [<a href="/questions/?benchmark={quote(b['id'])}">questions</a> · <a href="{esc(b['homepage_url'])}">website</a> · <a href="{esc(b['dataset_url'])}">dataset</a>]</div>
 <div class="entry-title"><a href="{url}">{esc(b['name'])}</a></div>
 <p class="entry-summary">{esc(b['summary'])}</p>
 <div class="entry-meta">Subject: {esc(b.get('category','Other'))}<br>Released: {esc(b['released_on'])} · Questions: {b['question_count']:,} · Metric: {esc(b.get('metric','Not documented'))}</div></li>''')
