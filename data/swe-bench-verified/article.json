@@ -1,0 +1,16 @@
+{
+  "category": "Software engineering",
+  "task": "Issue resolution",
+  "metric": "Resolved (%)",
+  "language": "Python",
+  "overview": "SWE-bench Verified tests whether an AI system can fix real software issues. Each task pairs an issue description with a repository at a specific commit. The system produces a code patch, which is evaluated against tests.\n\nThe Verified subset contains 500 tasks selected from SWE-bench and reviewed by software engineers for quality and solvability. It focuses on existing Python projects rather than standalone programming exercises. [Dataset card](https://huggingface.co/datasets/princeton-nlp/SWE-bench_Verified)",
+  "methodology": "A system receives an issue's problem statement and access to the codebase before the fix. It must locate the relevant code and submit a patch. The official evaluation harness applies the patch in a containerized environment and runs the task's tests. [Evaluation guide](https://www.swebench.com/SWE-bench/guides/evaluation/)\n\nThis snapshot records each task's repository, base commit, installation version, difficulty annotation, tests that must change from failing to passing, and the count of existing passing tests.",
+  "scoring": "The headline metric is the percentage of tasks resolved. A task is resolved when the issue-related tests pass and the required previously passing tests continue to pass. [Harness grading](https://github.com/SWE-bench/SWE-bench/blob/main/swebench/harness/grading.py)\n\nFor this 500-task set, each resolved task contributes 0.2 percentage points. This is a derived value: 100 divided by 500. Model results have not been added to Benchopedia yet.",
+  "limitations": "This snapshot covers 12 Python repositories. Treat performance as evidence about these issue-resolution tasks; it does not establish performance across every language or software workflow. The repository distribution below also shows that projects are represented unevenly. These are observations from the imported data.\n\nDifficulty labels describe estimated human fix time, not measured model difficulty. When comparing published results, check the agent setup, available tools, evaluation procedure, and number of attempts as well as the model name.",
+  "sources": [
+    {"title": "SWE-bench Verified · Dataset card", "url": "https://huggingface.co/datasets/princeton-nlp/SWE-bench_Verified"},
+    {"title": "SWE-bench · Project documentation", "url": "https://www.swebench.com/SWE-bench/"},
+    {"title": "SWE-bench · Evaluation guide", "url": "https://www.swebench.com/SWE-bench/guides/evaluation/"},
+    {"title": "SWE-bench · Harness grading implementation", "url": "https://github.com/SWE-bench/SWE-bench/blob/main/swebench/harness/grading.py"}
+  ]
+}

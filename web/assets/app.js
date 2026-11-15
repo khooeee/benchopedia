@@ -1,0 +1,154 @@
+/* Progressive enhancement: every article and task has a static HTML page. */
+(() => {
+  'use strict';
+  const $ = (selector) => document.querySelector(selector);
+  const escape = (value) => String(value).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const difficultyLabels = {'<15 min fix':'Under 15 min','15 min - 1 hour':'15 min–1 hour','1-4 hours':'1–4 hours','>4 hours':'Over 4 hours'};
+  const difficultyOrder = Object.keys(difficultyLabels);
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === '/' && !event.metaKey && !event.ctrlKey && !event.altKey && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && !document.activeElement.isContentEditable) {
+      event.preventDefault();
+      ($('#question-search') || $('#benchmark-search'))?.focus();
+    }
+  });
+
+  if ($('#benchmark-search')) {
+    const search = $('#benchmark-search');
+    const subject = $('#benchmark-category');
+    const rows = [...document.querySelectorAll('[data-benchmark]')];
+    const params = new URLSearchParams(location.search);
+    search.value = params.get('q') || '';
+    const initialSubject = params.get('subject') || '';
+    if ([...subject.options].some((option) => option.value === initialSubject)) subject.value = initialSubject;
+    function filterBenchmarks() {
+      const terms = search.value.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
+      let count = 0;
+      rows.forEach((row) => {
+        row.hidden = !((!subject.value || row.dataset.category === subject.value) && terms.every((term) => row.dataset.search.includes(term)));
+        if (!row.hidden) count++;
+      });
+      document.querySelectorAll('.year-group').forEach((group) => {
+        group.hidden = [...group.querySelectorAll('[data-benchmark]')].every((row) => row.hidden);
+      });
+      $('#benchmark-count').textContent = `${count} benchmark${count === 1 ? '' : 's'}`;
+      $('#benchmark-empty').hidden = count !== 0;
+      const params = new URLSearchParams();
+      if (search.value) params.set('q', search.value);
+      if (subject.value) params.set('subject', subject.value);
+      history.replaceState(null, '', '/' + (params.size ? '?' + params : ''));
+    }
+    search.addEventListener('input', filterBenchmarks);
+    subject.addEventListener('change', filterBenchmarks);
+    $('.search-form').addEventListener('submit', (event) => { event.preventDefault(); filterBenchmarks(); });
+    $('#reset-benchmarks').addEventListener('click', () => {
+      search.value = '';
+      subject.value = '';
+      filterBenchmarks();
+      search.focus();
+    });
+    filterBenchmarks();
+  }
+
+  if ($('#copy-prompt')) {
+    $('#copy-prompt').addEventListener('click', async () => {
+      const status = $('#copy-status');
+      try {
+        await navigator.clipboard.writeText(JSON.parse($('#prompt-data').textContent));
+        $('#copy-prompt').textContent = 'copied';
+        status.textContent = 'Original prompt copied to clipboard.';
+        setTimeout(() => { $('#copy-prompt').textContent = 'copy prompt'; }, 2000);
+      } catch {
+        status.classList.remove('sr-only');
+        status.textContent = 'Clipboard unavailable. Use the download prompt link instead.';
+      }
+    });
+  }
+
+  if (!$('#question-search')) return;
+  const fields = {q:$('#question-search'),benchmark:$('#filter-benchmark'),repo:$('#filter-repo'),difficulty:$('#filter-difficulty'),sort:$('#question-sort')};
+  let questions = [], page = 1;
+  const pageSize = 25;
+  const initialParams = new URLSearchParams(location.search);
+  for (const [key, field] of Object.entries(fields)) {
+    const value = initialParams.get(key);
+    if (value !== null && (field.tagName !== 'SELECT' || [...field.options].some((o) => o.value === value))) field.value = value;
+  }
+  page = Math.max(1, Number.parseInt(initialParams.get('page'), 10) || 1);
+
+  function updateURL() {
+    const params = new URLSearchParams();
+    for (const [key, field] of Object.entries(fields)) {
+      if (field.value && !(key === 'sort' && field.value === 'id')) params.set(key, field.value);
+    }
+    if (page > 1) params.set('page', page);
+    history.replaceState(null, '', '/questions/' + (params.size ? '?' + params : ''));
+  }
+
+  function render() {
+    const terms = fields.q.value.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
+    const filtered = questions.filter((q) => (
+      (!fields.benchmark.value || q.benchmark_id === fields.benchmark.value) &&
+      (!fields.repo.value || q.attrs.repo === fields.repo.value) &&
+      (!fields.difficulty.value || q.attrs.difficulty === fields.difficulty.value) &&
+      terms.every((term) => q.search.includes(term))
+    ));
+    if (fields.sort.value === 'title') filtered.sort((a,b) => a.title.localeCompare(b.title));
+    else if (fields.sort.value === 'difficulty') filtered.sort((a,b) => difficultyOrder.indexOf(a.attrs.difficulty) - difficultyOrder.indexOf(b.attrs.difficulty) || a.key.localeCompare(b.key));
+    const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
+    page = Math.min(page, pages);
+    const visible = filtered.slice((page-1)*pageSize, page*pageSize);
+    const rows = visible.map((q) => {
+      const url = escape(q.url);
+      const source = q.source_url ? ` · <a href="${escape(q.source_url)}">source</a>` : '';
+      return `<li><div class="entry-links"><a href="${url}">${escape(q.key)}</a> [<a href="${url}">question</a>${source}]</div><div class="entry-title"><a href="${url}">${escape(q.title)}</a></div><div class="entry-meta">Repository: ${escape(q.attrs.repo || '—')} · Human fix time: ${escape(difficultyLabels[q.attrs.difficulty] || 'Not annotated')}</div></li>`;
+    }).join('');
+    $('#question-results').innerHTML = `<ol class="entry-list" start="${(page-1)*pageSize+1}">${rows}</ol>`;
+    $('#question-results').hidden = !filtered.length;
+    $('#question-empty').hidden = !!filtered.length;
+    const first = (page-1)*pageSize+1, last = Math.min(page*pageSize,filtered.length);
+    $('#question-count').textContent = filtered.length ? `${first}–${last} of ${filtered.length.toLocaleString()} questions` : '0 questions';
+    $('#page-status').textContent = `Page ${page} of ${pages}`;
+    $('#page-prev').disabled = page <= 1;
+    $('#page-next').disabled = page >= pages;
+    $('.pagination').hidden = !filtered.length;
+    updateURL();
+  }
+
+  function reset() {
+    for (const [key, field] of Object.entries(fields)) field.value = key === 'sort' ? 'id' : '';
+    page = 1;
+    render();
+  }
+  function scrollToResults() {
+    $('.library-summary').scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
+  }
+  let timer;
+  fields.q.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => { page = 1; render(); }, 120);
+  });
+  for (const [key, field] of Object.entries(fields)) {
+    if (key !== 'q') field.addEventListener('change', () => { page = 1; render(); });
+  }
+  $('#clear-filters').addEventListener('click', reset);
+  $('[data-clear-questions]').addEventListener('click', reset);
+  $('#page-prev').addEventListener('click', () => { page--; render(); scrollToResults(); });
+  $('#page-next').addEventListener('click', () => { page++; render(); scrollToResults(); });
+  // Do not replace server-rendered tasks or react to controls until the index is ready.
+  Object.values(fields).forEach((field) => { field.disabled = true; });
+  $('#page-next').disabled = true;
+  $('#clear-filters').disabled = true;
+  fetch('/assets/questions.json').then((response) => {
+    if (!response.ok) throw new Error('Question index could not be loaded');
+    return response.json();
+  }).then((data) => {
+    questions = data.map((q) => ({...q, search: [q.title,q.key,q.prompt,q.attrs.repo || ''].join(' ').toLocaleLowerCase()}));
+    Object.values(fields).forEach((field) => { field.disabled = false; });
+    $('#clear-filters').disabled = false;
+    render();
+  }).catch(() => {
+    $('#question-count').innerHTML = 'Search is unavailable. <a href="/questions/all/">Browse all questions instead →</a>';
+    $('.pagination').hidden = true;
+  });
+})();
