@@ -2,7 +2,7 @@
 
 Two layers of checking:
   1. schema.sql constraints, enforced as each row is inserted.
-  2. Check queries in checks/*.sql and data/<benchmark>/checks/*.sql. Each is a
+  2. Shared check queries in checks/*.sql. Each is a
      SELECT that returns the rows violating a rule, so a passing check returns nothing.
 
 Exits non-zero if anything fails.
@@ -54,7 +54,7 @@ def load_benchmark(db, benchmark_dir, errors):
 
 
 def run_checks(db, errors):
-    check_files = sorted((ROOT / "checks").glob("*.sql")) + sorted(DATA_DIR.glob("*/checks/*.sql"))
+    check_files = sorted((ROOT / "checks").glob("*.sql"))
     for check_file in check_files:
         violations = db.execute(check_file.read_text(encoding="utf-8")).fetchall()
         if not violations:

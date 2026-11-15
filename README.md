@@ -4,13 +4,13 @@ The encyclopedia of AI benchmarks: one readable page per benchmark, with an at-a
 
 ## How it works
 
-`data/` is the source of truth: one directory per benchmark, holding `benchmark.json`, `questions.jsonl` and benchmark-specific `checks/`.
+`data/` is the source of truth: one directory per benchmark, holding `benchmark.json` and `questions.jsonl`.
 
 ```sh
 python3 scripts/build.py
 ```
 
-loads everything into `build/benchopedia.db` (SQLite) and fails if any constraint in `schema.sql` or any check query is violated. A check is a `SELECT` that returns the rows breaking a rule; global ones live in `checks/`.
+loads everything into `build/benchopedia.db` (SQLite) and fails if any constraint in `schema.sql` or any check query is violated. A check is a `SELECT` that returns the rows breaking a rule; shared checks live in `checks/`.
 
 `scripts/import_<benchmark>.py` re-snapshots a benchmark's questions from its upstream dataset.
 
@@ -44,7 +44,7 @@ text, category, metric and primary sources; the database builder loads these int
 inline code and HTTP(S) links. Source HTML is escaped.
 
 To add a benchmark, add its metadata and questions under `data/<id>/`, optionally
-add an article and benchmark-specific checks, then rebuild. Counts, navigation
+add an article, then rebuild. Counts, navigation
 and search indexes are generated from the database. Each question stores its
 benchmark link, key, prompt and optional source URL.
 
