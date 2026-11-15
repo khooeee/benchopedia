@@ -38,7 +38,6 @@ erDiagram
         TEXT key PK "the benchmark's own identifier"
         TEXT prompt "what the model is given"
         TEXT source_url "nullable"
-        TEXT attrs "JSON object, benchmark-specific"
     }
     benchmark_article {
         TEXT benchmark_id PK, FK
