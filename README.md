@@ -4,7 +4,7 @@ The encyclopedia of AI benchmarks: one readable page per benchmark, with an at-a
 
 ## How it works
 
-`data/` is the source of truth: one directory per benchmark, holding `benchmark.json`, `questions.jsonl` (one question per line) and benchmark-specific `checks/`.
+`data/` is the source of truth: one directory per benchmark, holding `benchmark.json`, `questions.jsonl` and benchmark-specific `checks/`.
 
 ```sh
 python3 scripts/build.py
@@ -17,9 +17,9 @@ loads everything into `build/benchopedia.db` (SQLite) and fails if any constrain
 ## Build the website
 
 ```sh
-python3 scripts/build_site.py
-python3 scripts/check_site.py
-node scripts/check_ui.cjs
+python3 scripts/build_site.py # Rebuild and validate SQLite, then generate the website in dist/.
+python3 scripts/check_site.py # Check generated pages, internal links, and original prompt fidelity.
+node scripts/check_ui.cjs     # Test search, filters, sorting, and pagination without a browser.
 python3 -m http.server 8765 --directory dist
 ```
 
