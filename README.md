@@ -14,6 +14,46 @@ loads everything into `build/benchopedia.db` (SQLite) and fails if any constrain
 
 `scripts/import_<benchmark>.py` re-snapshots a benchmark's questions from its upstream dataset.
 
+## Schema
+
+`schema.sql` is authoritative, including the `CHECK` constraints not shown here.
+
+```mermaid
+erDiagram
+    benchmark ||--o{ question : contains
+    benchmark ||--o| benchmark_article : "described by"
+
+    benchmark {
+        TEXT id PK "its directory name under data/"
+        TEXT name UK
+        TEXT summary
+        TEXT homepage_url
+        TEXT dataset_url
+        TEXT dataset_revision "upstream revision imported"
+        TEXT released_on "YYYY-MM-DD"
+        INTEGER question_count "declared size"
+    }
+    question {
+        TEXT benchmark_id PK, FK
+        TEXT key PK "the benchmark's own identifier"
+        TEXT prompt "what the model is given"
+        TEXT source_url "nullable"
+        TEXT attrs "JSON object, benchmark-specific"
+    }
+    benchmark_article {
+        TEXT benchmark_id PK, FK
+        TEXT category
+        TEXT task
+        TEXT metric
+        TEXT language
+        TEXT overview
+        TEXT methodology
+        TEXT scoring
+        TEXT limitations
+        TEXT sources "JSON array"
+    }
+```
+
 ## Build the website
 
 ```sh
