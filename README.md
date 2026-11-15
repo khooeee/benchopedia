@@ -2,8 +2,6 @@
 
 The encyclopedia of AI benchmarks: one readable page per benchmark, with an at-a-glance view of which benchmarks are saturated and which still have headroom.
 
-https://benchopedia.com
-
 ## How it works
 
 `data/` is the source of truth: one directory per benchmark, holding `benchmark.json`, `questions.jsonl` (one question per line) and benchmark-specific `checks/`.
