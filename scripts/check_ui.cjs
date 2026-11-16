@@ -64,7 +64,7 @@ function catalog(search = '') {
 }
 
 (async () => {
-  const home = catalog('?q=verified&subject=Software+engineering');
+  const home = catalog('?q=verified&category=Software+engineering');
   assert.equal(home.elements['#benchmark-count'].textContent,'1 benchmark');
   assert.equal(home.row.hidden,false);
   home.elements['#benchmark-search'].value = 'no-such-benchmark';
@@ -108,5 +108,5 @@ function catalog(search = '') {
   assert.equal(deep.elements['#question-count'].textContent,'1–25 of 501 questions');
   const failed = await library('',true);
   assert.ok(failed.elements['#question-count'].innerHTML.includes('/questions/all/'));
-  console.log('OK: benchmark search/subjects, numbered question lists, combined filters, empty/reset states, sorting, pagination, deep links and fetch failure fallback');
+  console.log('OK: benchmark search/categories, numbered question lists, combined filters, empty/reset states, sorting, pagination, deep links and fetch failure fallback');
 })().catch((error) => {console.error(error);process.exitCode = 1;});

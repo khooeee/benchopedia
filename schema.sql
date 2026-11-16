@@ -6,8 +6,6 @@ CREATE TABLE benchmark (
     name             TEXT NOT NULL UNIQUE CHECK (trim(name) <> ''),
     summary          TEXT NOT NULL CHECK (trim(summary) <> ''),
     category         TEXT NOT NULL CHECK (trim(category) <> ''),
-    task             TEXT NOT NULL CHECK (trim(task) <> ''),
-    language         TEXT NOT NULL CHECK (trim(language) <> ''),
     homepage_url    TEXT NOT NULL CHECK (homepage_url LIKE 'https://%'),
     dataset_url      TEXT NOT NULL CHECK (dataset_url LIKE 'https://%'),
     -- Upstream revision that data/<id>/questions.jsonl was imported from.

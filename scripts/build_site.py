@@ -143,10 +143,10 @@ def home():
 <div class="entry-title"><a href="{url}">{esc(b['name'])}</a></div>
 <div class="entry-links"><a href="/questions/?benchmark={quote(b['id'])}">questions</a> · <a href="{esc(b['homepage_url'])}">website</a> · <a href="{esc(b['dataset_url'])}">dataset</a></div>
 <p class="entry-summary">{esc(b['summary'])}</p>
-<div class="entry-meta">Subject: {esc(b['category'])}<br>Released: {esc(b['released_on'])} · Questions: {b['question_count']:,}</div></li>''')
+<div class="entry-meta">Category: {esc(b['category'])}<br>Released: {esc(b['released_on'])} · Questions: {b['question_count']:,}</div></li>''')
         groups.append(f'<section class="year-group"><h2>{year}</h2><ol class="entry-list">' + ''.join(entries) + '</ol></section>')
     body = f'''<h1>AI benchmarks</h1>
-<form class="search-form" role="search"><label for="benchmark-search">Search:</label> <input type="search" id="benchmark-search" name="q" placeholder="Name, description, or subject"> <label for="benchmark-category">Subject:</label> <select id="benchmark-category" name="subject"><option value="">All subjects</option>{options}</select> <button type="submit">Search</button></form>
+<form class="search-form" role="search"><label for="benchmark-search">Search:</label> <input type="search" id="benchmark-search" name="q" placeholder="Name, description, or category"> <label for="benchmark-category">Category:</label> <select id="benchmark-category" name="category"><option value="">All categories</option>{options}</select> <button type="submit">Search</button></form>
 <p class="list-summary"><span id="benchmark-count" role="status" aria-live="polite">{len(BENCHMARKS)} benchmark{'s' if len(BENCHMARKS)!=1 else ''}</span></p>
 <div id="catalog">{''.join(groups)}</div><div id="benchmark-empty" hidden><p>No benchmarks match your search.</p><button type="button" id="reset-benchmarks">Clear search</button></div>'''
     write('index.html',layout('AI benchmarks',body))
@@ -154,13 +154,12 @@ def home():
 
 def benchmark_page(b):
     qs = [q for q in QUESTIONS if q['benchmark_id']==b['id']]
-    facts = [('Subject',b['category']),('Task',b['task']),('Language',b['language']),('Released',b['released_on']),('Questions',f'{len(qs):,}')]
+    facts = [('Category',b['category']),('Released',b['released_on']),('Questions',f'{len(qs):,}')]
     sources = json.loads(b['sources'])
     source_list = ''.join(f'<li><a href="{esc(s["url"])}">{esc(s["title"])}</a></li>' for s in sources)
     body = f'''<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Benchmarks</a> &gt; {esc(b['name'])}</nav>
 <h1>{esc(b['name'])}</h1><p class="resource-links">[<a href="/questions/?benchmark={quote(b['id'])}">browse {len(qs):,} questions</a> · <a href="{esc(b['homepage_url'])}">official website</a> · <a href="{esc(b['dataset_url'])}">dataset</a>]</p>
 <p>{esc(b['summary'])}</p><dl class="metadata">{''.join(f'<div><dt>{esc(k)}:</dt><dd>{esc(v)}</dd></div>' for k,v in facts)}</dl>
-<nav class="contents" aria-label="Article sections">Contents: <a href="#overview">Overview</a> · <a href="#methodology">Methodology</a> · <a href="#scoring">Scoring</a> · <a href="#dataset">Dataset</a> · <a href="#limitations">Limitations</a> · <a href="#sources">Sources</a></nav>
 <article class="prose"><section id="overview"><h2>Overview</h2>{markdown(b['overview'])}</section>
 <section id="methodology"><h2>Methodology</h2>{markdown(b['methodology'])}</section>
 <section id="scoring"><h2>Scoring</h2>{markdown(b['scoring'])}</section>

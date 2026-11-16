@@ -13,17 +13,17 @@
 
   if ($('#benchmark-search')) {
     const search = $('#benchmark-search');
-    const subject = $('#benchmark-category');
+    const category = $('#benchmark-category');
     const rows = [...document.querySelectorAll('[data-benchmark]')];
     const params = new URLSearchParams(location.search);
     search.value = params.get('q') || '';
-    const initialSubject = params.get('subject') || '';
-    if ([...subject.options].some((option) => option.value === initialSubject)) subject.value = initialSubject;
+    const initialCategory = params.get('category') || '';
+    if ([...category.options].some((option) => option.value === initialCategory)) category.value = initialCategory;
     function filterBenchmarks() {
       const terms = search.value.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
       let count = 0;
       rows.forEach((row) => {
-        row.hidden = !((!subject.value || row.dataset.category === subject.value) && terms.every((term) => row.dataset.search.includes(term)));
+        row.hidden = !((!category.value || row.dataset.category === category.value) && terms.every((term) => row.dataset.search.includes(term)));
         if (!row.hidden) count++;
       });
       document.querySelectorAll('.year-group').forEach((group) => {
@@ -33,15 +33,15 @@
       $('#benchmark-empty').hidden = count !== 0;
       const params = new URLSearchParams();
       if (search.value) params.set('q', search.value);
-      if (subject.value) params.set('subject', subject.value);
+      if (category.value) params.set('category', category.value);
       history.replaceState(null, '', '/' + (params.size ? '?' + params : ''));
     }
     search.addEventListener('input', filterBenchmarks);
-    subject.addEventListener('change', filterBenchmarks);
+    category.addEventListener('change', filterBenchmarks);
     $('.search-form').addEventListener('submit', (event) => { event.preventDefault(); filterBenchmarks(); });
     $('#reset-benchmarks').addEventListener('click', () => {
       search.value = '';
-      subject.value = '';
+      category.value = '';
       filterBenchmarks();
       search.focus();
     });
