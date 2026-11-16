@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
-const source = fs.readFileSync(path.join(root, 'web/assets/app.js'), 'utf8');
+const source = fs.readFileSync(path.join(root, 'assets/app.js'), 'utf8');
 const data = JSON.parse(fs.readFileSync(path.join(root, 'dist/assets/tasks.json')));
 
 class Element {

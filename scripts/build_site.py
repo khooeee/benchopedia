@@ -229,7 +229,7 @@ def main():
             shutil.rmtree(child)
         else:
             child.unlink()
-    shutil.copytree(ROOT/'web'/'assets',OUT/'assets')
+    shutil.copytree(ROOT/'assets',OUT/'assets')
     home()
     for b in BENCHMARKS:
         benchmark_page(b)

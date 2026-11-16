@@ -75,7 +75,7 @@ database are ignored by Git.
 The interface is a compact archive: benchmarks listed by release year, numbered
 task lists, and single-column reference pages. All fonts and assets are local.
 
-`web/assets/` holds the stylesheet and browser code. `scripts/build_site.py`
+`assets/` holds the stylesheet and browser code. `scripts/build_site.py`
 holds the page templates. `benchmark.json` also holds the benchmark's article:
 its overview, methodology, scoring and limitations sections and its primary
 sources. Article text supports paragraphs, headings, code blocks, inline code
