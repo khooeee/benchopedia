@@ -1,0 +1,33 @@
+{
+  "id": "commonsenseqa",
+  "name": "CommonsenseQA",
+  "summary": "1,221 multiple-choice commonsense questions from the random-split validation set, each with five choices and a reference answer.",
+  "homepage_url": "https://www.tau-nlp.org/commonsenseqa",
+  "dataset_url": "https://huggingface.co/datasets/tau/commonsense_qa",
+  "dataset_revision": "94630fe30dad47192a8546eb75f094926d47e155",
+  "released_on": "2018-11-02",
+  "task_count": 1221,
+  "has_solutions": true,
+  "overview": "CommonsenseQA tests multiple-choice questions that need everyday commonsense knowledge rather than a stated passage. Workers wrote questions from ConceptNet concepts, each with one reference answer and four distractors. The benchmark was introduced in November 2018. [Original paper](https://arxiv.org/abs/1811.00937)",
+  "methodology": "This snapshot contains all 1,221 records in the random-split validation set at the pinned dataset revision. It excludes the 9,741 training questions. It also excludes the 1,140-question leaderboard test set, whose reference answers are not published in this dataset. The question-token split described in the paper is not included. The count is taken from the pinned dataset card. [Dataset card](https://huggingface.co/datasets/tau/commonsense_qa/blob/94630fe30dad47192a8546eb75f094926d47e155/README.md) and [authors' repository](https://github.com/jonathanherzig/commonsenseqa)\n\nEach Task Prompt preserves the upstream question, then choices A through E in their original order. The Solution is the reference label and the matching choice text. The ConceptNet concept used to write the question is not stored. IDs are the upstream question IDs. Source links open the row in the dataset viewer, which follows the current dataset revision. These pages show individual questions without added examples. No task-specific software environment is required to read them.\n\nThe importer reads the pinned Parquet file with PyArrow and can be rerun with python3 data/commonsenseqa/import.py.",
+  "scoring": "A question is correct when the predicted choice label matches the reference label. The leaderboard scores the random-split test set, whose labels are not in this snapshot. On the questions published here, accuracy is the fraction of the validation set answered correctly. [Authors' repository](https://github.com/jonathanherzig/commonsenseqa) and [original paper](https://arxiv.org/abs/1811.00937)\n\nCompare results that use the same split. A validation score is not a leaderboard score. Benchopedia stores the validation questions and reference answers. It does not run evaluations or publish model scores for this snapshot.",
+  "limitations": "These are English multiple-choice questions written around ConceptNet concepts, so a score does not by itself establish commonsense reasoning outside this format. The answer is always one of the five supplied choices. The validation questions are preserved as published rather than independently corrected. [Original paper](https://arxiv.org/abs/1811.00937)\n\nThis is not the hidden leaderboard test set. The questions and answers published here are public, so a score alone cannot establish that a model was tested on unseen material.",
+  "sources": [
+    {
+      "title": "CommonsenseQA · Original paper",
+      "url": "https://arxiv.org/abs/1811.00937"
+    },
+    {
+      "title": "CommonsenseQA · Authors' repository",
+      "url": "https://github.com/jonathanherzig/commonsenseqa"
+    },
+    {
+      "title": "CommonsenseQA · Dataset card at the imported revision",
+      "url": "https://huggingface.co/datasets/tau/commonsense_qa/blob/94630fe30dad47192a8546eb75f094926d47e155/README.md"
+    },
+    {
+      "title": "CommonsenseQA · Author's license statement",
+      "url": "https://github.com/jonathanherzig/commonsenseqa/issues/5#issuecomment-698754925"
+    }
+  ]
+}
