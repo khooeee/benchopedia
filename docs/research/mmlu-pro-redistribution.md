@@ -42,7 +42,7 @@ any task content until the outstanding permission issue is resolved.
 
 ## Publisher declarations
 
-The [paper, version 6, Appendix A.5](https://arxiv.org/html/2406.01574v6#A5)
+The [paper, version 6, Appendix A.5](https://arxiv.org/html/2406.01574v6#A1.SS5)
 explicitly declares MIT licensing for MMLU-Pro. It separately identifies MMLU,
 TheoremQA, and SciBench as MIT-licensed, and describes the STEM Website source
 as “Open-Licensed.” It states that the four sources have their own terms.
