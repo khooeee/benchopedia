@@ -103,21 +103,18 @@
   for (const [key, field] of Object.entries(fields)) {
     if (key !== 'q') field.addEventListener('change', () => { page = 1; render(); });
   }
-  $('#clear-filters').addEventListener('click', reset);
   $('[data-clear-tasks]').addEventListener('click', reset);
   $('#page-prev').addEventListener('click', () => { page--; render(); scrollToResults(); });
   $('#page-next').addEventListener('click', () => { page++; render(); scrollToResults(); });
   // Do not replace server-rendered tasks or react to controls until the index is ready.
   Object.values(fields).forEach((field) => { field.disabled = true; });
   $('#page-next').disabled = true;
-  $('#clear-filters').disabled = true;
   fetch('/assets/tasks.json').then((response) => {
     if (!response.ok) throw new Error('Task index could not be loaded');
     return response.json();
   }).then((data) => {
     tasks = data.map((q) => ({...q, search: [q.title,q.key,q.prompt].join(' ').toLocaleLowerCase()}));
     Object.values(fields).forEach((field) => { field.disabled = false; });
-    $('#clear-filters').disabled = false;
     render();
   }).catch(() => {
     $('#task-count').innerHTML = 'Search is unavailable. <a href="/tasks/all/">Browse all tasks instead →</a>';

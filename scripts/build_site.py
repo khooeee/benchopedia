@@ -172,7 +172,7 @@ def library():
     selectors = f'<label>Benchmark: <select id="filter-benchmark"><option value="">All benchmarks</option>{"".join(option(b["id"],b["name"]) for b in BENCHMARKS)}</select></label>'
     body = f'''<h1>Tasks</h1><p class="page-description">Original tasks from the benchmark datasets.</p>
 <section class="task-library" aria-label="Browse tasks"><label class="task-search-label" for="task-search">Search:</label> <input type="search" id="task-search" placeholder="Task text or task ID">
-<div class="filter-bar">{selectors}<button type="button" id="clear-filters">Clear filters</button></div>
+<div class="filter-bar">{selectors}</div>
 <div class="library-summary"><p id="task-count" role="status" aria-live="polite">1–{min(25,len(TASKS))} of {len(TASKS):,} tasks</p></div>
 <nav class="pagination" aria-label="Task pages"><button type="button" id="page-prev" disabled>Previous</button> <span id="page-status">Page 1 of {max(1,(len(TASKS)+24)//25)}</span> <button type="button" id="page-next">Next</button></nav>
 <div id="task-results">{task_list(TASKS[:25])}</div><div id="task-empty" hidden><p>No tasks match your search.</p><button type="button" data-clear-tasks>Clear filters</button></div>
