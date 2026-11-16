@@ -1,0 +1,36 @@
+{
+  "id": "gsm8k",
+  "name": "GSM8K",
+  "summary": "1,319 grade school math test problems requiring multiple steps of arithmetic reasoning, with worked reference solutions.",
+  "homepage_url": "https://github.com/openai/grade-school-math",
+  "dataset_url": "https://github.com/openai/grade-school-math/blob/3101c7d5072418e28b9008a6636bde82a006892c/grade_school_math/data/test.jsonl",
+  "dataset_revision": "3101c7d5072418e28b9008a6636bde82a006892c",
+  "released_on": "2021-10-27",
+  "task_count": 1319,
+  "overview": "GSM8K (Grade School Math 8K) tests solving math word problems through multiple steps of reasoning. Human writers created the problems and worked solutions; the problems primarily use addition, subtraction, multiplication, and division and typically require two to eight steps. The benchmark was introduced in October 2021. [Original paper](https://arxiv.org/abs/2110.14168) and [authors’ documentation](https://github.com/openai/grade-school-math/blob/3101c7d5072418e28b9008a6636bde82a006892c/README.md)",
+  "methodology": "This snapshot contains all 1,319 records in the original, non-Socratic test split, taken from grade_school_math/data/test.jsonl at the pinned repository revision. It excludes training problems, the Socratic variant, and example model-generated solutions. The exact count is calculated from the pinned file. [Test data](https://github.com/openai/grade-school-math/blob/3101c7d5072418e28b9008a6636bde82a006892c/grade_school_math/data/test.jsonl)\n\nEach Task Prompt preserves the upstream question verbatim. The Solution preserves the entire reference answer, including line breaks, calculator annotations such as <<16-3-4=9>>, and the final numeric answer after ####. These pages display individual problems without added few-shot examples, chat instructions, or training delimiters. No task-specific software environment is required to read them. [Data format](https://github.com/openai/grade-school-math/blob/3101c7d5072418e28b9008a6636bde82a006892c/README.md)\n\nThe source has no task IDs. IDs are test-0001 through test-1319, assigned by one-based line position in the pinned file. Prompt and solution source links point to that same immutable file and line. The importer uses only Python’s standard library and can be rerun with python3 data/gsm8k/import.py.\n\n### License\n\nThe upstream repository distributes the data under the MIT license. Its notice is reproduced here and included with the imported snapshot. [Upstream license](https://github.com/openai/grade-school-math/blob/3101c7d5072418e28b9008a6636bde82a006892c/LICENSE)\n\n```text\nMIT License\n\nCopyright (c) 2021 OpenAI\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n```",
+  "scoring": "A task is correct when the extracted final answer matches the reference final answer. The authors’ example grading code finds the numeric string after ####, removes commas, and compares the resulting strings exactly. A completion without a matching answer marker is invalid; the grader does not judge the explanation or normalize every mathematically equivalent expression. Overall accuracy is the fraction of test problems answered correctly. [Answer extraction and grading](https://github.com/openai/grade-school-math/blob/3101c7d5072418e28b9008a6636bde82a006892c/grade_school_math/dataset.py)\n\nCompare results with the same prompting, number of generated solutions, selection method, and calculator or tool access. The original paper studies both generated solutions and verifier-based selection among candidates. Benchopedia stores the published problems and reference solutions; it does not run evaluations or publish model scores for this snapshot. [Original paper](https://arxiv.org/abs/2110.14168)",
+  "limitations": "These tasks cover English grade school arithmetic word problems, so performance does not by itself establish advanced mathematical ability or general reasoning skill. Final-answer accuracy does not establish that every intermediate reasoning step is correct. The reference solutions are preserved as published rather than independently corrected. [Benchmark scope](https://github.com/openai/grade-school-math/blob/3101c7d5072418e28b9008a6636bde82a006892c/README.md) and [grading code](https://github.com/openai/grade-school-math/blob/3101c7d5072418e28b9008a6636bde82a006892c/grade_school_math/dataset.py)\n\nThe displayed questions alone do not reproduce a complete model evaluation: prompting, sampling, verifier selection, and calculator use can change results. The public availability of questions and answers also means a score alone cannot establish that a model was tested on unseen material. This snapshot represents the original GSM8K test set, not a later variant or a newly collected test set.",
+  "sources": [
+    {
+      "title": "GSM8K · Original paper",
+      "url": "https://arxiv.org/abs/2110.14168"
+    },
+    {
+      "title": "GSM8K · Authors’ documentation at the imported revision",
+      "url": "https://github.com/openai/grade-school-math/blob/3101c7d5072418e28b9008a6636bde82a006892c/README.md"
+    },
+    {
+      "title": "GSM8K · Complete test data at the imported revision",
+      "url": "https://github.com/openai/grade-school-math/blob/3101c7d5072418e28b9008a6636bde82a006892c/grade_school_math/data/test.jsonl"
+    },
+    {
+      "title": "GSM8K · Answer extraction and grading",
+      "url": "https://github.com/openai/grade-school-math/blob/3101c7d5072418e28b9008a6636bde82a006892c/grade_school_math/dataset.py"
+    },
+    {
+      "title": "GSM8K · MIT license",
+      "url": "https://github.com/openai/grade-school-math/blob/3101c7d5072418e28b9008a6636bde82a006892c/LICENSE"
+    }
+  ]
+}
