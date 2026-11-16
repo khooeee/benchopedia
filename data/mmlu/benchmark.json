@@ -1,0 +1,32 @@
+{
+  "id": "mmlu",
+  "name": "MMLU",
+  "summary": "14,042 multiple-choice test tasks across 57 subjects, spanning mathematics, science, history, law, and other areas of knowledge.",
+  "homepage_url": "https://github.com/hendrycks/test",
+  "dataset_url": "https://huggingface.co/datasets/cais/mmlu",
+  "dataset_revision": "c30699e8356da336a370243923dbaf21066bb9fe",
+  "released_on": "2020-09-07",
+  "task_count": 14042,
+  "overview": "MMLU stands for Massive Multitask Language Understanding. It measures knowledge and problem solving across 57 subjects, from elementary mathematics and history to professional law and medicine. Each task offers four answer choices. The benchmark was introduced in September 2020 and published at ICLR 2021. [Original paper](https://arxiv.org/abs/2009.03300)",
+  "methodology": "This snapshot includes all 14,042 records in the cais/mmlu dataset's all configuration, test split. It excludes the dev, validation, and auxiliary_train splits. The dataset card declares an MIT license. [Dataset card](https://huggingface.co/datasets/cais/mmlu/blob/c30699e8356da336a370243923dbaf21066bb9fe/README.md)\n\nEach Task Prompt preserves the upstream question text, followed by a blank line and choices labeled A through D in their original order. The Solution shows the reference answer letter and corresponding choice text; the dataset does not supply worked explanations. IDs combine the subject and one-based row position in the pinned all/test split. Source links open that record in the upstream dataset viewer, which follows the current dataset revision.\n\nThese pages display individual test items. The original evaluation defaults to five examples from the same subject's dev split and appends an unanswered test item. Those few-shot examples and evaluation wrapper are not part of the prompts displayed here. No task-specific software environment is required to read the items. [Original evaluation code](https://github.com/hendrycks/test/blob/master/evaluate.py)",
+  "scoring": "A task is correct when the predicted choice matches its reference label. The original evaluation code selects the highest-scoring answer choice, reports accuracy per subject, and computes overall accuracy across all test items. This overall result weights subjects by their number of test items. Uniform guessing among four choices has an expected accuracy of 25%. [Evaluation implementation](https://github.com/hendrycks/test/blob/master/evaluate.py)\n\nCompare results using the same prompt format, number of few-shot examples, answer-selection method, and aggregation. Benchopedia stores reference answers but does not run evaluations or publish model scores for this snapshot.",
+  "limitations": "MMLU evaluates selection among four supplied answers. Its reference labels do not demonstrate the reasoning behind an answer, and performance on these tasks does not by itself establish skill at open-ended generation or software execution. Subject-level performance can vary substantially even when the overall score is similar. [Original paper](https://arxiv.org/abs/2009.03300)\n\nThe imported data and answer labels are preserved as published rather than independently corrected. This is the original MMLU test split, not MMLU-Pro or a revised variant. Public availability of the test items means a score alone cannot establish that a model was evaluated on unseen material.\n\nThe pinned test split contains 105 pairs of identical prompts and choices, including repeats within individual subjects. All 14,042 source records are retained under distinct IDs; no deduplication or answer correction is applied. This duplicate count is calculated from the imported snapshot.",
+  "sources": [
+    {
+      "title": "MMLU · Original paper",
+      "url": "https://arxiv.org/abs/2009.03300"
+    },
+    {
+      "title": "MMLU · Authors' repository",
+      "url": "https://github.com/hendrycks/test"
+    },
+    {
+      "title": "MMLU · Dataset card at the imported revision",
+      "url": "https://huggingface.co/datasets/cais/mmlu/blob/c30699e8356da336a370243923dbaf21066bb9fe/README.md"
+    },
+    {
+      "title": "MMLU · Original evaluation code",
+      "url": "https://github.com/hendrycks/test/blob/master/evaluate.py"
+    }
+  ]
+}

@@ -73,9 +73,14 @@ def main():
     tasks = json.loads((OUT / "assets/tasks.json").read_text())
     originals = {}
     for path in (ROOT / "data").glob("*/tasks.jsonl"):
-        for line in path.read_text().splitlines():
-            task = json.loads(line)
-            originals[(path.parent.name, task["key"])] = task
+        # JSONL records are separated by LF, not Unicode separators that can
+        # legitimately appear inside imported text (including MMLU prompts).
+        with path.open(encoding="utf-8") as stream:
+            for line in stream:
+                task = json.loads(line)
+                key = (path.parent.name, task["key"])
+                assert key not in originals, f"Duplicate task identifier: {key}"
+                originals[key] = task
     assert len(tasks) == len(originals), "Search index is incomplete"
     for q in tasks:
         key = (q["benchmark_id"], q["key"])

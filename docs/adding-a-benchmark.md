@@ -159,10 +159,13 @@ node scripts/check_ui.cjs     # Check JavaScript search, filtering, and paginati
 ```
 
 The build enforces schema constraints and the shared SQL checks: the declared
-task count must match the imported count, and prompts must be unique within a
-benchmark. Investigate duplicate prompts against upstream; do not silently drop
-records or alter wording just to pass a check. If legitimate source data conflicts
-with a check, resolve and document that separately.
+task count must match the imported count, and task keys must be unique within a
+benchmark. Identical prompts are allowed because published datasets such as
+MMLU contain repeated items. Investigate repeated prompts against upstream; do
+not silently drop records or alter wording. Preserve distinct upstream records
+under their own stable keys and document any duplicates. Read JSONL by iterating
+file lines, rather than splitting text on all Unicode line separators, which
+can occur inside valid task text.
 
 `check_site.py` checks the generated site against the imported data. The UI check
 tests browser logic using a fictional catalog, so adding a benchmark should not
