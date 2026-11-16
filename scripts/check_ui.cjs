@@ -76,7 +76,7 @@ function catalog(search = '') {
   assert.equal(e['#task-count'].textContent,'1–25 of 500 tasks');
   assert.equal(e['#page-prev'].disabled,true);
   assert.ok(e['#task-results'].innerHTML.includes('Benchmark: <a href="/benchmarks/swe-bench-verified/">SWE-bench Verified</a>'));
-  assert.ok(e['#task-results'].innerHTML.includes(`<a href="${data[0].prompt_source_url}">source</a>`));
+  assert.ok(!e['#task-results'].innerHTML.includes('>source</a>'));
   e['#page-next'].emit('click');
   assert.equal(e['#task-count'].textContent,'26–50 of 500 tasks');
   assert.ok(e['#task-results'].innerHTML.includes('start="26"'));
