@@ -1,0 +1,49 @@
+{
+  "id": "bigcodebench",
+  "name": "BigCodeBench",
+  "summary": "1,140 practical Python programming tasks that call standard and third-party libraries, each with a reference solution and unit tests.",
+  "homepage_url": "https://bigcode-bench.github.io/",
+  "dataset_url": "https://huggingface.co/datasets/bigcode/bigcodebench/blob/b74c0d0bf70d2c0bc459be537895cca163007f1a/data/v0.1.4-00000-of-00001.parquet",
+  "dataset_revision": "b74c0d0bf70d2c0bc459be537895cca163007f1a",
+  "released_on": "2025-02-23",
+  "task_count": 1140,
+  "has_solutions": true,
+  "overview": "BigCodeBench tests whether a model can write a Python function that solves a practical programming task by combining calls to several libraries. Its 1,140 tasks use 139 libraries, 77 from the standard library and 62 third-party, across seven domains, and each task has about 5.6 unit tests on average. Every task has two prompt formats: Complete gives imports, a function signature, and a structured docstring to complete, and Instruct gives a shorter natural-language instruction. The benchmark was released in June 2024 by the BigCode Project. [Original paper](https://arxiv.org/abs/2406.15877) and [dataset card](https://huggingface.co/datasets/bigcode/bigcodebench/blob/b74c0d0bf70d2c0bc459be537895cca163007f1a/README.md)",
+  "methodology": "This snapshot contains all 1,140 tasks in the v0.1.4 split at the pinned dataset revision, BigCodeBench/0 through BigCodeBench/1139. v0.1.4 is the default version in the pinned evaluation harness; earlier version splits on the dataset are not imported. [Dataset file](https://huggingface.co/datasets/bigcode/bigcodebench/blob/b74c0d0bf70d2c0bc459be537895cca163007f1a/data/v0.1.4-00000-of-00001.parquet) and [harness data loader](https://github.com/bigcode-project/bigcodebench/blob/09dd993f46c3fbf3a799465bb96d524edcb0b199/bigcodebench/data/bigcodebench.py)\n\nThe authors had GPT-4 synthesize each task from a seed example in ODEX, a set of intents paired with code from Stack Overflow, then refined the tasks, solutions, and tests with human annotators. The paper reports that each task's tests reach 99% branch coverage on average. [Original paper](https://arxiv.org/abs/2406.15877)\n\nEach Task Prompt begins with the upstream task ID. It then shows the upstream complete_prompt verbatim under Complete prompt and the upstream instruct_prompt verbatim under Instruct prompt, each inside a fenced block. The headings and fences are display formatting; a model receives one of the two prompts, not both.\n\nThe Solution is complete_prompt, a newline, canonical_solution, a newline, and the upstream test code. This is the program the harness runs to check the reference solution, so readers can see the full reference function and its unittest TestCases class together. [Ground-truth check](https://github.com/bigcode-project/bigcodebench/blob/09dd993f46c3fbf3a799465bb96d524edcb0b199/bigcodebench/evaluate.py) and [test execution](https://github.com/bigcode-project/bigcodebench/blob/09dd993f46c3fbf3a799465bb96d524edcb0b199/bigcodebench/eval/__init__.py)\n\nIDs are bigcodebench-0000 through bigcodebench-1139, from the number in the upstream task ID. Prompt and solution source links open that row in the dataset viewer, which follows the current dataset revision. Environment links open the harness's evaluation Dockerfile at a separately pinned commit. The importer reads the pinned Parquet file with PyArrow and can be rerun with python3 data/bigcodebench/import.py. [Evaluation Dockerfile](https://github.com/bigcode-project/bigcodebench/blob/09dd993f46c3fbf3a799465bb96d524edcb0b199/Docker/Evaluate.Dockerfile)",
+  "scoring": "A task is solved when the generated program passes all of its unit tests in the harness. The paper reports Pass@1 with greedy decoding in a zero-shot setting, separately for Complete and Instruct. [Original paper](https://arxiv.org/abs/2406.15877)\n\nBecause models often leave out required imports or setup, the paper also reports calibrated Pass@1, which adds the missing setup before running the tests. The pinned harness enables calibration by default and does this by placing the task's code prompt and a placeholder body before the generated code. The paper also reports Pass@5 from five samples at temperature 0.8. [Original paper](https://arxiv.org/abs/2406.15877), [harness evaluation](https://github.com/bigcode-project/bigcodebench/blob/09dd993f46c3fbf3a799465bb96d524edcb0b199/bigcodebench/evaluate.py), and [harness README](https://github.com/bigcode-project/bigcodebench/blob/09dd993f46c3fbf3a799465bb96d524edcb0b199/README.md)\n\nCompare results that use the same prompt format, dataset version, calibration setting, sampling, and execution environment. Benchopedia stores the published tasks, reference solutions, and tests. It does not run evaluations or publish model scores for this snapshot.",
+  "limitations": "The tasks cover Python functions only, so a score does not by itself establish skill in other languages, multi-file projects, or repository-level software engineering. Passing the unit tests does not prove a program correct for every input. [Original paper](https://arxiv.org/abs/2406.15877)\n\nResults depend on the execution environment: tasks call many third-party libraries, and the harness lists exact versions for them in its evaluation requirements, which its Docker image installs. The tasks were synthesized with GPT-4 and refined by people, and the dataset has been revised across several version splits, so results on different versions are not directly comparable. The tasks and solutions are public, so a score alone cannot establish that a model was tested on unseen material. [Evaluation Dockerfile](https://github.com/bigcode-project/bigcodebench/blob/09dd993f46c3fbf3a799465bb96d524edcb0b199/Docker/Evaluate.Dockerfile), [evaluation requirements](https://github.com/bigcode-project/bigcodebench/blob/09dd993f46c3fbf3a799465bb96d524edcb0b199/Requirements/requirements-eval.txt), and [dataset history](https://huggingface.co/datasets/bigcode/bigcodebench/commits/main)",
+  "sources": [
+    {
+      "title": "BigCodeBench · Original paper",
+      "url": "https://arxiv.org/abs/2406.15877"
+    },
+    {
+      "title": "BigCodeBench · Dataset card at the imported revision",
+      "url": "https://huggingface.co/datasets/bigcode/bigcodebench/blob/b74c0d0bf70d2c0bc459be537895cca163007f1a/README.md"
+    },
+    {
+      "title": "BigCodeBench · v0.1.4 dataset file",
+      "url": "https://huggingface.co/datasets/bigcode/bigcodebench/blob/b74c0d0bf70d2c0bc459be537895cca163007f1a/data/v0.1.4-00000-of-00001.parquet"
+    },
+    {
+      "title": "BigCodeBench · Evaluation harness README",
+      "url": "https://github.com/bigcode-project/bigcodebench/blob/09dd993f46c3fbf3a799465bb96d524edcb0b199/README.md"
+    },
+    {
+      "title": "BigCodeBench · Harness evaluation code",
+      "url": "https://github.com/bigcode-project/bigcodebench/blob/09dd993f46c3fbf3a799465bb96d524edcb0b199/bigcodebench/evaluate.py"
+    },
+    {
+      "title": "BigCodeBench · Evaluation Dockerfile",
+      "url": "https://github.com/bigcode-project/bigcodebench/blob/09dd993f46c3fbf3a799465bb96d524edcb0b199/Docker/Evaluate.Dockerfile"
+    },
+    {
+      "title": "BigCodeBench · Evaluation requirements",
+      "url": "https://github.com/bigcode-project/bigcodebench/blob/09dd993f46c3fbf3a799465bb96d524edcb0b199/Requirements/requirements-eval.txt"
+    },
+    {
+      "title": "BigCodeBench · Apache 2.0 license",
+      "url": "https://github.com/bigcode-project/bigcodebench/blob/09dd993f46c3fbf3a799465bb96d524edcb0b199/LICENSE"
+    }
+  ]
+}
