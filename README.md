@@ -98,3 +98,14 @@ copyrights and license or access terms; the root license does not replace them.
 See each benchmark's methodology and the
 [benchmark license review](docs/benchmark-license-review.md) for the reviewed
 terms and unresolved issues.
+
+## Deployment
+
+GitHub Pages serves the generated `dist/` directory at
+https://khooeee.github.io/benchopedia/.
+The GitHub Actions workflow builds the website and runs both checks on pull
+requests. It publishes only from `main`, after all checks pass; pull requests
+never publish a preview. Development and previews stay local.
+
+See [Deployment setup](docs/deployment.md) for the GitHub Pages and Cloudflare
+settings, optional custom domains, and manual redeployment.

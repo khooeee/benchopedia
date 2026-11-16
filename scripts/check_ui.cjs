@@ -44,12 +44,14 @@ class Element {
   focus() {}
 }
 
-async function library(search = '', fail = false, records = data) {
+async function library(search = '', fail = false, records = data, basePath = '') {
+  records = records.map((q) => ({...q, url:basePath + q.url, benchmark_url:basePath + q.benchmark_url}));
   const elements = Object.fromEntries([
     '#task-search','#filter-benchmark','label[for="filter-benchmark"]',
     '#task-results','#task-empty','#task-count','#page-status','#page-prev',
     '#page-next','.pagination','[data-clear-tasks]','.library-summary',
   ].map((key) => [key, new Element()]));
+  elements['meta[name="site-base-path"]'] = {content:basePath};
   elements['#task-search'].tagName = 'INPUT';
   for (const [key, values] of Object.entries({
     '#filter-benchmark':['',...new Set(records.map((q) => q.benchmark_id))],
@@ -61,7 +63,7 @@ async function library(search = '', fail = false, records = data) {
   const context = {
     URLSearchParams, Event, location:{search}, document:{querySelector:(key) => elements[key] || null,createElement:(tag) => new Element('',tag.toUpperCase()),addEventListener(){}},
     history:{replaceState(_a,_b,url){context.url = url;}},
-    fetch:async () => ({ok:!fail,json:async () => records}),
+    fetch:async (url) => {context.fetchURL = url; return {ok:!fail,json:async () => records};},
     setTimeout(fn){fn();return 1;},clearTimeout(){},matchMedia:() => ({matches:true}),
   };
   vm.runInNewContext(source,context);
@@ -70,11 +72,12 @@ async function library(search = '', fail = false, records = data) {
   return {elements,context};
 }
 
-function catalog(search = '') {
+function catalog(search = '', basePath = '') {
   const elements = Object.fromEntries([
     '#benchmark-search','#benchmark-count','#benchmark-empty',
     '#reset-benchmarks','.search-form',
   ].map((key) => [key, new Element()]));
+  elements['meta[name="site-base-path"]'] = {content:basePath};
   const rows = ['alpha benchmark reasoning', 'beta benchmark coding'].map((search) => {
     const row = new Element();
     row.dataset = {search};
@@ -198,5 +201,22 @@ function catalog(search = '') {
   const failed = await library('',true);
   assert.ok(failed.elements['#task-count'].innerHTML.includes('/tasks/all/'));
   assert.equal(failed.elements.autocomplete.disabled, true);
+  const project = await library('', false, data, '/benchopedia');
+  assert.equal(project.context.fetchURL, '/benchopedia/assets/tasks.json');
+  assert.equal(project.context.url, '/benchopedia/tasks/');
+  assert.ok(project.elements['#task-results'].innerHTML.includes('href="/benchopedia/benchmarks/alpha/tasks/alpha-01/"'));
+  assert.ok(project.elements['#task-results'].innerHTML.includes('href="/benchopedia/benchmarks/alpha/"'));
+  project.elements['#page-next'].emit('click');
+  assert.equal(project.context.url, '/benchopedia/tasks/?page=2');
+  project.elements['#task-search'].value = 'sharedtoken';
+  project.elements['#task-search'].emit('input');
+  assert.equal(project.context.url, '/benchopedia/tasks/?q=sharedtoken');
+  const projectFailure = await library('', true, data, '/benchopedia');
+  assert.ok(projectFailure.elements['#task-count'].innerHTML.includes('href="/benchopedia/tasks/all/"'));
+  const projectHome = catalog('?q=alpha', '/benchopedia');
+  assert.equal(projectHome.context.url, '/benchopedia/?q=alpha');
+  projectHome.elements['#reset-benchmarks'].emit('click');
+  assert.equal(projectHome.context.url, '/benchopedia/');
+  console.log('OK: project-path asset fetch, task links, pagination, search URLs and fallback');
   console.log('OK: benchmark search/autocomplete, numbered task lists, combined filters, empty/reset states, pagination, deep links and fetch failure fallback');
 })().catch((error) => {console.error(error);process.exitCode = 1;});

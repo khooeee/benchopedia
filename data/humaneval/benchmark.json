@@ -1,0 +1,44 @@
+{
+  "id": "humaneval",
+  "name": "HumanEval",
+  "summary": "164 hand-written Python programming tasks with function signatures, docstrings, reference implementations, and unit tests.",
+  "homepage_url": "https://github.com/openai/human-eval",
+  "dataset_url": "https://github.com/openai/human-eval/blob/b9453e8f1865df0a0057a1383767caa400acfbcf/data/HumanEval.jsonl.gz",
+  "dataset_revision": "b9453e8f1865df0a0057a1383767caa400acfbcf",
+  "released_on": "2021-07-07",
+  "task_count": 164,
+  "overview": "HumanEval measures the functional correctness of programs generated from natural-language specifications. Each Python task supplies a function signature, docstring, and any necessary supporting code; a model completes the function. The benchmark contains 164 hand-written problems and was introduced with the Codex paper in July 2021. [Original paper](https://arxiv.org/abs/2107.03374) and [official dataset](https://huggingface.co/datasets/openai/openai_humaneval)",
+  "methodology": "This snapshot includes all 164 original tasks, HumanEval/0 through HumanEval/163, from data/HumanEval.jsonl.gz at the pinned repository revision. It excludes example problems and generated samples and is the original HumanEval, rather than HumanEval+ or a translated variant. [Pinned data](https://github.com/openai/human-eval/blob/b9453e8f1865df0a0057a1383767caa400acfbcf/data/HumanEval.jsonl.gz)\n\nEach Task Prompt begins with the upstream task ID and function name for navigation, followed by the exact upstream prompt inside a Python code block. That block preserves imports, helper code, the function signature, docstring, indentation, and line breaks. The heading and Markdown fence are display formatting, not instructions supplied by the original evaluation.\n\nThe Solution contains the original prompt concatenated with canonical_solution, then a newline, the complete upstream test field, another newline, and check(entry_point). This is the same program assembly used by the authors’ execution harness, so readers can see both the full reference implementation and its tests. Tests and reference code are kept out of the Task Prompt. [Program assembly](https://github.com/openai/human-eval/blob/b9453e8f1865df0a0057a1383767caa400acfbcf/human_eval/execution.py)\n\nPage IDs use humaneval-000 through humaneval-163, derived from the numeric part of the upstream task ID and padded for ordering and URL compatibility. Source links point to the immutable compressed dataset file, which contains both prompts and solutions; it must be downloaded and decompressed to inspect individual records. Environment links open the authors’ Python setup instructions. The importer requires only Python’s standard library and runs with python3 data/humaneval/import.py. [Setup and evaluation instructions](https://github.com/openai/human-eval/blob/b9453e8f1865df0a0057a1383767caa400acfbcf/README.md#installation)\n\n### License\n\nThe upstream dataset repository uses the MIT license; its original notice is reproduced here. [Upstream license](https://github.com/openai/human-eval/blob/b9453e8f1865df0a0057a1383767caa400acfbcf/LICENSE)\n\n```text\nThe MIT License\n\nCopyright (c) OpenAI (https://openai.com)\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in\nall copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\nTHE SOFTWARE.\n```",
+  "scoring": "A generated completion is appended to the prompt and executed against the task’s unit tests, ending with check(entry_point). The harness records whether it passes, fails, or times out; its default timeout is three seconds. Correctness is based on the tests rather than textual agreement with the reference implementation. [Execution harness](https://github.com/openai/human-eval/blob/b9453e8f1865df0a0057a1383767caa400acfbcf/human_eval/execution.py)\n\nThe reported metric is pass@k: the probability that at least one of k sampled completions passes the tests, averaged over tasks. The authors’ estimator uses the number of passing completions among n samples and computes 1 − C(n − c, k) / C(n, k), where c is the number that pass. The implementation only reports k values for which every task has at least k samples. At k = 1 this is the mean passing fraction across tasks. [Metric implementation](https://github.com/openai/human-eval/blob/b9453e8f1865df0a0057a1383767caa400acfbcf/human_eval/evaluation.py)\n\nCompare results with the same sampling settings, prompt format, number of samples, execution environment, timeout, and test suite. Benchopedia displays the published data and reference programs; it does not execute submissions or report model scores.",
+  "limitations": "HumanEval covers small Python function-completion problems. Performance does not by itself establish skill at maintaining a large repository, using external tools, or writing software in other languages. Passing a finite test suite does not prove correctness for every input. [Original paper](https://arxiv.org/abs/2107.03374)\n\nPrompts, reference implementations, and tests are preserved as published, without independent corrections. This is the original test suite, not HumanEval+ with expanded tests. Public availability also means a score alone cannot establish that a model was evaluated on unseen material.\n\nThe upstream repository is marked deprecated and unmaintained at the imported revision. Its README advises using a robust sandbox when executing generated code. The setup link documents the original harness; these static task pages do not provide an execution environment. [Authors’ documentation](https://github.com/openai/human-eval/blob/b9453e8f1865df0a0057a1383767caa400acfbcf/README.md)",
+  "sources": [
+    {
+      "title": "HumanEval · Original paper",
+      "url": "https://arxiv.org/abs/2107.03374"
+    },
+    {
+      "title": "HumanEval · Official dataset card",
+      "url": "https://huggingface.co/datasets/openai/openai_humaneval"
+    },
+    {
+      "title": "HumanEval · Authors’ documentation at the imported revision",
+      "url": "https://github.com/openai/human-eval/blob/b9453e8f1865df0a0057a1383767caa400acfbcf/README.md"
+    },
+    {
+      "title": "HumanEval · Complete pinned dataset",
+      "url": "https://github.com/openai/human-eval/blob/b9453e8f1865df0a0057a1383767caa400acfbcf/data/HumanEval.jsonl.gz"
+    },
+    {
+      "title": "HumanEval · Execution harness",
+      "url": "https://github.com/openai/human-eval/blob/b9453e8f1865df0a0057a1383767caa400acfbcf/human_eval/execution.py"
+    },
+    {
+      "title": "HumanEval · pass@k implementation",
+      "url": "https://github.com/openai/human-eval/blob/b9453e8f1865df0a0057a1383767caa400acfbcf/human_eval/evaluation.py"
+    },
+    {
+      "title": "HumanEval · MIT license",
+      "url": "https://github.com/openai/human-eval/blob/b9453e8f1865df0a0057a1383767caa400acfbcf/LICENSE"
+    }
+  ]
+}
