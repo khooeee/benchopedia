@@ -5,6 +5,8 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from helpers.site_path import output_path
+
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "dist"
 
@@ -15,6 +17,8 @@ class Page(HTMLParser):
         self.links = []
         self.ids = set()
         self.title = False
+        self.benchmarks = {}
+        self.solution_filter = False
         self.solution = None
         self.reading_solution = False
         self.section = None
@@ -24,6 +28,12 @@ class Page(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
+        if "data-benchmark" in attrs:
+            self.benchmarks[attrs["data-benchmark"]] = attrs.get("data-has-solutions")
+        if tag == "input" and attrs.get("id") == "filter-solutions":
+            self.solution_filter = (attrs.get("type") == "checkbox"
+                                    and attrs.get("name") == "has_solutions"
+                                    and attrs.get("value") == "1")
         if "id" in attrs:
             self.ids.add(attrs["id"])
         if tag == "section":
@@ -56,6 +66,13 @@ def main():
     pages = {p: Page(p.read_text()) for p in OUT.rglob("*.html")}
     assert pages, "Build the website first"
     errors = []
+    catalog = pages[OUT / "index.html"]
+    expected_flags = {}
+    for metadata in (ROOT / "data").glob("*/benchmark.json"):
+        benchmark = json.loads(metadata.read_text(encoding="utf-8"))
+        expected_flags[benchmark["id"]] = str(benchmark["has_solutions"]).lower()
+    assert catalog.benchmarks == expected_flags, "Catalog solution flags differ from metadata"
+    assert catalog.solution_filter, "Missing benchmark solutions checkbox"
     for path, page in pages.items():
         if not page.title:
             errors.append(f"{path}: missing title")
@@ -63,7 +80,7 @@ def main():
             url = urlsplit(href)
             if url.scheme or url.netloc or not href:
                 continue
-            target = OUT / url.path.lstrip("/") if url.path.startswith("/") else path.parent / url.path
+            target = OUT / output_path(url.path) if url.path.startswith("/") else path.parent / url.path
             if target.is_dir():
                 target = target / "index.html"
             if not target.exists():
@@ -85,7 +102,7 @@ def main():
     for q in tasks:
         key = (q["benchmark_id"], q["key"])
         assert q["prompt"] == originals[key]["prompt"], f"Search prompt changed: {key}"
-        task_dir = OUT / q["url"].lstrip("/")
+        task_dir = OUT / output_path(q["url"])
         assert (task_dir / "index.html").exists(), f"Missing task page: {key}"
         assert pages[task_dir / "index.html"].solution == originals[key].get("solution"), f"Solution changed: {key}"
         page = pages[task_dir / "index.html"]

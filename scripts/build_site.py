@@ -12,6 +12,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 from helpers.build_sqlite import main as build_sqlite
+from helpers.site_path import BASE_PATH, site_url
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "dist"
@@ -107,8 +108,9 @@ def layout(title, body, active="benchmarks", description="Descriptions, datasets
         current = ' aria-current="page"' if active == key else ''
         return f'<a href="{url}"{current}>{label}</a>'
 
-    return f'''<!doctype html>
+    page = f'''<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="site-base-path" content="{esc(BASE_PATH)}">
 <title>{esc(title)} · Benchopedia</title><meta name="description" content="{esc(description)}">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/assets/style.css"><script src="/assets/benchmark-autocomplete.js" defer></script><script src="/assets/app.js" defer></script></head>
@@ -118,6 +120,8 @@ def layout(title, body, active="benchmarks", description="Descriptions, datasets
 <main id="main" tabindex="-1">{body}</main>
 <footer><a href="/about/">About Benchopedia</a> · <a href="https://github.com/khooeee/benchopedia/issues">Corrections &amp; suggestions</a></footer>
 </body></html>'''
+    return re.sub(r'(href|src)="(/(?!/)[^"]*)"',
+                  lambda match: f'{match[1]}="{site_url(match[2])}"', page)
 
 
 def task_list(rows, start=1):
@@ -137,16 +141,16 @@ def home():
         entries = []
         for b in (b for b in ordered if b['released_on'].startswith(year)):
             url = benchmark_url(b)
-            entries.append(f'''<li data-benchmark data-search="{esc((b['name']+' '+b['id']+' '+b['summary']).lower())}">
+            entries.append(f'''<li data-benchmark="{esc(b['id'])}" data-has-solutions="{str(bool(b['has_solutions'])).lower()}" data-search="{esc((b['name']+' '+b['id']+' '+b['summary']).lower())}">
 <div class="entry-title"><a href="{url}">{esc(b['name'])}</a></div>
 <div class="entry-links"><a href="/tasks/?benchmark={quote(b['id'])}">tasks</a> · <a href="{esc(b['homepage_url'])}">website</a> · <a href="{esc(b['dataset_url'])}">dataset</a></div>
 <p class="entry-summary">{esc(b['summary'])}</p>
 <div class="entry-meta">Released: {esc(b['released_on'])} · Tasks: {b['task_count']:,}</div></li>''')
         groups.append(f'<section class="year-group"><h2>{year}</h2><ol class="entry-list">' + ''.join(entries) + '</ol></section>')
     body = f'''<h1>Benchmarks</h1>
-<form class="search-form" role="search"><label for="benchmark-search">Search:</label> <input type="search" id="benchmark-search" name="q" placeholder="Name or description"> <button type="submit">Search</button></form>
+<form class="search-form" role="search"><label for="benchmark-search">Search:</label> <input type="search" id="benchmark-search" name="q" placeholder="Name or description"> <button type="submit">Search</button> <label class="solution-filter"><input type="checkbox" id="filter-solutions" name="has_solutions" value="1"> Has solutions</label></form>
 <p class="list-summary"><span id="benchmark-count" role="status" aria-live="polite">{len(BENCHMARKS)} benchmark{'s' if len(BENCHMARKS)!=1 else ''}</span></p>
-<div id="catalog">{''.join(groups)}</div><div id="benchmark-empty" hidden><p>No benchmarks match your search.</p><button type="button" id="reset-benchmarks">Clear search</button></div>'''
+<div id="catalog">{''.join(groups)}</div><div id="benchmark-empty" hidden><p>No benchmarks match your search.</p><button type="button" id="reset-benchmarks">Clear filters</button></div>'''
     write('index.html',layout('Benchmarks',body))
 
 
@@ -180,6 +184,9 @@ def library():
     write('tasks/index.html',layout('Tasks',body,'tasks'))
     write('tasks/all/index.html',layout('All tasks','<h1>All tasks</h1><p><a href="/tasks/">Search and filter tasks</a></p>'+task_list(TASKS),'tasks'))
     search_data = [{k:q[k] for k in ('benchmark_id','benchmark_name','benchmark_url','key','title','prompt','prompt_source_url')} | {'url':task_url(q)} for q in TASKS]
+    for record in search_data:
+        for key in ('url', 'benchmark_url'):
+            record[key] = site_url(record[key])
     write('assets/tasks.json',json.dumps(search_data,ensure_ascii=False,separators=(',',':')))
 
 

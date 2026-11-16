@@ -24,7 +24,7 @@ data[0].prompt_source_url = 'https://example.org/alpha/1';
 
 class Element {
   constructor(value = '', tagName = 'DIV') {
-    Object.assign(this, {value, tagName, listeners:{}, disabled:false, hidden:false, textContent:'', innerHTML:'', options:[], children:[], attributes:{}});
+    Object.assign(this, {value, tagName, listeners:{}, disabled:false, hidden:false, checked:false, textContent:'', innerHTML:'', options:[], children:[], attributes:{}});
     this.classList = {remove(){},toggle(){}};
   }
   addEventListener(event, action) { (this.listeners[event] ||= []).push(action); }
@@ -44,12 +44,14 @@ class Element {
   focus() {}
 }
 
-async function library(search = '', fail = false, records = data) {
+async function library(search = '', fail = false, records = data, basePath = '') {
+  records = records.map((q) => ({...q, url:basePath + q.url, benchmark_url:basePath + q.benchmark_url}));
   const elements = Object.fromEntries([
     '#task-search','#filter-benchmark','label[for="filter-benchmark"]',
     '#task-results','#task-empty','#task-count','#page-status','#page-prev',
     '#page-next','.pagination','[data-clear-tasks]','.library-summary',
   ].map((key) => [key, new Element()]));
+  elements['meta[name="site-base-path"]'] = {content:basePath};
   elements['#task-search'].tagName = 'INPUT';
   for (const [key, values] of Object.entries({
     '#filter-benchmark':['',...new Set(records.map((q) => q.benchmark_id))],
@@ -61,7 +63,7 @@ async function library(search = '', fail = false, records = data) {
   const context = {
     URLSearchParams, Event, location:{search}, document:{querySelector:(key) => elements[key] || null,createElement:(tag) => new Element('',tag.toUpperCase()),addEventListener(){}},
     history:{replaceState(_a,_b,url){context.url = url;}},
-    fetch:async () => ({ok:!fail,json:async () => records}),
+    fetch:async (url) => {context.fetchURL = url; return {ok:!fail,json:async () => records};},
     setTimeout(fn){fn();return 1;},clearTimeout(){},matchMedia:() => ({matches:true}),
   };
   vm.runInNewContext(source,context);
@@ -70,14 +72,15 @@ async function library(search = '', fail = false, records = data) {
   return {elements,context};
 }
 
-function catalog(search = '') {
+function catalog(search = '', basePath = '') {
   const elements = Object.fromEntries([
-    '#benchmark-search','#benchmark-count','#benchmark-empty',
+    '#benchmark-search','#filter-solutions','#benchmark-count','#benchmark-empty',
     '#reset-benchmarks','.search-form',
   ].map((key) => [key, new Element()]));
-  const rows = ['alpha benchmark reasoning', 'beta benchmark coding'].map((search) => {
+  elements['meta[name="site-base-path"]'] = {content:basePath};
+  const rows = ['alpha benchmark reasoning', 'beta benchmark coding'].map((search, index) => {
     const row = new Element();
-    row.dataset = {search};
+    row.dataset = {search, hasSolutions:index === 0 ? 'true' : 'false'};
     return row;
   });
   const groups = rows.map((row) => {
@@ -107,6 +110,40 @@ function catalog(search = '') {
   assert.ok(home.groups.every((group) => !group.hidden));
   assert.equal(home.elements['#benchmark-count'].textContent,'2 benchmarks');
   assert.equal(home.context.url,'/');
+  home.elements['#filter-solutions'].checked = true;
+  home.elements['#filter-solutions'].emit('change');
+  assert.equal(home.elements['#benchmark-count'].textContent, '1 benchmark');
+  assert.equal(home.rows[0].hidden, false);
+  assert.equal(home.rows[1].hidden, true);
+  assert.equal(home.groups[1].hidden, true);
+  assert.equal(home.context.url, '/?has_solutions=1');
+  home.elements['#filter-solutions'].checked = false;
+  home.elements['#filter-solutions'].emit('change');
+  assert.ok(home.rows.every((row) => !row.hidden));
+  assert.equal(home.elements['#benchmark-count'].textContent, '2 benchmarks');
+  assert.equal(home.context.url, '/');
+  const solutionsOnly = catalog('?q=alpha&has_solutions=1', '/benchopedia');
+  assert.equal(solutionsOnly.elements['#filter-solutions'].checked, true);
+  assert.equal(solutionsOnly.elements['#benchmark-count'].textContent, '1 benchmark');
+  assert.equal(solutionsOnly.context.url, '/benchopedia/?q=alpha&has_solutions=1');
+  solutionsOnly.elements['#benchmark-search'].value = 'beta';
+  const submit = solutionsOnly.elements['.search-form'].emit('submit');
+  assert.equal(submit.defaultPrevented, true);
+  assert.equal(solutionsOnly.elements['#benchmark-count'].textContent, '0 benchmarks');
+  assert.ok(solutionsOnly.groups.every((group) => group.hidden));
+  assert.equal(solutionsOnly.elements['#benchmark-empty'].hidden, false);
+  assert.equal(solutionsOnly.context.url, '/benchopedia/?q=beta&has_solutions=1');
+  solutionsOnly.elements['#reset-benchmarks'].emit('click');
+  assert.equal(solutionsOnly.elements['#filter-solutions'].checked, false);
+  assert.equal(solutionsOnly.elements['#benchmark-search'].value, '');
+  assert.ok(solutionsOnly.rows.every((row) => !row.hidden));
+  assert.equal(solutionsOnly.elements['#benchmark-count'].textContent, '2 benchmarks');
+  assert.equal(solutionsOnly.elements['#benchmark-empty'].hidden, true);
+  assert.equal(solutionsOnly.context.url, '/benchopedia/');
+  const withoutSolutionsFilter = catalog('?has_solutions=0');
+  assert.equal(withoutSolutionsFilter.elements['#filter-solutions'].checked, false);
+  assert.ok(withoutSolutionsFilter.rows.every((row) => !row.hidden));
+  assert.equal(withoutSolutionsFilter.context.url, '/');
   const {elements:e,context:c} = await library();
   assert.equal(e['#task-count'].textContent,`1–25 of ${data.length} tasks`);
   assert.equal(e['#page-prev'].disabled,true);
@@ -198,5 +235,23 @@ function catalog(search = '') {
   const failed = await library('',true);
   assert.ok(failed.elements['#task-count'].innerHTML.includes('/tasks/all/'));
   assert.equal(failed.elements.autocomplete.disabled, true);
+  const project = await library('', false, data, '/benchopedia');
+  assert.equal(project.context.fetchURL, '/benchopedia/assets/tasks.json');
+  assert.equal(project.context.url, '/benchopedia/tasks/');
+  assert.ok(project.elements['#task-results'].innerHTML.includes('href="/benchopedia/benchmarks/alpha/tasks/alpha-01/"'));
+  assert.ok(project.elements['#task-results'].innerHTML.includes('href="/benchopedia/benchmarks/alpha/"'));
+  project.elements['#page-next'].emit('click');
+  assert.equal(project.context.url, '/benchopedia/tasks/?page=2');
+  project.elements['#task-search'].value = 'sharedtoken';
+  project.elements['#task-search'].emit('input');
+  assert.equal(project.context.url, '/benchopedia/tasks/?q=sharedtoken');
+  const projectFailure = await library('', true, data, '/benchopedia');
+  assert.ok(projectFailure.elements['#task-count'].innerHTML.includes('href="/benchopedia/tasks/all/"'));
+  const projectHome = catalog('?q=alpha', '/benchopedia');
+  assert.equal(projectHome.context.url, '/benchopedia/?q=alpha');
+  projectHome.elements['#reset-benchmarks'].emit('click');
+  assert.equal(projectHome.context.url, '/benchopedia/');
+  console.log('OK: project-path asset fetch, task links, pagination, search URLs and fallback');
+  console.log('OK: benchmark solution checkbox, combined search, URL state, counts and reset');
   console.log('OK: benchmark search/autocomplete, numbered task lists, combined filters, empty/reset states, pagination, deep links and fetch failure fallback');
 })().catch((error) => {console.error(error);process.exitCode = 1;});

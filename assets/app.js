@@ -2,6 +2,8 @@
 (() => {
   'use strict';
   const $ = (selector) => document.querySelector(selector);
+  const basePath = $('meta[name="site-base-path"]')?.content || '';
+  const siteURL = (path) => basePath + path;
   const escape = (value) => String(value).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
   document.addEventListener('keydown', (event) => {
@@ -13,14 +15,17 @@
 
   if ($('#benchmark-search')) {
     const search = $('#benchmark-search');
+    const solutions = $('#filter-solutions');
     const rows = [...document.querySelectorAll('[data-benchmark]')];
     const params = new URLSearchParams(location.search);
     search.value = params.get('q') || '';
+    solutions.checked = params.get('has_solutions') === '1';
     function filterBenchmarks() {
       const terms = search.value.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
       let count = 0;
       rows.forEach((row) => {
-        row.hidden = !terms.every((term) => row.dataset.search.includes(term));
+        row.hidden = (solutions.checked && row.dataset.hasSolutions !== 'true') ||
+          !terms.every((term) => row.dataset.search.includes(term));
         if (!row.hidden) count++;
       });
       document.querySelectorAll('.year-group').forEach((group) => {
@@ -30,12 +35,15 @@
       $('#benchmark-empty').hidden = count !== 0;
       const params = new URLSearchParams();
       if (search.value) params.set('q', search.value);
-      history.replaceState(null, '', '/' + (params.size ? '?' + params : ''));
+      if (solutions.checked) params.set('has_solutions', '1');
+      history.replaceState(null, '', siteURL('/') + (params.size ? '?' + params : ''));
     }
     search.addEventListener('input', filterBenchmarks);
+    solutions.addEventListener('change', filterBenchmarks);
     $('.search-form').addEventListener('submit', (event) => { event.preventDefault(); filterBenchmarks(); });
     $('#reset-benchmarks').addEventListener('click', () => {
       search.value = '';
+      solutions.checked = false;
       filterBenchmarks();
       search.focus();
     });
@@ -60,7 +68,7 @@
       if (field.value) params.set(key, field.value);
     }
     if (page > 1) params.set('page', page);
-    history.replaceState(null, '', '/tasks/' + (params.size ? '?' + params : ''));
+    history.replaceState(null, '', siteURL('/tasks/') + (params.size ? '?' + params : ''));
   }
 
   function render() {
@@ -112,7 +120,7 @@
   Object.values(fields).forEach((field) => { field.disabled = true; });
   benchmarkAutocomplete.input.disabled = true;
   $('#page-next').disabled = true;
-  fetch('/assets/tasks.json').then((response) => {
+  fetch(siteURL('/assets/tasks.json')).then((response) => {
     if (!response.ok) throw new Error('Task index could not be loaded');
     return response.json();
   }).then((data) => {
@@ -121,7 +129,7 @@
     benchmarkAutocomplete.input.disabled = false;
     render();
   }).catch(() => {
-    $('#task-count').innerHTML = 'Search is unavailable. <a href="/tasks/all/">Browse all tasks instead →</a>';
+    $('#task-count').innerHTML = `Search is unavailable. <a href="${escape(siteURL('/tasks/all/'))}">Browse all tasks instead →</a>`;
     $('.pagination').hidden = true;
   });
 })();
