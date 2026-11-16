@@ -131,7 +131,7 @@ def task_list(rows, start=1):
 
 
 def home():
-    categories = sorted({b.get('category','Other') for b in BENCHMARKS})
+    categories = sorted({b['category'] for b in BENCHMARKS})
     options = ''.join(f'<option value="{esc(c)}">{esc(c)}</option>' for c in categories)
     ordered = sorted(BENCHMARKS, key=lambda b: (b['released_on'],b['name']), reverse=True)
     groups = []
@@ -139,11 +139,11 @@ def home():
         entries = []
         for b in (b for b in ordered if b['released_on'].startswith(year)):
             url = benchmark_url(b)
-            entries.append(f'''<li data-benchmark data-category="{esc(b.get('category','Other'))}" data-search="{esc((b['name']+' '+b['id']+' '+b['summary']+' '+b.get('category','')).lower())}">
+            entries.append(f'''<li data-benchmark data-category="{esc(b['category'])}" data-search="{esc((b['name']+' '+b['id']+' '+b['summary']+' '+b['category']).lower())}">
 <div class="entry-title"><a href="{url}">{esc(b['name'])}</a></div>
 <div class="entry-links"><a href="/questions/?benchmark={quote(b['id'])}">questions</a> · <a href="{esc(b['homepage_url'])}">website</a> · <a href="{esc(b['dataset_url'])}">dataset</a></div>
 <p class="entry-summary">{esc(b['summary'])}</p>
-<div class="entry-meta">Subject: {esc(b.get('category','Other'))}<br>Released: {esc(b['released_on'])} · Questions: {b['question_count']:,}</div></li>''')
+<div class="entry-meta">Subject: {esc(b['category'])}<br>Released: {esc(b['released_on'])} · Questions: {b['question_count']:,}</div></li>''')
         groups.append(f'<section class="year-group"><h2>{year}</h2><ol class="entry-list">' + ''.join(entries) + '</ol></section>')
     body = f'''<h1>AI benchmarks</h1>
 <form class="search-form" role="search"><label for="benchmark-search">Search:</label> <input type="search" id="benchmark-search" name="q" placeholder="Name, description, or subject"> <label for="benchmark-category">Subject:</label> <select id="benchmark-category" name="subject"><option value="">All subjects</option>{options}</select> <button type="submit">Search</button></form>
@@ -154,18 +154,18 @@ def home():
 
 def benchmark_page(b):
     qs = [q for q in QUESTIONS if q['benchmark_id']==b['id']]
-    facts = [('Subject',b.get('category','Not documented')),('Task',b.get('task','Not documented')),('Language',b.get('language','Not documented')),('Released',b['released_on']),('Questions',f'{len(qs):,}'),('Metric',b.get('metric','Not documented'))]
-    sources = json.loads(b.get('sources','[]'))
+    facts = [('Subject',b['category']),('Task',b['task']),('Language',b['language']),('Released',b['released_on']),('Questions',f'{len(qs):,}'),('Metric',b['metric'])]
+    sources = json.loads(b['sources'])
     source_list = ''.join(f'<li><a href="{esc(s["url"])}">{esc(s["title"])}</a></li>' for s in sources)
     body = f'''<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Benchmarks</a> &gt; {esc(b['name'])}</nav>
 <h1>{esc(b['name'])}</h1><p class="resource-links">[<a href="/questions/?benchmark={quote(b['id'])}">browse {len(qs):,} questions</a> · <a href="{esc(b['homepage_url'])}">official website</a> · <a href="{esc(b['dataset_url'])}">dataset</a>]</p>
 <p>{esc(b['summary'])}</p><dl class="metadata">{''.join(f'<div><dt>{esc(k)}:</dt><dd>{esc(v)}</dd></div>' for k,v in facts)}</dl>
 <nav class="contents" aria-label="Article sections">Contents: <a href="#overview">Overview</a> · <a href="#methodology">Methodology</a> · <a href="#scoring">Scoring</a> · <a href="#dataset">Dataset</a> · <a href="#limitations">Limitations</a> · <a href="#sources">Sources</a></nav>
-<article class="prose"><section id="overview"><h2>Overview</h2>{markdown(b.get('overview',b['summary']))}</section>
-<section id="methodology"><h2>Methodology</h2>{markdown(b.get('methodology','Not yet documented.'))}</section>
-<section id="scoring"><h2>Scoring</h2>{markdown(b.get('scoring','Not yet documented.'))}</section>
+<article class="prose"><section id="overview"><h2>Overview</h2>{markdown(b['overview'])}</section>
+<section id="methodology"><h2>Methodology</h2>{markdown(b['methodology'])}</section>
+<section id="scoring"><h2>Scoring</h2>{markdown(b['scoring'])}</section>
 <section id="dataset"><h2>Dataset</h2><p>{len(qs):,} questions in this snapshot. <a href="/questions/?benchmark={quote(b['id'])}">Browse questions</a> or visit <a href="{esc(b['dataset_url'])}">the upstream dataset</a>.</p></section>
-<section id="limitations"><h2>Limitations</h2>{markdown(b.get('limitations','Not yet documented.'))}</section>
+<section id="limitations"><h2>Limitations</h2>{markdown(b['limitations'])}</section>
 <section id="sources"><h2>Sources</h2><ol>{source_list}</ol><details class="snapshot"><summary>Dataset revision</summary><p>Snapshot of <a href="{esc(b['dataset_url'])}">the upstream dataset</a> at revision <code>{esc(b['dataset_revision'])}</code>.</p></details></section></article>'''
     write(f'benchmarks/{b["id"]}/index.html',layout(b['name'],body,description=b['summary']))
 
@@ -215,9 +215,7 @@ def main():
     build_database()
     with sqlite3.connect(ROOT/'build'/'benchopedia.db') as db:
         db.row_factory = sqlite3.Row
-        BENCHMARKS = [dict(r) for r in db.execute('SELECT b.*, a.category, a.task, a.metric, a.language, a.overview, a.methodology, a.scoring, a.limitations, a.sources FROM benchmark b LEFT JOIN benchmark_article a ON a.benchmark_id=b.id ORDER BY b.name')]
-        # Missing editorial content must not prevent a new benchmark from appearing.
-        BENCHMARKS = [{k:v for k,v in b.items() if v is not None} for b in BENCHMARKS]
+        BENCHMARKS = [dict(r) for r in db.execute('SELECT * FROM benchmark ORDER BY name')]
         QUESTIONS = [dict(r) for r in db.execute('SELECT * FROM question ORDER BY benchmark_id, key')]
     for q in QUESTIONS:
         q['title'] = question_title(q['prompt'])

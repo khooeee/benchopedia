@@ -35,14 +35,8 @@ def load_benchmark(db, benchmark_dir, errors):
     if benchmark.get("id") != benchmark_dir.name:
         errors.append(f"{benchmark_file.relative_to(ROOT)}: id must match the directory name")
         return
+    benchmark["sources"] = json.dumps(benchmark.get("sources"), ensure_ascii=False)
     insert(db, "benchmark", benchmark, benchmark_file.relative_to(ROOT), errors)
-
-    article_file = benchmark_dir / "article.json"
-    if article_file.exists():
-        article = json.loads(article_file.read_text(encoding="utf-8"))
-        article["benchmark_id"] = benchmark["id"]
-        article["sources"] = json.dumps(article["sources"], ensure_ascii=False)
-        insert(db, "benchmark_article", article, article_file.relative_to(ROOT), errors)
 
     questions_file = benchmark_dir / "questions.jsonl"
     with questions_file.open(encoding="utf-8", newline="") as f:

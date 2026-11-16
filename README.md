@@ -21,35 +21,31 @@ loads everything into `build/benchopedia.db` (SQLite) and fails if any constrain
 ```mermaid
 erDiagram
     benchmark ||--o{ question : contains
-    benchmark ||--o| benchmark_article : "described by"
 
     benchmark {
         TEXT id PK "its directory name under data/"
         TEXT name UK
         TEXT summary
+        TEXT category
+        TEXT task
+        TEXT metric
+        TEXT language
         TEXT homepage_url
         TEXT dataset_url
         TEXT dataset_revision "upstream revision imported"
         TEXT released_on "YYYY-MM-DD"
         INTEGER question_count "declared size"
+        TEXT overview "article section"
+        TEXT methodology "article section"
+        TEXT scoring "article section"
+        TEXT limitations "article section"
+        TEXT sources "JSON array"
     }
     question {
         TEXT benchmark_id PK, FK
         TEXT key PK "the benchmark's own identifier"
         TEXT prompt "what the model is given"
         TEXT source_url "nullable"
-    }
-    benchmark_article {
-        TEXT benchmark_id PK, FK
-        TEXT category
-        TEXT task
-        TEXT metric
-        TEXT language
-        TEXT overview
-        TEXT methodology
-        TEXT scoring
-        TEXT limitations
-        TEXT sources "JSON array"
     }
 ```
 
@@ -77,13 +73,13 @@ The interface is a compact archive: benchmarks listed by release year, numbered
 question lists, and single-column reference pages. All fonts and assets are local.
 
 `web/assets/` holds the stylesheet and browser code. `scripts/build_site.py`
-holds the page templates. Optional `data/<id>/article.json` files supply article
-text, category, metric and primary sources; the database builder loads these into
-`benchmark_article`. Article text supports paragraphs, headings, code blocks,
-inline code and HTTP(S) links. Source HTML is escaped.
+holds the page templates. `benchmark.json` also holds the benchmark's article:
+its overview, methodology, scoring and limitations sections and its primary
+sources. Article text supports paragraphs, headings, code blocks, inline code
+and HTTP(S) links. Source HTML is escaped.
 
-To add a benchmark, add its metadata and questions under `data/<id>/`, optionally
-add an article, then rebuild. Counts, navigation
+To add a benchmark, add its metadata, article and questions under `data/<id>/`,
+then rebuild. Counts, navigation
 and search indexes are generated from the database. Each question stores its
 benchmark link, key, prompt and optional source URL.
 
