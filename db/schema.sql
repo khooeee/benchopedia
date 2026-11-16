@@ -19,6 +19,8 @@ CREATE TABLE benchmark (
     methodology      TEXT NOT NULL CHECK (trim(methodology) <> ''),
     scoring          TEXT NOT NULL CHECK (trim(scoring) <> ''),
     limitations      TEXT NOT NULL CHECK (trim(limitations) <> ''),
+    -- data/<id>/redistribution-review.md, published as the page's License section.
+    redistribution_review TEXT NOT NULL CHECK (trim(redistribution_review) <> ''),
     sources          TEXT NOT NULL CHECK (json_valid(sources) AND json_type(sources) = 'array'
                                          AND json_array_length(sources) > 0)
 ) STRICT;

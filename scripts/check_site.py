@@ -71,6 +71,8 @@ def main():
     for metadata in (ROOT / "data").glob("*/benchmark.json"):
         benchmark = json.loads(metadata.read_text(encoding="utf-8"))
         expected_flags[benchmark["id"]] = str(benchmark["has_solutions"]).lower()
+        page = pages.get(OUT / "benchmarks" / benchmark["id"] / "index.html")
+        assert page and "license" in page.sections, f"Missing License section: {benchmark['id']}"
     assert catalog.benchmarks == expected_flags, "Catalog solution flags differ from metadata"
     assert catalog.solution_filter, "Missing benchmark solutions checkbox"
     for path, page in pages.items():

@@ -159,6 +159,8 @@ def benchmark_page(b):
     facts = [('Released',b['released_on']),('Tasks',f'{len(qs):,}')]
     sources = json.loads(b['sources'])
     source_list = ''.join(f'<li><a href="{esc(s["url"])}">{esc(s["title"])}</a></li>' for s in sources)
+    # The review's own title would duplicate the section heading.
+    license_text = re.sub(r"\A# [^\n]*\n", "", b['redistribution_review'])
     body = f'''<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Benchmarks</a> &gt; {esc(b['name'])}</nav>
 <h1>{esc(b['name'])}</h1><p class="resource-links">[<a href="/tasks/?benchmark={quote(b['id'])}">browse {len(qs):,} tasks</a> · <a href="{esc(b['homepage_url'])}">official website</a> · <a href="{esc(b['dataset_url'])}">dataset</a>]</p>
 <p>{esc(b['summary'])}</p><dl class="metadata">{''.join(f'<div><dt>{esc(k)}:</dt><dd>{esc(v)}</dd></div>' for k,v in facts)}</dl>
@@ -167,6 +169,7 @@ def benchmark_page(b):
 <section id="scoring"><h2>Scoring</h2>{markdown(b['scoring'])}</section>
 <section id="dataset"><h2>Dataset</h2><p>{len(qs):,} tasks in this snapshot. <a href="/tasks/?benchmark={quote(b['id'])}">Browse tasks</a> or visit <a href="{esc(b['dataset_url'])}">the upstream dataset</a>.</p></section>
 <section id="limitations"><h2>Limitations</h2>{markdown(b['limitations'])}</section>
+<section id="license"><h2>License</h2>{markdown(license_text)}</section>
 <section id="sources"><h2>Sources</h2><ol>{source_list}</ol><details class="snapshot"><summary>Dataset revision</summary><p>Snapshot of <a href="{esc(b['dataset_url'])}">the upstream dataset</a> at revision <code>{esc(b['dataset_revision'])}</code>.</p></details></section></article>'''
     write(f'benchmarks/{b["id"]}/index.html',layout(b['name'],body,description=b['summary']))
 

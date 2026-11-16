@@ -40,6 +40,7 @@ erDiagram
         TEXT methodology "article section"
         TEXT scoring "article section"
         TEXT limitations "article section"
+        TEXT redistribution_review "License section"
         TEXT sources "JSON array"
     }
     task {
@@ -80,10 +81,13 @@ task lists, and single-column reference pages. All fonts and assets are local.
 `assets/` holds the stylesheet and browser code. `scripts/build_site.py`
 holds the page templates. `benchmark.json` also holds the benchmark's article:
 its overview, methodology, scoring and limitations sections and its primary
-sources. Article text supports paragraphs, headings, code blocks, inline code
-and HTTP(S) links. Source HTML is escaped.
+sources. `redistribution-review.md` holds its license terms and required
+notices, published as the page's License section. Article text supports
+paragraphs, headings, code blocks, inline code and HTTP(S) links. Source HTML
+is escaped.
 
-To add a benchmark, add its metadata, article and tasks under `data/<id>/`,
+To add a benchmark, add its metadata, article, redistribution review and tasks
+under `data/<id>/`,
 then rebuild. Counts, navigation
 and search indexes are generated from the database. Each task stores its
 benchmark link, key, prompt, optional reference solution, and optional URLs for
@@ -96,7 +100,7 @@ Model results and saturation indicators await sourced score data.
 Benchopedia's original code and documentation are available under the
 [MIT license](LICENSE). Imported benchmark content retains its upstream
 copyrights and license or access terms; the root license does not replace them.
-See each benchmark's methodology and the
+See each benchmark's `redistribution-review.md` and the
 [benchmark license review](docs/benchmark-license-review.md) for the reviewed
 terms and unresolved issues.
 

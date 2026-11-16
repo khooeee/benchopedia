@@ -40,7 +40,8 @@ upstream links may be an alternative, but article-only entries require an
 explicit scope change because the current schema requires imported tasks.
 
 For an allowed import, record the license, immutable source links, access terms,
-reviewed scope, and redistribution obligations in the benchmark's methodology.
+reviewed scope, and redistribution obligations in the benchmark's
+[redistribution review](#4-write-redistribution-reviewmd), not its methodology.
 Preserve required copyright notices, license texts, attribution, and any
 source-availability or share-alike conditions with the imported snapshot and
 published pages. Review underlying project and file licenses for code patches;
@@ -63,12 +64,14 @@ Choose a unique lowercase slug using letters, digits, and hyphens:
 ```text
 data/example-benchmark/
     benchmark.json
+    redistribution-review.md
     tasks.jsonl
     import.py
 ```
 
-`benchmark.json` contains the metadata and explanatory text. `tasks.jsonl`
-contains the imported task snapshot. `import.py` reproduces that snapshot from
+`benchmark.json` contains the metadata and explanatory text.
+`redistribution-review.md` records the license terms and required notices.
+`tasks.jsonl` contains the imported task snapshot. `import.py` reproduces that snapshot from
 the upstream source. Commit these files; `build/` and `dist/` are generated and
 ignored by Git. Do not edit the generated database to add data.
 
@@ -112,10 +115,50 @@ page, not separate files. Write concise explanations supported by primary source
 Use Markdown links near factual claims and list the sources in `sources` as well.
 Do not invent performance results or conclusions about saturation.
 
+Keep license, copyright, attribution, and redistribution details out of these
+sections; they belong in `redistribution-review.md`. The build fails when an
+article section mentions a license or copyright.
+
 These sections support basic Markdown: paragraphs, headings, links, and code
 blocks. HTML is escaped. JSON strings represent newlines as `\n`.
 
-## 4. Map upstream records to tasks.jsonl
+## 4. Write redistribution-review.md
+
+Record the outcome of the [redistribution review](#required-redistribution-review)
+in this file. The build requires it and publishes it as the License section of
+the benchmark page, so required notices appear wherever the tasks are published.
+The page omits the title line and shows the `##` headings as subsections. Use the
+same Markdown subset as the article sections, with absolute links, because
+relative repository links do not work on the website.
+
+```markdown
+# Example Benchmark redistribution review
+
+## Scope
+
+What the snapshot publishes in the repository and on the website: the revision,
+split, task count, and kinds of content (prompts, answers, code, images).
+
+## Terms
+
+The license or other grant, the rights holder, access terms, and links to the
+evidence. State anything that remains unresolved.
+
+## Changes
+
+How Benchopedia changed the upstream material, such as added keys, assembled
+prompts, or converted formats.
+
+## Notices
+
+Required copyright notices, license texts, attribution, and canaries,
+reproduced verbatim in code blocks.
+```
+
+Keep any separate upstream license or attribution file, such as `LICENSE` or
+`ATTRIBUTION.md`, beside it.
+
+## 5. Map upstream records to tasks.jsonl
 
 Write one JSON object per line, encoded as UTF-8. The two records corresponding
 to the fictional template above would be:
@@ -153,7 +196,7 @@ include tests and other changes. Its environment link points to an official
 Dockerfile at a separately pinned task-repository commit. These are examples,
 not assumptions to apply to other benchmarks.
 
-## 5. Make the import reproducible
+## 6. Make the import reproducible
 
 Put dataset-specific fetching and conversion in `data/<id>/import.py`. Prefer
 Python's standard library where practical, following the existing importer.
@@ -184,7 +227,7 @@ multiline solutions, and different task formats. When refreshing an existing
 benchmark, review changes to IDs, counts, and text. Updating an upstream revision
 should be an intentional edit, not an automatic consequence of running a build.
 
-## 6. Build and check
+## 7. Build and check
 
 Run these commands from the repository root:
 
@@ -195,8 +238,8 @@ node scripts/check_ui.cjs     # Check JavaScript search, filtering, and paginati
 ```
 
 The build enforces schema constraints and the shared SQL checks: the declared
-task count must match the imported count, and task keys must be unique within a
-benchmark. Identical prompts are allowed because published datasets such as
+task count must match the imported count, task keys must be unique within a
+benchmark, and every benchmark needs a redistribution review. Identical prompts are allowed because published datasets such as
 MMLU contain repeated items. Investigate repeated prompts against upstream; do
 not silently drop records or alter wording. Preserve distinct upstream records
 under their own stable keys and document any duplicates. Read JSONL by iterating
@@ -209,7 +252,7 @@ require changing its assertions. Neither check verifies external URL availabilit
 or replaces checking imported content against the official source. The UI check
 does not check visual appearance.
 
-## 7. Preview and review locally
+## 8. Preview and review locally
 
 If a local server is already running, rebuild and refresh it. Otherwise start one:
 
@@ -220,7 +263,8 @@ python3 -m http.server 8765 --bind 127.0.0.1 --directory dist
 Open <http://localhost:8765> and verify:
 
 - The benchmark appears in the index with the right name, date, and count.
-- Its explanatory sections and source links are accurate.
+- Its explanatory sections and source links are accurate, and its License section
+  shows the required notices.
 - The task library can filter to it and search its prompts or IDs.
 - Representative task pages show complete input, the correct reference solution,
   and the relevant source and environment links when available.
