@@ -57,6 +57,25 @@ Resume when the publisher states one set of terms for the passages and
 questions, and the source Wikipedia article for each passage can be identified
 for attribution.
 
+## FOLIO
+
+Reviewed 2026-11-16 for the validation split of FOLIO v2 in
+[`yale-nlp/FOLIO` at `4c1f14bf39ca6a6de242bd8f75ef313b4b436818`](https://huggingface.co/datasets/yale-nlp/FOLIO/tree/4c1f14bf39ca6a6de242bd8f75ef313b4b436818)
+and the earlier v0.0 release in
+[Yale-LILY/FOLIO at `5d7bb84c7edab3fb358e057d2807f19cf5cf5e2d`](https://github.com/Yale-LILY/FOLIO/blob/5d7bb84c7edab3fb358e057d2807f19cf5cf5e2d/README.md).
+
+The v2 dataset card declares the MIT license, but its files are gated: access
+requires signing in and agreeing to share one's Hugging Face username and email
+with the publishers, and anonymous requests return HTTP 401. This import does
+not create that agreement on anyone's behalf, and republishing the files openly
+would remove a condition the publishers chose to keep. The openly licensed v0.0
+files on GitHub (CC BY-SA 4.0) are superseded; the authors' README points to v2
+for "significant quality improvement and error fixing," so importing v0.0 would
+publish a version with errors the authors have since fixed.
+
+Resume if the publishers release v2 without the gate or confirm that
+republishing the gated files is acceptable.
+
 ## GPQA
 
 Reviewed 2026-11-16 for the GPQA question sets in the authors' repository at
