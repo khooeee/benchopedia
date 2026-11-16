@@ -1,0 +1,33 @@
+{
+  "id": "piqa",
+  "name": "PIQA",
+  "summary": "1,838 physical commonsense questions from the labeled validation split, each with two solutions and a reference answer.",
+  "homepage_url": "https://yonatanbisk.com/piqa/",
+  "dataset_url": "https://github.com/ybisk/ybisk.github.io/tree/21edab439af693b961be2f069e8690a88d3b4e37/piqa/data",
+  "dataset_revision": "21edab439af693b961be2f069e8690a88d3b4e37",
+  "released_on": "2019-11-26",
+  "task_count": 1838,
+  "has_solutions": true,
+  "overview": "PIQA tests whether a model can choose the physically plausible way to achieve a goal. Each item is a goal and two candidate solutions, one of which works. The benchmark was introduced in November 2019. [Original paper](https://arxiv.org/abs/1911.11641)",
+  "methodology": "This snapshot contains all 1,838 labeled validation examples at the pinned repository revision. The validation file and its label file agree in length, and every label is 0 or 1. It excludes the 16,113 training examples. The public test file has 3,084 examples and no label file, so those examples are not included. [Data notes](https://github.com/ybisk/ybisk.github.io/blob/21edab439af693b961be2f069e8690a88d3b4e37/piqa/data/README.md) and [original paper](https://arxiv.org/abs/1911.11641)\n\nEach Task Prompt keeps the goal, then the two solutions numbered 1 and 2. The upstream label is zero-based: 0 selects the first solution and 1 selects the second. The Solution is the one-based number and the text of the selected solution. The source has no example IDs. IDs are piqa-0001 through piqa-1838, from one-based row order in the pinned validation file. The prompt link opens that row, and the solution link opens the matching line of the label file. No task-specific software environment is required to read them.\n\nTwenty-seven goals appear more than once, with different solutions or labels. All 1,838 rows are kept. The importer can be rerun with python3 data/piqa/import.py.",
+  "scoring": "An item is correct when the predicted solution matches the reference label. Accuracy is the fraction of evaluated items answered correctly. The authors describe evaluation as accuracy on this binary choice. [Project page](https://yonatanbisk.com/piqa/) and [original paper](https://arxiv.org/abs/1911.11641)\n\nCompare results that use the same split. A validation score is not a hidden-test score. Benchopedia stores the validation goals, solutions, and labels. It does not run evaluations or publish model scores for this snapshot.",
+  "limitations": "These are English goals with two written solutions, so a score does not by itself establish physical reasoning in the world or tasks with more than two options. The reference answer does not explain why the other solution fails. The text is preserved as published rather than independently corrected. [Original paper](https://arxiv.org/abs/1911.11641)\n\nThis is the labeled validation split, not the unlabeled test split. The questions and answers are public, so a score alone cannot establish that a model was tested on unseen material. Some goals are repeated with different solutions, so a score that treats a goal as unique would not match this snapshot.",
+  "sources": [
+    {
+      "title": "PIQA · Original paper",
+      "url": "https://arxiv.org/abs/1911.11641"
+    },
+    {
+      "title": "PIQA · Project page",
+      "url": "https://yonatanbisk.com/piqa/"
+    },
+    {
+      "title": "PIQA · Data notes at the imported revision",
+      "url": "https://github.com/ybisk/ybisk.github.io/blob/21edab439af693b961be2f069e8690a88d3b4e37/piqa/data/README.md"
+    },
+    {
+      "title": "PIQA · Academic Free License 3.0",
+      "url": "https://opensource.org/license/afl-3-0"
+    }
+  ]
+}
