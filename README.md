@@ -7,10 +7,12 @@ The encyclopedia of AI benchmarks: one readable page per benchmark, with an at-a
 `data/` is the source of truth: one directory per benchmark, holding `benchmark.json` and `tasks.jsonl`.
 
 ```sh
-python3 scripts/build.py
+python3 scripts/helpers/build_sqlite.py
 ```
 
 loads everything into `build/benchopedia.db` (SQLite) and fails if any constraint in `schema.sql` or any check query is violated. A check is a `SELECT` that returns the rows breaking a rule; shared checks live in `checks/`.
+
+`scripts/build_site.py` calls this helper automatically before generating the website.
 
 `data/<benchmark>/import.py` re-snapshots a benchmark's tasks from its upstream dataset. For SWE-bench Verified:
 

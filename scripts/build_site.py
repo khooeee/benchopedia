@@ -11,7 +11,7 @@ import sqlite3
 from pathlib import Path
 from urllib.parse import quote
 
-from build import main as build_database
+from helpers.build_sqlite import main as build_sqlite
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "dist"
@@ -211,7 +211,7 @@ def about():
 
 def main():
     global BENCHMARKS, TASKS
-    build_database()
+    build_sqlite()
     with sqlite3.connect(ROOT/'build'/'benchopedia.db') as db:
         db.row_factory = sqlite3.Row
         BENCHMARKS = [dict(r) for r in db.execute('SELECT * FROM benchmark ORDER BY name')]
