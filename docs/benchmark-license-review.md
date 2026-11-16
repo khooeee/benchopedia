@@ -6,9 +6,14 @@ and solutions, and existing notices. Unmerged benchmark additions are outside
 this review. This records upstream evidence and remaining work, rather than
 certifying ownership of every question or code excerpt.
 
+Each benchmark's current terms and required notices now live in
+`data/<id>/redistribution-review.md`, which the build publishes as the License
+section of its page. Article sections such as the methodology do not carry
+license text. This file remains the record of the initial audit.
+
 | Benchmark | Imported tasks | Finding |
 | --- | ---: | --- |
-| GSM8K | 1,319 | Redistribution allowed by the reviewed MIT license; its full notice is already retained in the article metadata and generated benchmark page. |
+| GSM8K | 1,319 | Redistribution allowed by the reviewed MIT license; its full notice is retained in its redistribution review and generated benchmark page. |
 | MMLU | 14,042 | The pinned dataset card explicitly declares MIT and links to the project license. The import lacked the copyright and permission notice; this change adds it to the snapshot and benchmark page. This relies on the upstream license declaration, not an independent clearance of every source question. |
 | SWE-bench Verified | 500 | Not cleared as currently packaged. The pinned card supplies no license declaration, and copied reference patches contain code from projects with different terms. Required notices and a task/file-level redistribution review are missing. |
 
@@ -18,9 +23,9 @@ The snapshot is the original non-Socratic test split at
 `3101c7d5072418e28b9008a6636bde82a006892c`. The
 [upstream MIT license](https://github.com/openai/grade-school-math/blob/3101c7d5072418e28b9008a6636bde82a006892c/LICENSE)
 permits copying and redistribution subject to retention of the copyright and
-permission notice. The full OpenAI notice is already in
-[`benchmark.json`](../data/gsm8k/benchmark.json), which generates the benchmark
-article. Prompts and solutions remain upstream text. No separate restriction was
+permission notice. The full OpenAI notice is in
+[`redistribution-review.md`](../data/gsm8k/redistribution-review.md), which the
+build publishes on the benchmark page. Prompts and solutions remain upstream text. No separate restriction was
 found in the reviewed source.
 
 ## MMLU
@@ -35,7 +40,8 @@ unspecified. Thus the available evidence supports reuse under the publisher's
 MIT declaration, but does not establish rights in each underlying source item.
 
 This change preserves the upstream notice in [`data/mmlu/LICENSE`](../data/mmlu/LICENSE)
-and reproduces it in the article methodology for the generated website. It does
+and reproduces it in [`redistribution-review.md`](../data/mmlu/redistribution-review.md)
+for the generated website. It does
 not change task text, answer mappings, counts, or the dataset revision. The
 license review should be revisited if a source owner raises a conflicting claim.
 

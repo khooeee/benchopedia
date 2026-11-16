@@ -38,6 +38,11 @@ def load_benchmark(db, benchmark_dir, errors):
     if type(benchmark.get("has_solutions")) is not bool:
         errors.append(f"{benchmark_file.relative_to(ROOT)}: has_solutions must be a JSON boolean")
         return
+    review_file = benchmark_dir / "redistribution-review.md"
+    if not review_file.is_file():
+        errors.append(f"{review_file.relative_to(ROOT)}: missing; see docs/adding-a-benchmark.md")
+        return
+    benchmark["redistribution_review"] = review_file.read_text(encoding="utf-8")
     benchmark["sources"] = json.dumps(benchmark.get("sources"), ensure_ascii=False)
     insert(db, "benchmark", benchmark, benchmark_file.relative_to(ROOT), errors)
 
