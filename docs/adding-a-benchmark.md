@@ -166,25 +166,39 @@ Keep any separate upstream license or attribution file, such as `LICENSE` or
 
 When the tasks cannot be published, keep the benchmark's article but leave its
 tasks out of both the repository and the website. Delete its `tasks.jsonl`, set
-`task_count` and `has_solutions` to `null`, and add an entry to
-[`data/exclusions.json`](../data/exclusions.json), which records every exclusion
-and why:
+`task_count` and `has_solutions` to `null`, and create
+`data/<id>/exclusions.md` beside its metadata. Each affected benchmark owns its
+record; there is no shared exclusion registry. The directory supplies the
+benchmark ID.
 
-```json
-{
-  "benchmark_id": "example-benchmark",
-  "since": "2026-01-01",
-  "reason": "What is not cleared, and why.",
-  "restore_when": "The evidence or permission needed to include the tasks again."
-}
+```markdown
+# Example Benchmark task exclusions
+
+## Since
+
+2026-01-01
+
+## Reason
+
+What is not cleared, and why.
+
+## Restore when
+
+The evidence or permission needed to include the tasks again.
 ```
+
+The file's presence excludes the entire task snapshot. Create it only for an
+excluded benchmark; a normal import does not need an empty placeholder. The
+build requires nonempty `## Since`, `## Reason`, and `## Restore when` sections,
+with a `YYYY-MM-DD` date under `## Since`. A malformed record fails the build
+and still prevents task loading.
 
 Explain the exclusion in the benchmark's redistribution review as well. The
 build rejects a `tasks.jsonl` for an excluded benchmark and requires one for
 every other benchmark, so tasks cannot return or disappear by accident. Include
-the tasks again only after the review clears them: remove the entry, restore
-`task_count` and `has_solutions`, and rerun the importer. Deleting a file does
-not remove it from Git history.
+the tasks again only after the review clears them: delete `exclusions.md`,
+restore `task_count` and `has_solutions`, and rerun the importer. Deleting a file
+does not remove it from Git history.
 
 ## 5. Map upstream records to tasks.jsonl
 
@@ -263,6 +277,7 @@ Run these commands from the repository root:
 python3 scripts/build_site.py # Rebuild SQLite, validate the data, and generate dist/.
 python3 scripts/check_site.py # Check generated routes, internal links, task text, solutions, and source links.
 node scripts/check_ui.cjs     # Check JavaScript search, filtering, and pagination with fictional fixtures.
+python3 scripts/check_exclusions.py # Check exclusion records and task-loading safeguards.
 ```
 
 The build enforces schema constraints and the shared SQL checks: the declared
