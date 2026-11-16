@@ -1,0 +1,45 @@
+{
+  "id": "arc-agi-2",
+  "name": "ARC-AGI-2",
+  "summary": "120 public evaluation puzzles in which a solver infers a transformation from a few example grids and produces the output grid for each new input.",
+  "homepage_url": "https://arcprize.org/arc-agi/2/",
+  "dataset_url": "https://github.com/arcprize/ARC-AGI-2/tree/f3283f727488ad98fe575ea6a5ac981e4a188e49/data/evaluation",
+  "dataset_revision": "f3283f727488ad98fe575ea6a5ac981e4a188e49",
+  "released_on": "2025-03-24",
+  "task_count": 120,
+  "has_solutions": true,
+  "overview": "ARC-AGI-2 (Abstraction and Reasoning Corpus for Artificial General Intelligence, version 2) tests fluid intelligence: inferring a new rule from a handful of examples and applying it. Each task shows a few demonstration pairs of input and output grids, then one or more test inputs; the solver must produce each test output exactly, including its size. Grids are 1×1 to 30×30, and each cell holds a digit from 0 to 9 that the official interface shows as a color. The ARC Prize Foundation released ARC-AGI-2 in March 2025 as a harder successor to ARC-AGI-1, with tasks that need more compositional reasoning. [Technical report](https://arxiv.org/abs/2505.11831), [README](https://github.com/arcprize/ARC-AGI-2/blob/f3283f727488ad98fe575ea6a5ac981e4a188e49/readme.md), and [ARC Prize](https://arcprize.org/arc-agi/2/)",
+  "methodology": "This snapshot contains all 120 tasks in the public evaluation set at the pinned commit, listed in data/evaluation.txt. It excludes the 1,000 public training tasks and the semi-private and private test sets, which are not published. [Evaluation list](https://github.com/arcprize/ARC-AGI-2/blob/f3283f727488ad98fe575ea6a5ac981e4a188e49/data/evaluation.txt) and [README](https://github.com/arcprize/ARC-AGI-2/blob/f3283f727488ad98fe575ea6a5ac981e4a188e49/readme.md)\n\nEvery public evaluation task was solved by at least two people within two attempts in controlled testing. The report says the public, semi-private, and private sets were grouped so that mean human accuracy differs by at most one percentage point between them. The evaluation tasks were corrected after release, on 2025-04-14 and 2025-04-17, mostly for off-by-one-pixel errors; the pinned commit includes those changes. [README](https://github.com/arcprize/ARC-AGI-2/blob/f3283f727488ad98fe575ea6a5ac981e4a188e49/readme.md), [technical report](https://arxiv.org/abs/2505.11831), and [changelog](https://github.com/arcprize/ARC-AGI-2/blob/f3283f727488ad98fe575ea6a5ac981e4a188e49/changelog.md)\n\nARC defines tasks as JSON grids rather than text prompts. Each Task Prompt here is a deterministic rendering of one task file: a heading with the task ID, then each demonstration pair as Example 1, Example 2, and so on, then each test input. Every grid is labeled with its rows × columns size and written inside a fenced block as one line of digits per row, with no separators, since each cell is a single digit. The Solution gives each test output grid in the same form. The site shows digits, not the colors of the official interface; the rendering preserves every cell value.\n\nIDs are the upstream eight-character task IDs. Prompt and solution source links point to the task's JSON file at the pinned commit. No task-specific software environment is required to read them. The importer uses only Python's standard library and can be rerun with python3 data/arc-agi-2/import.py.",
+  "scoring": "A task is solved when the solver produces the exact output grid for every test input, including the grid's height and width. Only exact matches count. The README's success criterion allows two trials for each test input, for people and AI systems alike; a later paragraph of the same README says three. [README](https://github.com/arcprize/ARC-AGI-2/blob/f3283f727488ad98fe575ea6a5ac981e4a188e49/readme.md)\n\nOfficial ARC Prize results are measured on the semi-private and private sets, which are calibrated to the same human difficulty as this public set but are not published. Results on the public evaluation set are therefore not the same measurement as leaderboard scores. [README](https://github.com/arcprize/ARC-AGI-2/blob/f3283f727488ad98fe575ea6a5ac981e4a188e49/readme.md) and [ARC Prize](https://arcprize.org/arc-agi/2/)\n\nCompare results that use the same task set, number of trials, grid representation, and compute budget. Benchopedia stores the published tasks and their test outputs. It does not run evaluations or publish model scores for this snapshot.",
+  "limitations": "People take ARC tasks as colored grids in an interactive interface, while this page shows rows of digits. The digit rendering is Benchopedia's display format, not an official model prompt, and the README defines no text format for giving tasks to a model. [README](https://github.com/arcprize/ARC-AGI-2/blob/f3283f727488ad98fe575ea6a5ac981e4a188e49/readme.md)\n\nThe public evaluation set is small, so each task changes the score by under one percentage point. Its tasks and solutions are public, and the README warns that looking at them during development leaks information into a system. A score on this set alone cannot establish that a system was tested on unseen material. [README](https://github.com/arcprize/ARC-AGI-2/blob/f3283f727488ad98fe575ea6a5ac981e4a188e49/readme.md)",
+  "sources": [
+    {
+      "title": "ARC-AGI-2 · Technical report",
+      "url": "https://arxiv.org/abs/2505.11831"
+    },
+    {
+      "title": "ARC-AGI-2 · README at the imported revision",
+      "url": "https://github.com/arcprize/ARC-AGI-2/blob/f3283f727488ad98fe575ea6a5ac981e4a188e49/readme.md"
+    },
+    {
+      "title": "ARC-AGI-2 · Changelog",
+      "url": "https://github.com/arcprize/ARC-AGI-2/blob/f3283f727488ad98fe575ea6a5ac981e4a188e49/changelog.md"
+    },
+    {
+      "title": "ARC-AGI-2 · Public evaluation tasks at the imported revision",
+      "url": "https://github.com/arcprize/ARC-AGI-2/tree/f3283f727488ad98fe575ea6a5ac981e4a188e49/data/evaluation"
+    },
+    {
+      "title": "ARC-AGI-2 · ARC Prize page",
+      "url": "https://arcprize.org/arc-agi/2/"
+    },
+    {
+      "title": "ARC · On the Measure of Intelligence",
+      "url": "https://arxiv.org/abs/1911.01547"
+    },
+    {
+      "title": "ARC-AGI-2 · Apache 2.0 license",
+      "url": "https://github.com/arcprize/ARC-AGI-2/blob/f3283f727488ad98fe575ea6a5ac981e4a188e49/LICENSE"
+    }
+  ]
+}
