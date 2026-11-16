@@ -140,14 +140,14 @@ def home():
         for b in (b for b in ordered if b['released_on'].startswith(year)):
             url = benchmark_url(b)
             entries.append(f'''<li data-benchmark data-category="{esc(b.get('category','Other'))}" data-search="{esc((b['name']+' '+b['id']+' '+b['summary']+' '+b.get('category','')).lower())}">
-<div class="entry-links"><a href="{url}">{esc(b['id'])}</a> [<a href="/questions/?benchmark={quote(b['id'])}">questions</a> · <a href="{esc(b['homepage_url'])}">website</a> · <a href="{esc(b['dataset_url'])}">dataset</a>]</div>
 <div class="entry-title"><a href="{url}">{esc(b['name'])}</a></div>
+<div class="entry-links"><a href="/questions/?benchmark={quote(b['id'])}">questions</a> · <a href="{esc(b['homepage_url'])}">website</a> · <a href="{esc(b['dataset_url'])}">dataset</a></div>
 <p class="entry-summary">{esc(b['summary'])}</p>
-<div class="entry-meta">Subject: {esc(b.get('category','Other'))}<br>Released: {esc(b['released_on'])} · Questions: {b['question_count']:,} · Metric: {esc(b.get('metric','Not documented'))}</div></li>''')
+<div class="entry-meta">Subject: {esc(b.get('category','Other'))}<br>Released: {esc(b['released_on'])} · Questions: {b['question_count']:,}</div></li>''')
         groups.append(f'<section class="year-group"><h2>{year}</h2><ol class="entry-list">' + ''.join(entries) + '</ol></section>')
-    body = f'''<h1>AI benchmarks</h1><p class="page-description">Descriptions, datasets, and the questions behind each benchmark.</p>
+    body = f'''<h1>AI benchmarks</h1>
 <form class="search-form" role="search"><label for="benchmark-search">Search:</label> <input type="search" id="benchmark-search" name="q" placeholder="Name, description, or subject"> <label for="benchmark-category">Subject:</label> <select id="benchmark-category" name="subject"><option value="">All subjects</option>{options}</select> <button type="submit">Search</button></form>
-<p class="list-summary"><span id="benchmark-count" role="status" aria-live="polite">{len(BENCHMARKS)} benchmark{'s' if len(BENCHMARKS)!=1 else ''}</span> · Listed by release year, newest first</p>
+<p class="list-summary"><span id="benchmark-count" role="status" aria-live="polite">{len(BENCHMARKS)} benchmark{'s' if len(BENCHMARKS)!=1 else ''}</span></p>
 <div id="catalog">{''.join(groups)}</div><div id="benchmark-empty" hidden><p>No benchmarks match your search.</p><button type="button" id="reset-benchmarks">Clear search</button></div>'''
     write('index.html',layout('AI benchmarks',body))
 
