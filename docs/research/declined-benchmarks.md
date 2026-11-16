@@ -6,6 +6,32 @@ could not clear their tasks for both the public repository and the website. No
 task content was copied for them. Each entry names what is unclear and what
 would allow the import to resume.
 
+## Aider Polyglot
+
+Reviewed 2026-11-16 for all 225 exercises in
+[Aider-AI/polyglot-benchmark at `7e0611e77b54e2dea774cdc0aa00cf9f7ed6144f`](https://github.com/Aider-AI/polyglot-benchmark/tree/7e0611e77b54e2dea774cdc0aa00cf9f7ed6144f).
+
+The repository has no license of its own. Its README says the exercises are
+copied from Exercism's C++, Go, Java, JavaScript, Python, and Rust tracks and
+are copyright Exercism, whose track repositories use the MIT license. That
+license can cover only text Exercism could license. The food-chain exercise,
+included in the Go, Java, JavaScript, and Python sets, asks for the lyrics of
+"I Know an Old Lady Who Swallowed a Fly" and reproduces the full song in its
+instructions. The instructions call the song of unknown origin. Wikipedia
+reports that Rose Bonne and Alan Mills copyrighted a version titled "I Know an
+Old Lady" in 1952 and that Burl Ives recorded it in 1953. The exercise uses that
+title and that version's lines, such as "How absurd to swallow a bird."
+Neither the exercise nor the Aider README notes permission from those rights
+holders. Leaving
+the four exercises out would publish an incomplete set.
+[README](https://github.com/Aider-AI/polyglot-benchmark/blob/7e0611e77b54e2dea774cdc0aa00cf9f7ed6144f/README.md),
+[Python food-chain instructions](https://github.com/Aider-AI/polyglot-benchmark/blob/7e0611e77b54e2dea774cdc0aa00cf9f7ed6144f/python/exercises/practice/food-chain/.docs/instructions.md),
+and [Wikipedia article](https://en.wikipedia.org/w/index.php?title=There_Was_an_Old_Lady_Who_Swallowed_a_Fly&oldid=1384571605)
+
+Resume if the lyrics' rights holders permit redistribution, the song is shown to
+be in the public domain in this version, or the publishers replace the exercise
+in a new release.
+
 ## DROP
 
 Reviewed 2026-11-16 for the development set in the official
