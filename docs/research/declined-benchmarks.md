@@ -48,3 +48,20 @@ would break that access condition, and the open licenses do not waive it.
 
 Resume only if the authors publish GPQA without that condition or permit
 Benchopedia to publish it.
+
+## HellaSwag
+
+Reviewed 2026-11-16 for the validation set published in the authors' repository,
+`rowanz/hellaswag`, and its
+[Hugging Face copy at `218ec52e09a7e7462a5400043bb9a69a41d06b76`](https://huggingface.co/datasets/Rowan/hellaswag/tree/218ec52e09a7e7462a5400043bb9a69a41d06b76).
+
+The paper builds many contexts by scraping how-to articles from WikiHow,
+alongside ActivityNet video captions. On 2026-09-14, GitHub blocked the authors'
+repository after wikiHow filed a DMCA takedown notice that lists it, asserting
+copyright in wikiHow's articles. The Hugging Face copy declares no license.
+Copying these contexts would publish text whose rights holder has objected to
+its redistribution. [Original paper](https://arxiv.org/abs/1905.07830) and
+[DMCA notice](https://github.com/github/dmca/blob/master/2026/09/2026-09-14-wikihow.md)
+
+Resume only if wikiHow permits redistribution of the WikiHow-derived contexts,
+or the dispute is resolved in a way that clears them.
