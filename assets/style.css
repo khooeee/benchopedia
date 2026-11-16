@@ -71,8 +71,15 @@ summary { cursor: pointer; }
 .task-adjacent { border-top: 1px solid #ccc; display: flex; justify-content: space-between; gap: 20px; font-size: .9rem; padding-top: 14px; margin-top: 28px; }
 #task-search { width: min(100%, 460px); }
 .task-search-label, .task-library { font-size: .9rem; }
-.filter-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 18px; margin: 14px 0 20px; }
+.filter-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 6px; margin: 14px 0 20px; }
 .filter-bar label { display: flex; gap: 6px; align-items: center; }
+.benchmark-autocomplete { position: relative; width: 260px; max-width: 100%; min-width: 0; }
+.benchmark-autocomplete input { width: 100%; }
+.benchmark-options { position: absolute; top: calc(100% + 3px); left: 0; right: 0; z-index: 2; max-height: 240px; overflow-y: auto; background: #fff; border: 1px solid #999; border-radius: 2px; box-shadow: 0 3px 8px #0002; }
+.benchmark-options [role="option"] { display: block; padding: 5px 8px; cursor: pointer; overflow-wrap: anywhere; }
+.benchmark-options [role="option"]:hover, .benchmark-options .is-active { background: #e8effa; color: #174b9b; }
+.benchmark-options [aria-selected="true"] { font-weight: bold; }
+.benchmark-no-matches { padding: 5px 8px; color: #666; }
 .library-summary { display: flex; justify-content: space-between; align-items: baseline; gap: 20px; padding: 0 0 10px; border-bottom: 1px solid #aaa; }
 .library-summary p { margin: 0; }
 .pagination { display: flex; align-items: center; gap: 12px; margin: 14px 0; font-size: .9rem; }
@@ -97,9 +104,9 @@ summary { cursor: pointer; }
   .metadata > div { display: block; margin: 6px 0; }
   .metadata dt, .metadata dd { display: inline; }
   .metadata dt { margin-right: 5px; }
-  .filter-bar { align-items: stretch; gap: 9px; }
-  .filter-bar label { width: 100%; justify-content: space-between; }
-  .filter-bar select { width: 62%; }
+  .filter-bar { justify-content: space-between; gap: 9px; }
+  .filter-bar label { width: auto; }
+  .filter-bar select, .benchmark-autocomplete { width: 62%; }
   .library-summary { flex-wrap: wrap; gap: 10px; }
   .task-adjacent { font-size: .85rem; gap: 10px; }
 }
