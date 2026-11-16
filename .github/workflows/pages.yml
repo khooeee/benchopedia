@@ -27,6 +27,8 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
+      - name: Check score data validation
+        run: python3 scripts/check_scores.py
       - name: Check local-root build
         run: |
           python3 scripts/build_site.py

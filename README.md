@@ -6,7 +6,9 @@ The encyclopedia of AI benchmarks: one readable page per benchmark, with an at-a
 
 For the full import and verification process, see [Adding a benchmark](docs/adding-a-benchmark.md).
 
-`data/` is the source of truth: one directory per benchmark, holding `benchmark.json` and `tasks.jsonl`.
+`data/` is the source of truth: one directory per benchmark, holding `benchmark.json`
+and `tasks.jsonl`, plus optional `scores.json` for sourced model results. See
+[Adding sourced scores](docs/adding-scores.md) for the snapshot format and validation rules.
 
 ```sh
 python3 scripts/helpers/build_sqlite.py
@@ -25,6 +27,9 @@ loads everything into `build/benchopedia.db` (SQLite) and fails if any constrain
 ```mermaid
 erDiagram
     benchmark ||--o{ task : contains
+    benchmark ||--o{ benchmark_metric : measures
+    benchmark_metric ||--o{ evaluation_setup : defines
+    evaluation_setup ||--o{ score : reports
 
     benchmark {
         TEXT id PK "its directory name under data/"
@@ -42,6 +47,34 @@ erDiagram
         TEXT limitations "article section"
         TEXT sources "JSON array"
     }
+    benchmark_metric {
+        TEXT id PK
+        TEXT benchmark_id FK
+        TEXT name
+        TEXT unit
+        REAL min_value "nullable"
+        REAL max_value "nullable"
+        INTEGER higher_is_better "boolean, 0 or 1"
+    }
+    evaluation_setup {
+        TEXT id PK
+        TEXT metric_id FK
+        TEXT dataset_revision "nullable"
+        TEXT split "nullable"
+        TEXT agent "nullable"
+        TEXT configuration "JSON object"
+        TEXT documentation_url
+    }
+    score {
+        TEXT id PK "stable run or record ID"
+        TEXT setup_id FK
+        TEXT model_name
+        REAL value "native metric units"
+        TEXT reported_on "nullable"
+        TEXT observed_on
+        TEXT source_url
+        TEXT source_revision "immutable pin"
+    }
     task {
         TEXT benchmark_id PK, FK
         TEXT key PK "the benchmark's own identifier"
@@ -58,6 +91,7 @@ erDiagram
 ```sh
 python3 scripts/build_site.py # Rebuild and validate SQLite, then generate the website in dist/.
 python3 scripts/check_site.py # Check generated pages, links, prompts and solutions.
+python3 scripts/check_scores.py # Test score ingestion and validation with fictional fixtures.
 node scripts/check_ui.cjs     # Test search, filters, and pagination without a browser.
 python3 -m http.server 8765 --directory dist
 ```
@@ -89,7 +123,10 @@ and search indexes are generated from the database. Each task stores its
 benchmark link, key, prompt, optional reference solution, and optional URLs for
 the prompt source, task environment and solution source.
 
-Model results and saturation indicators await sourced score data.
+Sourced model results can be stored and validated through optional score snapshots.
+Scorecards and saturation indicators are not displayed on the website yet; no
+production score data is included. Best scores and headroom are derived from
+comparable results rather than stored labels.
 
 ## Licensing
 

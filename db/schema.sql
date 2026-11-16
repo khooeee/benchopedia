@@ -36,3 +36,51 @@ CREATE TABLE task (
     prompt_source_url   TEXT CHECK (prompt_source_url LIKE 'https://%'),
     PRIMARY KEY (benchmark_id, key)
 ) STRICT;
+
+-- Scores use their metric's native scale (e.g. 72.4 percent, not 0.724).
+CREATE TABLE benchmark_metric (
+    id TEXT PRIMARY KEY CHECK (trim(id) <> ''),
+    benchmark_id TEXT NOT NULL REFERENCES benchmark (id),
+    name TEXT NOT NULL CHECK (trim(name) <> ''),
+    unit TEXT NOT NULL CHECK (trim(unit) <> ''),
+    -- NULL means the metric has no documented bound on this side.
+    min_value REAL CHECK (abs(min_value) <= 1.7976931348623157e308),
+    max_value REAL CHECK (abs(max_value) <= 1.7976931348623157e308),
+    higher_is_better INTEGER NOT NULL CHECK (higher_is_better IN (0, 1)),
+    CHECK (min_value IS NULL OR max_value IS NULL OR min_value < max_value)
+) STRICT;
+
+-- A change in dataset, agent version, tools, budget or attempt policy is a
+-- different setup. Unknown settings must not imply comparable evaluations.
+CREATE TABLE evaluation_setup (
+    id TEXT PRIMARY KEY CHECK (trim(id) <> ''),
+    metric_id TEXT NOT NULL REFERENCES benchmark_metric (id),
+    dataset_revision TEXT CHECK (trim(dataset_revision) <> ''),
+    split TEXT CHECK (trim(split) <> ''),
+    agent TEXT CHECK (trim(agent) <> ''),
+    configuration TEXT NOT NULL CHECK (json_valid(configuration)
+                                      AND json_type(configuration) = 'object'),
+    documentation_url TEXT NOT NULL CHECK (documentation_url LIKE 'https://_%')
+) STRICT;
+
+CREATE TABLE score (
+    -- Stable upstream run/record identity, not a new ID for every scrape.
+    id TEXT PRIMARY KEY CHECK (trim(id) <> ''),
+    setup_id TEXT NOT NULL REFERENCES evaluation_setup (id),
+    model_name TEXT NOT NULL CHECK (trim(model_name) <> ''),
+    value REAL NOT NULL CHECK (abs(value) <= 1.7976931348623157e308),
+    -- Reporting date is optional; collection date must never substitute for it.
+    reported_on TEXT CHECK (reported_on IS NULL OR
+        (length(reported_on) = 10 AND reported_on GLOB '????-??-??'
+         AND date(reported_on, '+0 days') IS reported_on)),
+    observed_on TEXT NOT NULL CHECK (
+        length(observed_on) = 10 AND observed_on GLOB '????-??-??'
+        AND date(observed_on, '+0 days') IS observed_on),
+    source_url TEXT NOT NULL CHECK (source_url LIKE 'https://_%'),
+    source_revision TEXT NOT NULL CHECK (trim(source_revision) <> ''),
+    CHECK (reported_on IS NULL OR reported_on <= observed_on)
+) STRICT;
+
+CREATE INDEX metric_benchmark ON benchmark_metric (benchmark_id);
+CREATE INDEX setup_metric ON evaluation_setup (metric_id);
+CREATE INDEX score_setup ON score (setup_id);

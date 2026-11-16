@@ -13,6 +13,11 @@ import sqlite3
 import sys
 from pathlib import Path
 
+if __package__:
+    from .load_scores import load_scores
+else:  # Direct invocation: python3 scripts/helpers/build_sqlite.py
+    from load_scores import load_scores
+
 ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT / "data"
 DB_PATH = ROOT / "build" / "benchopedia.db"
@@ -49,6 +54,8 @@ def load_benchmark(db, benchmark_dir, errors):
             origin = f"{tasks_file.relative_to(ROOT)}:{line_number}"
             insert(db, "task", task, origin, errors)
 
+    load_scores(db, benchmark_dir / "scores.json", benchmark["id"], errors)
+
 
 def run_checks(db, errors):
     check_files = sorted((ROOT / "checks").glob("*.sql"))
@@ -78,12 +85,13 @@ def main():
 
     benchmarks = db.execute("SELECT count(*) FROM benchmark").fetchone()[0]
     tasks = db.execute("SELECT count(*) FROM task").fetchone()[0]
+    scores = db.execute("SELECT count(*) FROM score").fetchone()[0]
     db.close()
 
     if errors:
         print("\n".join(errors), file=sys.stderr)
         sys.exit(f"\nFAILED: {len(errors)} problem line(s) above")
-    print(f"OK: {benchmarks} benchmark(s), {tasks} task(s), {check_count} check(s) passed")
+    print(f"OK: {benchmarks} benchmark(s), {tasks} task(s), {scores} score(s), {check_count} check(s) passed")
     print(f"Built {DB_PATH.relative_to(ROOT)}")
 
 
