@@ -89,3 +89,12 @@ benchmark link, key, prompt, optional reference solution, and optional URLs for
 the prompt source, task environment and solution source.
 
 Model results and saturation indicators await sourced score data.
+
+## Licensing
+
+Benchopedia's original code and documentation are available under the
+[MIT license](LICENSE). Imported benchmark content retains its upstream
+copyrights and license or access terms; the root license does not replace them.
+See each benchmark's methodology and the
+[benchmark license review](docs/benchmark-license-review.md) for the reviewed
+terms and unresolved issues.

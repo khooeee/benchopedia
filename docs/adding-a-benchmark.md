@@ -20,6 +20,36 @@ code. Establish:
 - Whether reference solutions and task environment instructions are available.
 - Whether the task data can be redistributed under its license and access terms.
 
+### Required redistribution review
+
+**Before downloading or importing task content, establish permission to publish
+it in both the public Git repository and the crawlable website.** Review the
+terms for the exact dataset revision and split, including prompts, answers,
+images, code patches, and other third-party material. An evaluation harness's
+license does not automatically cover its dataset or the repositories it quotes.
+Public access, a citation, and Benchopedia's MIT license do not establish those
+redistribution rights.
+
+**If permission is missing, unclear, or incompatible with either form of public
+redistribution, stop the import and tell the user before copying any tasks.**
+Name the affected content, link the relevant terms, and explain the restriction
+or uncertainty. Do not bypass access conditions, silently omit restricted items,
+or treat user approval as permission from the rights holder. Resume only when
+the necessary rights and obligations are documented. An original article with
+upstream links may be an alternative, but article-only entries require an
+explicit scope change because the current schema requires imported tasks.
+
+For an allowed import, record the license, immutable source links, access terms,
+reviewed scope, and redistribution obligations in the benchmark's methodology.
+Preserve required copyright notices, license texts, attribution, and any
+source-availability or share-alike conditions with the imported snapshot and
+published pages. Review underlying project and file licenses for code patches;
+a dataset-level license label alone is insufficient. Recheck this decision when
+refreshing a snapshot or changing its scope. See the
+[current benchmark review](benchmark-license-review.md) for examples and open
+issues. These are required manual checks; the build does not verify legal
+permission.
+
 Write down the chosen scope in the benchmark page's methodology. For example,
 importing only a test split should be explicit. Do not substitute a sample for
 the complete declared split or silently skip records that are difficult to import.
