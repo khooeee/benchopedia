@@ -28,7 +28,6 @@ erDiagram
         TEXT summary
         TEXT category
         TEXT task
-        TEXT metric
         TEXT language
         TEXT homepage_url
         TEXT dataset_url

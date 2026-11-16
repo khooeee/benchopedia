@@ -154,7 +154,7 @@ def home():
 
 def benchmark_page(b):
     qs = [q for q in QUESTIONS if q['benchmark_id']==b['id']]
-    facts = [('Subject',b['category']),('Task',b['task']),('Language',b['language']),('Released',b['released_on']),('Questions',f'{len(qs):,}'),('Metric',b['metric'])]
+    facts = [('Subject',b['category']),('Task',b['task']),('Language',b['language']),('Released',b['released_on']),('Questions',f'{len(qs):,}')]
     sources = json.loads(b['sources'])
     source_list = ''.join(f'<li><a href="{esc(s["url"])}">{esc(s["title"])}</a></li>' for s in sources)
     body = f'''<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Benchmarks</a> &gt; {esc(b['name'])}</nav>

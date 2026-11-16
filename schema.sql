@@ -7,7 +7,6 @@ CREATE TABLE benchmark (
     summary          TEXT NOT NULL CHECK (trim(summary) <> ''),
     category         TEXT NOT NULL CHECK (trim(category) <> ''),
     task             TEXT NOT NULL CHECK (trim(task) <> ''),
-    metric           TEXT NOT NULL CHECK (trim(metric) <> ''),
     language         TEXT NOT NULL CHECK (trim(language) <> ''),
     homepage_url    TEXT NOT NULL CHECK (homepage_url LIKE 'https://%'),
     dataset_url      TEXT NOT NULL CHECK (dataset_url LIKE 'https://%'),

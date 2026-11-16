@@ -4,7 +4,6 @@
   "summary": "500 real GitHub issues from 12 open-source Python repositories, each human-validated as solvable and fairly tested. A model is given the repository and the issue text and must produce a patch that makes the issue's hidden tests pass.",
   "category": "Software engineering",
   "task": "Issue resolution",
-  "metric": "Resolved (%)",
   "language": "Python",
   "homepage_url": "https://www.swebench.com",
   "dataset_url": "https://huggingface.co/datasets/princeton-nlp/SWE-bench_Verified",
