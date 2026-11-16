@@ -124,8 +124,7 @@ def task_list(rows, start=1):
     entries = []
     for q in rows:
         url = task_url(q)
-        source = f' [<a href="{esc(q["prompt_source_url"])}">source</a>]' if q.get('prompt_source_url') else ''
-        entries.append(f'''<li><div class="entry-links"><a href="{url}">{esc(q['key'])}</a>{source}</div>
+        entries.append(f'''<li><div class="entry-links"><a href="{url}">{esc(q['key'])}</a></div>
 <div class="entry-title"><a href="{url}">{esc(q['title'])}</a></div>
 <div class="entry-meta">Benchmark: <a href="{esc(q['benchmark_url'])}">{esc(q['benchmark_name'])}</a></div></li>''')
     return f'<ol class="entry-list" start="{start}">' + ''.join(entries) + '</ol>'
