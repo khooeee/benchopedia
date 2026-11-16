@@ -40,8 +40,8 @@ commit `56686c06f5e19865c153de0fdb11be3890014df7` and the
 The Hugging Face dataset is gated. Access requires agreeing "to NOT reveal
 examples from this dataset in plain text or images online, to reduce the risk
 of leakage into foundation model training corpora." The authors' repository
-keeps the data in a password-protected `dataset.zip` for the same reason, beside
-an MIT license for the repository and a CC BY 4.0 declaration on the dataset
+keeps the data in a password-protected `dataset.zip`, beside an MIT
+license for the repository and a CC BY 4.0 declaration on the dataset
 card. Publishing the questions in a public repository and on a crawlable website
 would break that access condition, and the open licenses do not waive it.
 [Repository README](https://github.com/idavidrein/gpqa/blob/56686c06f5e19865c153de0fdb11be3890014df7/README.md)
