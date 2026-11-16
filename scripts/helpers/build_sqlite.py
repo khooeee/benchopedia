@@ -35,6 +35,9 @@ def load_benchmark(db, benchmark_dir, errors):
     if benchmark.get("id") != benchmark_dir.name:
         errors.append(f"{benchmark_file.relative_to(ROOT)}: id must match the directory name")
         return
+    if type(benchmark.get("has_solutions")) is not bool:
+        errors.append(f"{benchmark_file.relative_to(ROOT)}: has_solutions must be a JSON boolean")
+        return
     benchmark["sources"] = json.dumps(benchmark.get("sources"), ensure_ascii=False)
     insert(db, "benchmark", benchmark, benchmark_file.relative_to(ROOT), errors)
 

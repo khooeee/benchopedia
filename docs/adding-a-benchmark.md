@@ -87,6 +87,7 @@ every example value with information about the actual benchmark and real sources
   "dataset_revision": "replace-with-an-immutable-upstream-revision",
   "released_on": "2026-01-01",
   "task_count": 2,
+  "has_solutions": true,
   "overview": "What the benchmark measures and why it exists.",
   "methodology": "Which version and split are included, the model inputs, and the evaluation procedure.",
   "scoring": "How outputs are graded and how the overall score is calculated.",
@@ -100,6 +101,11 @@ every example value with information about the actual benchmark and real sources
 The `id` must match the directory name; `name` must be unique. `task_count` is
 the number of tasks actually included in this snapshot. Use the release date of
 the included benchmark variant in `YYYY-MM-DD` format.
+
+`has_solutions` must be a JSON boolean: `true` when at least one imported task
+contains reference solution text, and `false` when none do. A source link or
+evaluator alone does not count as a reference solution. SQLite stores this flag
+as 0 or 1; the build checks it against the tasks so it stays accurate after imports.
 
 The overview, methodology, scoring, and limitations are sections on the benchmark
 page, not separate files. Write concise explanations supported by primary sources.

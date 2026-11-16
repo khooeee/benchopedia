@@ -35,6 +35,7 @@ erDiagram
         TEXT dataset_revision "upstream revision imported"
         TEXT released_on "YYYY-MM-DD"
         INTEGER task_count "declared size"
+        INTEGER has_solutions "boolean, 0 or 1"
         TEXT overview "article section"
         TEXT methodology "article section"
         TEXT scoring "article section"
