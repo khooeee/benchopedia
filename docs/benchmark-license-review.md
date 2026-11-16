@@ -41,6 +41,11 @@ license review should be revisited if a source owner raises a conflicting claim.
 
 ## SWE-bench Verified: unresolved
 
+A [deeper follow-up](research/swe-bench-redistribution.md) inventories root
+licenses at all 499 source revisions and examines prompt provenance, including
+Django Trac tickets. It finds no blanket redistribution ban, while keeping the
+permission and packaging questions below open.
+
 The [pinned dataset card](https://huggingface.co/datasets/princeton-nlp/SWE-bench_Verified/blob/c104f840cc67f8b6eec6f759ebc8b2693d585d4a/README.md)
 describes issue text and gold patches but contains neither a license field nor
 a licensing section. The
