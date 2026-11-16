@@ -144,11 +144,11 @@ def home():
 <p class="entry-summary">{esc(b['summary'])}</p>
 <div class="entry-meta">Released: {esc(b['released_on'])} · Tasks: {b['task_count']:,}</div></li>''')
         groups.append(f'<section class="year-group"><h2>{year}</h2><ol class="entry-list">' + ''.join(entries) + '</ol></section>')
-    body = f'''<h1>AI benchmarks</h1>
+    body = f'''<h1>Benchmarks</h1>
 <form class="search-form" role="search"><label for="benchmark-search">Search:</label> <input type="search" id="benchmark-search" name="q" placeholder="Name or description"> <button type="submit">Search</button></form>
 <p class="list-summary"><span id="benchmark-count" role="status" aria-live="polite">{len(BENCHMARKS)} benchmark{'s' if len(BENCHMARKS)!=1 else ''}</span></p>
 <div id="catalog">{''.join(groups)}</div><div id="benchmark-empty" hidden><p>No benchmarks match your search.</p><button type="button" id="reset-benchmarks">Clear search</button></div>'''
-    write('index.html',layout('AI benchmarks',body))
+    write('index.html',layout('Benchmarks',body))
 
 
 def benchmark_page(b):
@@ -192,7 +192,7 @@ def task_page(q, previous, following):
     body = f'''<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Benchmarks</a> &gt; <a href="{benchmark_url(b)}">{esc(b['name'])}</a> &gt; <a href="/tasks/?benchmark={quote(b['id'])}">Tasks</a></nav>
 <p class="task-id">{esc(q['key'])}</p><h1>{esc(q['title'])}</h1>
 <p class="resource-links">[{source_link}<button type="button" id="copy-prompt" class="link-button">copy prompt</button>]</p><p class="sr-only" role="status" id="copy-status"></p>
-<article class="prose"><section><h2>Problem statement</h2><div class="prompt-content">{markdown(q['prompt'])}</div></section></article>
+<article class="prose"><section><h2>Task Prompt</h2><div class="prompt-content">{markdown(q['prompt'])}</div></section></article>
 <nav class="task-adjacent" aria-label="Adjacent tasks">{prev_link}<a href="/tasks/?benchmark={quote(b['id'])}">Task index</a>{next_link}</nav>
 <script type="application/json" id="prompt-data">{json.dumps(q['prompt'],ensure_ascii=False).replace('<',chr(92)+'u003c')}</script>'''
     relative = task_url(q).lstrip('/')

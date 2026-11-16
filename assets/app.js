@@ -52,7 +52,7 @@
         setTimeout(() => { $('#copy-prompt').textContent = 'copy prompt'; }, 2000);
       } catch {
         status.classList.remove('sr-only');
-        status.textContent = 'Clipboard unavailable. Select the problem statement below and copy it manually.';
+        status.textContent = 'Clipboard unavailable. Select the task text below and copy it manually.';
       }
     });
   }
