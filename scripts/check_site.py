@@ -17,12 +17,22 @@ class Page(HTMLParser):
         self.title = False
         self.solution = None
         self.reading_solution = False
+        self.section = None
+        self.section_links = {}
+        self.sections = []
         self.feed(text)
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
         if "id" in attrs:
             self.ids.add(attrs["id"])
+        if tag == "section":
+            self.section = attrs.get("id")
+            if self.section:
+                self.sections.append(self.section)
+                self.section_links[self.section] = []
+        if tag == "a" and self.section:
+            self.section_links[self.section].append(attrs.get("href", ""))
         if tag in ("a", "link", "script"):
             self.links.append(attrs.get("href", attrs.get("src", "")))
         if tag == "title":
@@ -38,6 +48,8 @@ class Page(HTMLParser):
     def handle_endtag(self, tag):
         if tag == "code":
             self.reading_solution = False
+        if tag == "section":
+            self.section = None
 
 
 def main():
@@ -70,14 +82,19 @@ def main():
         assert q["prompt"] == originals[key]["prompt"], f"Search prompt changed: {key}"
         task_dir = OUT / q["url"].lstrip("/")
         assert (task_dir / "index.html").exists(), f"Missing task page: {key}"
-        # The raw prompt must round-trip through the inert JSON script.
-        text = (task_dir / "index.html").read_text()
-        embedded = text.split('<script type="application/json" id="prompt-data">', 1)[1].split('</script>', 1)[0]
-        assert json.loads(embedded) == originals[key]["prompt"], f"Copy prompt changed: {key}"
         assert pages[task_dir / "index.html"].solution == originals[key].get("solution"), f"Solution changed: {key}"
+        page = pages[task_dir / "index.html"]
+        assert q.get("prompt_source_url") == originals[key].get("prompt_source_url"), f"Search prompt source changed: {key}"
+        if originals[key].get("prompt_source_url"):
+            assert originals[key]["prompt_source_url"] in page.section_links.get("task-prompt", []), f"Missing prompt source: {key}"
+        if originals[key].get("environment_url"):
+            assert originals[key]["environment_url"] in page.section_links.get("environment", []), f"Missing environment link: {key}"
+            assert page.sections.index("environment") < page.sections.index("task-prompt"), f"Environment must precede Task Prompt: {key}"
+        if originals[key].get("solution_source_url"):
+            assert originals[key]["solution_source_url"] in page.section_links.get("solution", []), f"Missing solution source: {key}"
     if errors:
         raise SystemExit("\n".join(errors))
-    print(f"OK: {len(pages)} pages, all internal links/anchors, {len(tasks)} task routes and exact original prompts/solutions")
+    print(f"OK: {len(pages)} pages, all internal links/anchors, {len(tasks)} task routes, original prompts/solutions and environment/solution-source links")
 
 
 if __name__ == "__main__":

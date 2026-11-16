@@ -29,6 +29,8 @@ CREATE TABLE task (
     prompt       TEXT NOT NULL CHECK (trim(prompt) <> ''),
     -- Reference solution supplied by the dataset, when available.
     solution     TEXT CHECK (trim(solution) <> ''),
-    source_url   TEXT CHECK (source_url LIKE 'https://%'),
+    environment_url TEXT CHECK (environment_url LIKE 'https://%'),
+    solution_source_url TEXT CHECK (solution_source_url LIKE 'https://%'),
+    prompt_source_url   TEXT CHECK (prompt_source_url LIKE 'https://%'),
     PRIMARY KEY (benchmark_id, key)
 ) STRICT;

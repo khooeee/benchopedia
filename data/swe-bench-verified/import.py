@@ -12,6 +12,8 @@ from pathlib import Path
 
 DATASET = "princeton-nlp/SWE-bench_Verified"
 PAGE_SIZE = 100
+# Pin the readable environment recipes independently of the dataset snapshot.
+TASK_REPO_REVISION = "3d07b464b7b311a0cbfb5ed5b2d8a3b96f84a33d"
 
 BENCHMARK_DIR = Path(__file__).resolve().parent
 
@@ -52,6 +54,7 @@ def fetch_rows():
 def to_task(row):
     # Instance ids are "<owner>__<repo>-<pull request number>".
     pull_number = row["instance_id"].rsplit("-", 1)[1]
+    pull_url = f"https://github.com/{row['repo']}/pull/{pull_number}"
     solution = row["patch"]
     if not isinstance(solution, str) or not solution.strip():
         raise ValueError(f"{row['instance_id']}: missing reference patch")
@@ -59,7 +62,9 @@ def to_task(row):
         "key": row["instance_id"],
         "prompt": row["problem_statement"],
         "solution": solution,
-        "source_url": f"https://github.com/{row['repo']}/pull/{pull_number}",
+        "environment_url": f"https://github.com/SWE-bench/swe-bench-tasks/blob/{TASK_REPO_REVISION}/tasks/{row['instance_id']}/Dockerfile",
+        "solution_source_url": f"{pull_url}/files",
+        "prompt_source_url": pull_url,
     }
 
 

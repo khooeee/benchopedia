@@ -42,21 +42,6 @@
     filterBenchmarks();
   }
 
-  if ($('#copy-prompt')) {
-    $('#copy-prompt').addEventListener('click', async () => {
-      const status = $('#copy-status');
-      try {
-        await navigator.clipboard.writeText(JSON.parse($('#prompt-data').textContent));
-        $('#copy-prompt').textContent = 'copied';
-        status.textContent = 'Original prompt copied to clipboard.';
-        setTimeout(() => { $('#copy-prompt').textContent = 'copy prompt'; }, 2000);
-      } catch {
-        status.classList.remove('sr-only');
-        status.textContent = 'Clipboard unavailable. Select the task text below and copy it manually.';
-      }
-    });
-  }
-
   if (!$('#task-search')) return;
   const fields = {q:$('#task-search'),benchmark:$('#filter-benchmark')};
   let tasks = [], page = 1;
@@ -88,7 +73,7 @@
     const visible = filtered.slice((page-1)*pageSize, page*pageSize);
     const rows = visible.map((q) => {
       const url = escape(q.url);
-      const source = q.source_url ? ` [<a href="${escape(q.source_url)}">source</a>]` : '';
+      const source = q.prompt_source_url ? ` [<a href="${escape(q.prompt_source_url)}">source</a>]` : '';
       return `<li><div class="entry-links"><a href="${url}">${escape(q.key)}</a>${source}</div><div class="entry-title"><a href="${url}">${escape(q.title)}</a></div><div class="entry-meta">Benchmark: <a href="${escape(q.benchmark_url)}">${escape(q.benchmark_name)}</a></div></li>`;
     }).join('');
     $('#task-results').innerHTML = `<ol class="entry-list" start="${(page-1)*pageSize+1}">${rows}</ol>`;

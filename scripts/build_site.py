@@ -124,7 +124,7 @@ def task_list(rows, start=1):
     entries = []
     for q in rows:
         url = task_url(q)
-        source = f' [<a href="{esc(q["source_url"])}">source</a>]' if q.get('source_url') else ''
+        source = f' [<a href="{esc(q["prompt_source_url"])}">source</a>]' if q.get('prompt_source_url') else ''
         entries.append(f'''<li><div class="entry-links"><a href="{url}">{esc(q['key'])}</a>{source}</div>
 <div class="entry-title"><a href="{url}">{esc(q['title'])}</a></div>
 <div class="entry-meta">Benchmark: <a href="{esc(q['benchmark_url'])}">{esc(q['benchmark_name'])}</a></div></li>''')
@@ -180,7 +180,7 @@ def library():
 <p class="all-tasks-link"><a href="/tasks/all/">View all {len(TASKS):,} tasks on one page</a></p><noscript><p>Search and filters require JavaScript. Use the complete task index above to browse without it.</p></noscript></section>'''
     write('tasks/index.html',layout('Tasks',body,'tasks'))
     write('tasks/all/index.html',layout('All tasks','<h1>All tasks</h1><p><a href="/tasks/">Search and filter tasks</a></p>'+task_list(TASKS),'tasks'))
-    search_data = [{k:q[k] for k in ('benchmark_id','benchmark_name','benchmark_url','key','title','prompt','source_url')} | {'url':task_url(q)} for q in TASKS]
+    search_data = [{k:q[k] for k in ('benchmark_id','benchmark_name','benchmark_url','key','title','prompt','prompt_source_url')} | {'url':task_url(q)} for q in TASKS]
     write('assets/tasks.json',json.dumps(search_data,ensure_ascii=False,separators=(',',':')))
 
 
@@ -188,16 +188,21 @@ def task_page(q, previous, following):
     b = next(b for b in BENCHMARKS if b['id']==q['benchmark_id'])
     prev_link = f'<a href="{task_url(previous)}">Previous task</a>' if previous else '<span></span>'
     next_link = f'<a href="{task_url(following)}">Next task</a>' if following else '<span></span>'
-    source_link = f'<a href="{esc(q["source_url"])}">source</a> · ' if q.get('source_url') else ''
-    solution_section = ''
+    prompt_source = f'<p><a href="{esc(q["prompt_source_url"])}">Source</a></p>' if q.get('prompt_source_url') else ''
+    environment_section = ''
+    if q.get('environment_url'):
+        environment_section = f'<section id="environment" aria-label="Environment"><p><a href="{esc(q["environment_url"])}">Environment</a></p></section>'
+    solution_source = f'<p><a href="{esc(q["solution_source_url"])}">Source</a></p>' if q.get('solution_source_url') else ''
+    solution_content = ''
     if q.get('solution') is not None:
-        solution_section = f'<section><h2>Solution</h2><details><summary>Show reference solution</summary><pre><code id="solution-text">{esc(q["solution"])}</code></pre></details></section>'
+        solution_content = f'<details><summary>Show reference solution</summary><pre><code id="solution-text">{esc(q["solution"])}</code></pre></details>'
+    solution_section = ''
+    if solution_source or solution_content:
+        solution_section = f'<section id="solution"><h2>Solution</h2>{solution_content}{solution_source}</section>'
     body = f'''<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Benchmarks</a> &gt; <a href="{benchmark_url(b)}">{esc(b['name'])}</a> &gt; <a href="/tasks/?benchmark={quote(b['id'])}">Tasks</a></nav>
 <p class="task-id">{esc(q['key'])}</p><h1>{esc(q['title'])}</h1>
-<p class="resource-links">[{source_link}<button type="button" id="copy-prompt" class="link-button">copy prompt</button>]</p><p class="sr-only" role="status" id="copy-status"></p>
-<article class="prose"><section><h2>Task Prompt</h2><div class="prompt-content">{markdown(q['prompt'])}</div></section>{solution_section}</article>
-<nav class="task-adjacent" aria-label="Adjacent tasks">{prev_link}<a href="/tasks/?benchmark={quote(b['id'])}">Task index</a>{next_link}</nav>
-<script type="application/json" id="prompt-data">{json.dumps(q['prompt'],ensure_ascii=False).replace('<',chr(92)+'u003c')}</script>'''
+<article class="prose">{environment_section}<section id="task-prompt"><h2>Task Prompt</h2><div class="prompt-content">{markdown(q['prompt'])}</div>{prompt_source}</section>{solution_section}</article>
+<nav class="task-adjacent" aria-label="Adjacent tasks">{prev_link}<a href="/tasks/?benchmark={quote(b['id'])}">Task index</a>{next_link}</nav>'''
     relative = task_url(q).lstrip('/')
     write(relative+'index.html',layout(q['title'],body,'tasks',description=q['title']))
 
