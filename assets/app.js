@@ -15,14 +15,17 @@
 
   if ($('#benchmark-search')) {
     const search = $('#benchmark-search');
+    const solutions = $('#filter-solutions');
     const rows = [...document.querySelectorAll('[data-benchmark]')];
     const params = new URLSearchParams(location.search);
     search.value = params.get('q') || '';
+    solutions.checked = params.get('has_solutions') === '1';
     function filterBenchmarks() {
       const terms = search.value.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
       let count = 0;
       rows.forEach((row) => {
-        row.hidden = !terms.every((term) => row.dataset.search.includes(term));
+        row.hidden = (solutions.checked && row.dataset.hasSolutions !== 'true') ||
+          !terms.every((term) => row.dataset.search.includes(term));
         if (!row.hidden) count++;
       });
       document.querySelectorAll('.year-group').forEach((group) => {
@@ -32,12 +35,15 @@
       $('#benchmark-empty').hidden = count !== 0;
       const params = new URLSearchParams();
       if (search.value) params.set('q', search.value);
+      if (solutions.checked) params.set('has_solutions', '1');
       history.replaceState(null, '', siteURL('/') + (params.size ? '?' + params : ''));
     }
     search.addEventListener('input', filterBenchmarks);
+    solutions.addEventListener('change', filterBenchmarks);
     $('.search-form').addEventListener('submit', (event) => { event.preventDefault(); filterBenchmarks(); });
     $('#reset-benchmarks').addEventListener('click', () => {
       search.value = '';
+      solutions.checked = false;
       filterBenchmarks();
       search.focus();
     });
