@@ -111,7 +111,7 @@ def layout(title, body, active="benchmarks", description="Descriptions, datasets
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{esc(title)} · Benchopedia</title><meta name="description" content="{esc(description)}">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/assets/style.css"><script src="/assets/app.js" defer></script></head>
+<link rel="stylesheet" href="/assets/style.css"><script src="/assets/benchmark-autocomplete.js" defer></script><script src="/assets/app.js" defer></script></head>
 <body><a class="skip" href="#main">Skip to content</a>
 <header class="site-header"><div class="header-inner"><a class="site-name" href="/">Benchopedia</a><span class="site-description">The AI benchmark encyclopedia</span>
 <nav aria-label="Main navigation">{nav('benchmarks','/','Benchmarks')} <span aria-hidden="true">|</span> {nav('tasks','/tasks/','Tasks')} <span aria-hidden="true">|</span> {nav('about','/about/','About')}</nav></div></header>
@@ -169,7 +169,7 @@ def benchmark_page(b):
 
 def library():
     option = lambda val,label: f'<option value="{esc(val)}">{esc(label)}</option>'
-    selectors = f'<label>Benchmark: <select id="filter-benchmark"><option value="">All benchmarks</option>{"".join(option(b["id"],b["name"]) for b in BENCHMARKS)}</select></label>'
+    selectors = f'<label for="filter-benchmark">Benchmark:</label><select id="filter-benchmark"><option value="">All benchmarks</option>{"".join(option(b["id"],b["name"]) for b in BENCHMARKS)}</select>'
     body = f'''<h1>Tasks</h1><p class="page-description">Original tasks from the benchmark datasets.</p>
 <section class="task-library" aria-label="Browse tasks"><label class="task-search-label" for="task-search">Search:</label> <input type="search" id="task-search" placeholder="Task text or task ID">
 <div class="filter-bar">{selectors}</div>

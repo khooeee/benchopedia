@@ -51,6 +51,7 @@
     const value = initialParams.get(key);
     if (value !== null && (field.tagName !== 'SELECT' || [...field.options].some((o) => o.value === value))) field.value = value;
   }
+  const benchmarkAutocomplete = createBenchmarkAutocomplete(fields.benchmark);
   page = Math.max(1, Number.parseInt(initialParams.get('page'), 10) || 1);
 
   function updateURL() {
@@ -89,6 +90,7 @@
 
   function reset() {
     for (const field of Object.values(fields)) field.value = '';
+    benchmarkAutocomplete.sync();
     page = 1;
     render();
   }
@@ -108,6 +110,7 @@
   $('#page-next').addEventListener('click', () => { page++; render(); scrollToResults(); });
   // Do not replace server-rendered tasks or react to controls until the index is ready.
   Object.values(fields).forEach((field) => { field.disabled = true; });
+  benchmarkAutocomplete.input.disabled = true;
   $('#page-next').disabled = true;
   fetch('/assets/tasks.json').then((response) => {
     if (!response.ok) throw new Error('Task index could not be loaded');
@@ -115,6 +118,7 @@
   }).then((data) => {
     tasks = data.map((q) => ({...q, search: [q.title,q.key,q.prompt].join(' ').toLocaleLowerCase()}));
     Object.values(fields).forEach((field) => { field.disabled = false; });
+    benchmarkAutocomplete.input.disabled = false;
     render();
   }).catch(() => {
     $('#task-count').innerHTML = 'Search is unavailable. <a href="/tasks/all/">Browse all tasks instead →</a>';
