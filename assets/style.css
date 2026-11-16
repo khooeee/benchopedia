@@ -37,8 +37,8 @@ footer { border-top: 1px solid #ccc; padding: 14px 36px 20px; font-size: .8rem; 
 .page-description { margin: 0 0 20px; }
 .search-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 20px 0; font-size: .9rem; }
 #benchmark-search { width: 330px; }
-.solution-filter { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
-.solution-filter input { margin: 0; }
+.benchmark-filter { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.benchmark-filter input { margin: 0; }
 .list-summary { border-bottom: 1px solid #aaa; padding-bottom: 12px; font-size: .9rem; margin-top: 20px; }
 .year-group h2 { background: #eee; font-size: 1.1rem; margin: 20px 0 10px; padding: 7px 10px; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; }
 .entry-list { margin: 12px 0 24px; padding-left: 45px; }

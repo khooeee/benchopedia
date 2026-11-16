@@ -74,13 +74,13 @@ async function library(search = '', fail = false, records = data, basePath = '')
 
 function catalog(search = '', basePath = '') {
   const elements = Object.fromEntries([
-    '#benchmark-search','#filter-solutions','#benchmark-count','#benchmark-empty',
+    '#benchmark-search','#filter-solutions','#filter-tasks','#benchmark-count','#benchmark-empty',
     '#reset-benchmarks','.search-form',
   ].map((key) => [key, new Element()]));
   elements['meta[name="site-base-path"]'] = {content:basePath};
-  const rows = ['alpha benchmark reasoning', 'beta benchmark coding'].map((search, index) => {
+  const rows = ['alpha benchmark reasoning', 'beta benchmark coding', 'gamma benchmark reasoning'].map((search, index) => {
     const row = new Element();
-    row.dataset = {search, hasSolutions:index === 0 ? 'true' : 'false'};
+    row.dataset = {search, hasSolutions:index === 0 ? 'true' : 'false', hasTasks:index < 2 ? 'true' : 'false'};
     return row;
   });
   const groups = rows.map((row) => {
@@ -108,7 +108,7 @@ function catalog(search = '', basePath = '') {
   assert.equal(home.elements['#benchmark-empty'].hidden,false);
   home.elements['#reset-benchmarks'].emit('click');
   assert.ok(home.groups.every((group) => !group.hidden));
-  assert.equal(home.elements['#benchmark-count'].textContent,'2 benchmarks');
+  assert.equal(home.elements['#benchmark-count'].textContent,'3 benchmarks');
   assert.equal(home.context.url,'/');
   home.elements['#filter-solutions'].checked = true;
   home.elements['#filter-solutions'].emit('change');
@@ -120,7 +120,7 @@ function catalog(search = '', basePath = '') {
   home.elements['#filter-solutions'].checked = false;
   home.elements['#filter-solutions'].emit('change');
   assert.ok(home.rows.every((row) => !row.hidden));
-  assert.equal(home.elements['#benchmark-count'].textContent, '2 benchmarks');
+  assert.equal(home.elements['#benchmark-count'].textContent, '3 benchmarks');
   assert.equal(home.context.url, '/');
   const solutionsOnly = catalog('?q=alpha&has_solutions=1', '/benchopedia');
   assert.equal(solutionsOnly.elements['#filter-solutions'].checked, true);
@@ -137,13 +137,46 @@ function catalog(search = '', basePath = '') {
   assert.equal(solutionsOnly.elements['#filter-solutions'].checked, false);
   assert.equal(solutionsOnly.elements['#benchmark-search'].value, '');
   assert.ok(solutionsOnly.rows.every((row) => !row.hidden));
-  assert.equal(solutionsOnly.elements['#benchmark-count'].textContent, '2 benchmarks');
+  assert.equal(solutionsOnly.elements['#benchmark-count'].textContent, '3 benchmarks');
   assert.equal(solutionsOnly.elements['#benchmark-empty'].hidden, true);
   assert.equal(solutionsOnly.context.url, '/benchopedia/');
   const withoutSolutionsFilter = catalog('?has_solutions=0');
   assert.equal(withoutSolutionsFilter.elements['#filter-solutions'].checked, false);
   assert.ok(withoutSolutionsFilter.rows.every((row) => !row.hidden));
   assert.equal(withoutSolutionsFilter.context.url, '/');
+  const tasksOnly = catalog('?has_tasks=1', '/benchopedia');
+  assert.equal(tasksOnly.elements['#filter-tasks'].checked, true);
+  assert.deepEqual(tasksOnly.rows.map((row) => row.hidden), [false, false, true]);
+  assert.equal(tasksOnly.groups[2].hidden, true);
+  assert.equal(tasksOnly.elements['#benchmark-count'].textContent, '2 benchmarks');
+  assert.equal(tasksOnly.context.url, '/benchopedia/?has_tasks=1');
+  tasksOnly.elements['#filter-solutions'].checked = true;
+  tasksOnly.elements['#filter-solutions'].emit('change');
+  assert.deepEqual(tasksOnly.rows.map((row) => row.hidden), [false, true, true]);
+  assert.equal(tasksOnly.context.url, '/benchopedia/?has_solutions=1&has_tasks=1');
+  tasksOnly.elements['#benchmark-search'].value = 'gamma';
+  tasksOnly.elements['#benchmark-search'].emit('input');
+  assert.equal(tasksOnly.elements['#benchmark-empty'].hidden, false);
+  assert.equal(tasksOnly.elements['#benchmark-count'].textContent, '0 benchmarks');
+  tasksOnly.elements['#reset-benchmarks'].emit('click');
+  assert.equal(tasksOnly.elements['#filter-tasks'].checked, false);
+  assert.equal(tasksOnly.elements['#filter-solutions'].checked, false);
+  assert.ok(tasksOnly.rows.every((row) => !row.hidden));
+  assert.equal(tasksOnly.context.url, '/benchopedia/');
+  tasksOnly.elements['#filter-tasks'].checked = true;
+  tasksOnly.elements['#filter-tasks'].emit('change');
+  assert.equal(tasksOnly.elements['#benchmark-count'].textContent, '2 benchmarks');
+  tasksOnly.elements['#filter-tasks'].checked = false;
+  tasksOnly.elements['#filter-tasks'].emit('change');
+  assert.equal(tasksOnly.elements['#benchmark-count'].textContent, '3 benchmarks');
+  const bothFilters = catalog('?q=alpha&has_solutions=1&has_tasks=1');
+  assert.equal(bothFilters.elements['#filter-tasks'].checked, true);
+  assert.equal(bothFilters.elements['#filter-solutions'].checked, true);
+  assert.equal(bothFilters.elements['#benchmark-count'].textContent, '1 benchmark');
+  const withoutTasksFilter = catalog('?has_tasks=0');
+  assert.equal(withoutTasksFilter.elements['#filter-tasks'].checked, false);
+  assert.ok(withoutTasksFilter.rows.every((row) => !row.hidden));
+  assert.equal(withoutTasksFilter.context.url, '/');
   const {elements:e,context:c} = await library();
   assert.equal(e['#task-count'].textContent,`1–25 of ${data.length} tasks`);
   assert.equal(e['#page-prev'].disabled,true);
@@ -252,6 +285,6 @@ function catalog(search = '', basePath = '') {
   projectHome.elements['#reset-benchmarks'].emit('click');
   assert.equal(projectHome.context.url, '/benchopedia/');
   console.log('OK: project-path asset fetch, task links, pagination, search URLs and fallback');
-  console.log('OK: benchmark solution checkbox, combined search, URL state, counts and reset');
+  console.log('OK: benchmark tasks/solutions checkboxes, combined search, URL state, counts and reset');
   console.log('OK: benchmark search/autocomplete, numbered task lists, combined filters, empty/reset states, pagination, deep links and fetch failure fallback');
 })().catch((error) => {console.error(error);process.exitCode = 1;});
