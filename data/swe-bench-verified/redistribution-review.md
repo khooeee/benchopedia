@@ -2,7 +2,7 @@
 
 ## Scope
 
-The snapshot contains all 500 tasks in the princeton-nlp/SWE-bench_Verified test split at revision `c104f840cc67f8b6eec6f759ebc8b2693d585d4a`: issue text and reference code patches from 12 open-source Python projects. Both the public repository and the website publish them.
+The snapshot contains all 500 tasks in the princeton-nlp/SWE-bench_Verified test split at revision `c104f840cc67f8b6eec6f759ebc8b2693d585d4a`: issue text and reference code patches from 12 open-source Python projects. The public repository holds them. Since 2026-11-15, the website withholds them until redistribution is cleared. [Exclusions](https://github.com/khooeee/benchopedia/blob/main/data/exclusions.json)
 
 ## Terms
 

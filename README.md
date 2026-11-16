@@ -25,6 +25,7 @@ loads everything into `build/benchopedia.db` (SQLite) and fails if any constrain
 ```mermaid
 erDiagram
     benchmark ||--o{ task : contains
+    benchmark ||--o| exclusion : "withheld by"
 
     benchmark {
         TEXT id PK "its directory name under data/"
@@ -51,6 +52,12 @@ erDiagram
         TEXT environment_url "nullable"
         TEXT solution_source_url "nullable"
         TEXT prompt_source_url "nullable"
+    }
+    exclusion {
+        TEXT benchmark_id PK, FK
+        TEXT since "YYYY-MM-DD"
+        TEXT reason
+        TEXT restore_when
     }
 ```
 
@@ -102,7 +109,8 @@ Benchopedia's original code and documentation are available under the
 copyrights and license or access terms; the root license does not replace them.
 See each benchmark's `redistribution-review.md` and the
 [benchmark license review](docs/benchmark-license-review.md) for the reviewed
-terms and unresolved issues.
+terms and unresolved issues. [`data/exclusions.json`](data/exclusions.json)
+tracks tasks withheld from the website and why.
 
 ## Deployment
 

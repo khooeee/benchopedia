@@ -15,6 +15,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT / "data"
+EXCLUSIONS_FILE = DATA_DIR / "exclusions.json"
 DB_PATH = ROOT / "build" / "benchopedia.db"
 
 MAX_VIOLATIONS_SHOWN = 10
@@ -55,6 +56,13 @@ def load_benchmark(db, benchmark_dir, errors):
             insert(db, "task", task, origin, errors)
 
 
+def load_exclusions(db, errors):
+    exclusions = json.loads(EXCLUSIONS_FILE.read_text(encoding="utf-8"))
+    for index, exclusion in enumerate(exclusions):
+        origin = f"{EXCLUSIONS_FILE.relative_to(ROOT)}[{index}]"
+        insert(db, "exclusion", exclusion, origin, errors)
+
+
 def run_checks(db, errors):
     check_files = sorted((ROOT / "checks").glob("*.sql"))
     for check_file in check_files:
@@ -78,6 +86,7 @@ def main():
     errors = []
     for benchmark_dir in sorted(p for p in DATA_DIR.iterdir() if p.is_dir()):
         load_benchmark(db, benchmark_dir, errors)
+    load_exclusions(db, errors)
     db.commit()
     check_count = run_checks(db, errors)
 

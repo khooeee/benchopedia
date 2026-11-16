@@ -99,3 +99,5 @@ harness license clears the dataset.
 
 This review leaves the existing SWE-bench task snapshot unchanged and explicitly
 open for that follow-up; adding a license label alone would not resolve it.
+Since 2026-11-15, the website withholds these tasks until they are cleared; see
+[`data/exclusions.json`](../data/exclusions.json).

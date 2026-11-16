@@ -38,3 +38,12 @@ CREATE TABLE task (
     prompt_source_url   TEXT CHECK (prompt_source_url LIKE 'https://%'),
     PRIMARY KEY (benchmark_id, key)
 ) STRICT;
+
+-- data/exclusions.json: benchmarks whose tasks are withheld from the website.
+-- The tasks are still loaded and validated; the article page stays published.
+CREATE TABLE exclusion (
+    benchmark_id TEXT PRIMARY KEY REFERENCES benchmark (id),
+    since        TEXT NOT NULL CHECK (since = date(since)),
+    reason       TEXT NOT NULL CHECK (trim(reason) <> ''),
+    restore_when TEXT NOT NULL CHECK (trim(restore_when) <> '')
+) STRICT;

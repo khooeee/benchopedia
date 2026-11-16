@@ -35,7 +35,9 @@ redistribution, stop the import and tell the user before copying any tasks.**
 Name the affected content, link the relevant terms, and explain the restriction
 or uncertainty. Do not bypass access conditions, silently omit restricted items,
 or treat user approval as permission from the rights holder. Resume only when
-the necessary rights and obligations are documented. An original article with
+the necessary rights and obligations are documented. For a benchmark that is
+already published, [withhold its tasks](#withholding-published-tasks) instead.
+An original article with
 upstream links may be an alternative, but article-only entries require an
 explicit scope change because the current schema requires imported tasks.
 
@@ -157,6 +159,27 @@ reproduced verbatim in code blocks.
 
 Keep any separate upstream license or attribution file, such as `LICENSE` or
 `ATTRIBUTION.md`, beside it.
+
+### Withholding published tasks
+
+If a benchmark is already published and its permission turns out to be missing
+or unclear, withhold its tasks from the website by adding an entry to
+[`data/exclusions.json`](../data/exclusions.json), which tracks every exclusion
+and why:
+
+```json
+{
+  "benchmark_id": "example-benchmark",
+  "since": "2026-01-01",
+  "reason": "What is not cleared, and why.",
+  "restore_when": "The evidence or permission needed to publish the tasks again."
+}
+```
+
+The build still loads and validates the snapshot, and keeps the benchmark's
+article, but writes no task pages or search entries for it. The page shows the
+reason in its Dataset section. Update the benchmark's redistribution review to
+match. Remove the entry only once the review clears the tasks.
 
 ## 5. Map upstream records to tasks.jsonl
 

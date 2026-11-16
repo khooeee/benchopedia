@@ -141,11 +141,14 @@ def home():
         entries = []
         for b in (b for b in ordered if b['released_on'].startswith(year)):
             url = benchmark_url(b)
-            entries.append(f'''<li data-benchmark="{esc(b['id'])}" data-has-solutions="{str(bool(b['has_solutions'])).lower()}" data-search="{esc((b['name']+' '+b['id']+' '+b['summary']).lower())}">
+            withheld = b['id'] in EXCLUDED
+            has_solutions = bool(b['has_solutions']) and not withheld
+            task_link = '' if withheld else f'<a href="/tasks/?benchmark={quote(b["id"])}">tasks</a> · '
+            entries.append(f'''<li data-benchmark="{esc(b['id'])}" data-has-solutions="{str(has_solutions).lower()}" data-search="{esc((b['name']+' '+b['id']+' '+b['summary']).lower())}">
 <div class="entry-title"><a href="{url}">{esc(b['name'])}</a></div>
-<div class="entry-links"><a href="/tasks/?benchmark={quote(b['id'])}">tasks</a> · <a href="{esc(b['homepage_url'])}">website</a> · <a href="{esc(b['dataset_url'])}">dataset</a></div>
+<div class="entry-links">{task_link}<a href="{esc(b['homepage_url'])}">website</a> · <a href="{esc(b['dataset_url'])}">dataset</a></div>
 <p class="entry-summary">{esc(b['summary'])}</p>
-<div class="entry-meta">Released: {esc(b['released_on'])} · Tasks: {b['task_count']:,}</div></li>''')
+<div class="entry-meta">Released: {esc(b['released_on'])} · Tasks: {b['task_count']:,}{' (withheld)' if withheld else ''}</div></li>''')
         groups.append(f'<section class="year-group"><h2>{year}</h2><ol class="entry-list">' + ''.join(entries) + '</ol></section>')
     body = f'''<h1>Benchmarks</h1>
 <form class="search-form" role="search"><label for="benchmark-search">Search:</label> <input type="search" id="benchmark-search" name="q" placeholder="Name or description"> <button type="submit">Search</button> <label class="solution-filter"><input type="checkbox" id="filter-solutions" name="has_solutions" value="1"> Has solutions</label></form>
@@ -155,19 +158,27 @@ def home():
 
 
 def benchmark_page(b):
-    qs = [q for q in TASKS if q['benchmark_id']==b['id']]
-    facts = [('Released',b['released_on']),('Tasks',f'{len(qs):,}')]
+    count = f"{b['task_count']:,}"
+    exclusion = EXCLUDED.get(b['id'])
+    if exclusion:
+        facts = [('Released',b['released_on']),('Tasks',f'{count} (withheld)')]
+        task_link = ''
+        dataset = f'''<p>The {count} tasks in this snapshot have been withheld from this website since {esc(exclusion['since'])}. {esc(exclusion['reason'])} See <a href="#license">License</a>, or visit <a href="{esc(b['dataset_url'])}">the upstream dataset</a>.</p>'''
+    else:
+        facts = [('Released',b['released_on']),('Tasks',count)]
+        task_link = f'<a href="/tasks/?benchmark={quote(b["id"])}">browse {count} tasks</a> · '
+        dataset = f'''<p>{count} tasks in this snapshot. <a href="/tasks/?benchmark={quote(b['id'])}">Browse tasks</a> or visit <a href="{esc(b['dataset_url'])}">the upstream dataset</a>.</p>'''
     sources = json.loads(b['sources'])
     source_list = ''.join(f'<li><a href="{esc(s["url"])}">{esc(s["title"])}</a></li>' for s in sources)
     # The review's own title would duplicate the section heading.
     license_text = re.sub(r"\A# [^\n]*\n", "", b['redistribution_review'])
     body = f'''<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Benchmarks</a> &gt; {esc(b['name'])}</nav>
-<h1>{esc(b['name'])}</h1><p class="resource-links">[<a href="/tasks/?benchmark={quote(b['id'])}">browse {len(qs):,} tasks</a> · <a href="{esc(b['homepage_url'])}">official website</a> · <a href="{esc(b['dataset_url'])}">dataset</a>]</p>
+<h1>{esc(b['name'])}</h1><p class="resource-links">[{task_link}<a href="{esc(b['homepage_url'])}">official website</a> · <a href="{esc(b['dataset_url'])}">dataset</a>]</p>
 <p>{esc(b['summary'])}</p><dl class="metadata">{''.join(f'<div><dt>{esc(k)}:</dt><dd>{esc(v)}</dd></div>' for k,v in facts)}</dl>
 <article class="prose"><section id="overview"><h2>Overview</h2>{markdown(b['overview'])}</section>
 <section id="methodology"><h2>Methodology</h2>{markdown(b['methodology'])}</section>
 <section id="scoring"><h2>Scoring</h2>{markdown(b['scoring'])}</section>
-<section id="dataset"><h2>Dataset</h2><p>{len(qs):,} tasks in this snapshot. <a href="/tasks/?benchmark={quote(b['id'])}">Browse tasks</a> or visit <a href="{esc(b['dataset_url'])}">the upstream dataset</a>.</p></section>
+<section id="dataset"><h2>Dataset</h2>{dataset}</section>
 <section id="limitations"><h2>Limitations</h2>{markdown(b['limitations'])}</section>
 <section id="license"><h2>License</h2>{markdown(license_text)}</section>
 <section id="sources"><h2>Sources</h2><ol>{source_list}</ol><details class="snapshot"><summary>Dataset revision</summary><p>Snapshot of <a href="{esc(b['dataset_url'])}">the upstream dataset</a> at revision <code>{esc(b['dataset_revision'])}</code>.</p></details></section></article>'''
@@ -176,7 +187,7 @@ def benchmark_page(b):
 
 def library():
     option = lambda val,label: f'<option value="{esc(val)}">{esc(label)}</option>'
-    selectors = f'<label for="filter-benchmark">Benchmark:</label><select id="filter-benchmark"><option value="">All benchmarks</option>{"".join(option(b["id"],b["name"]) for b in BENCHMARKS)}</select>'
+    selectors = f'<label for="filter-benchmark">Benchmark:</label><select id="filter-benchmark"><option value="">All benchmarks</option>{"".join(option(b["id"],b["name"]) for b in BENCHMARKS if b["id"] not in EXCLUDED)}</select>'
     body = f'''<h1>Tasks</h1><p class="page-description">Original tasks from the benchmark datasets.</p>
 <section class="task-library" aria-label="Browse tasks"><label class="task-search-label" for="task-search">Search:</label> <input type="search" id="task-search" placeholder="Task text or task ID">
 <div class="filter-bar">{selectors}</div>
@@ -224,12 +235,15 @@ def about():
 
 
 def main():
-    global BENCHMARKS, TASKS
+    global BENCHMARKS, TASKS, EXCLUDED
     build_sqlite()
     with sqlite3.connect(ROOT/'build'/'benchopedia.db') as db:
         db.row_factory = sqlite3.Row
         BENCHMARKS = [dict(r) for r in db.execute('SELECT * FROM benchmark ORDER BY name')]
         TASKS = [dict(r) for r in db.execute('SELECT * FROM task ORDER BY benchmark_id, key')]
+        EXCLUDED = {r['benchmark_id']:dict(r) for r in db.execute('SELECT * FROM exclusion')}
+    # Withheld tasks are validated with the rest but never written to the site.
+    TASKS = [q for q in TASKS if q['benchmark_id'] not in EXCLUDED]
     benchmark_by_id = {b['id']:b for b in BENCHMARKS}
     for q in TASKS:
         q['title'] = task_title(q['prompt'])
