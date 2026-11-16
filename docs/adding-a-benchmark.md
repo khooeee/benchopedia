@@ -4,10 +4,10 @@ Add a benchmark by creating its metadata, tasks, and importer under `data/<id>/`
 The build discovers these directories automatically and generates the SQLite
 database, benchmark page, task pages, and search index.
 
-Use [SWE-bench Verified](../data/swe-bench-verified/) as a working example, and
+Use [HumanEval](../data/humaneval/) as a working example, and
 [db/schema.sql](../db/schema.sql) as the authoritative field definitions. Adapt
 the import to the new dataset; its identifiers, answers, and environment setup
-may differ from SWE-bench's.
+may differ from HumanEval's.
 
 ## 1. Choose the source and scope
 
@@ -36,8 +36,10 @@ Name the affected content, link the relevant terms, and explain the restriction
 or uncertainty. Do not bypass access conditions, silently omit restricted items,
 or treat user approval as permission from the rights holder. Resume only when
 the necessary rights and obligations are documented. An original article with
-upstream links may be an alternative, but article-only entries require an
-explicit scope change because the current schema requires imported tasks.
+upstream links may be an alternative, but an article without tasks requires an
+explicit scope change and an [exclusion](#excluding-tasks). If a published
+benchmark's permission turns out to be missing or unclear, exclude its tasks
+the same way.
 
 For an allowed import, record the license, immutable source links, access terms,
 reviewed scope, and redistribution obligations in the benchmark's
@@ -109,6 +111,8 @@ the included benchmark variant in `YYYY-MM-DD` format.
 contains reference solution text, and `false` when none do. A source link or
 evaluator alone does not count as a reference solution. SQLite stores this flag
 as 0 or 1; the build checks it against the tasks so it stays accurate after imports.
+Both `task_count` and `has_solutions` are `null` when the tasks are
+[excluded](#excluding-tasks), and only then.
 
 The overview, methodology, scoring, and limitations are sections on the benchmark
 page, not separate files. Write concise explanations supported by primary sources.
@@ -157,6 +161,30 @@ reproduced verbatim in code blocks.
 
 Keep any separate upstream license or attribution file, such as `LICENSE` or
 `ATTRIBUTION.md`, beside it.
+
+### Excluding tasks
+
+When the tasks cannot be published, keep the benchmark's article but leave its
+tasks out of both the repository and the website. Delete its `tasks.jsonl`, set
+`task_count` and `has_solutions` to `null`, and add an entry to
+[`data/exclusions.json`](../data/exclusions.json), which records every exclusion
+and why:
+
+```json
+{
+  "benchmark_id": "example-benchmark",
+  "since": "2026-01-01",
+  "reason": "What is not cleared, and why.",
+  "restore_when": "The evidence or permission needed to include the tasks again."
+}
+```
+
+Explain the exclusion in the benchmark's redistribution review as well. The
+build rejects a `tasks.jsonl` for an excluded benchmark and requires one for
+every other benchmark, so tasks cannot return or disappear by accident. Include
+the tasks again only after the review clears them: remove the entry, restore
+`task_count` and `has_solutions`, and rerun the importer. Deleting a file does
+not remove it from Git history.
 
 ## 5. Map upstream records to tasks.jsonl
 
@@ -239,8 +267,9 @@ node scripts/check_ui.cjs     # Check JavaScript search, filtering, and paginati
 
 The build enforces schema constraints and the shared SQL checks: the declared
 task count must match the imported count, task keys must be unique within a
-benchmark, and every benchmark needs a redistribution review. Identical prompts are allowed because published datasets such as
-MMLU contain repeated items. Investigate repeated prompts against upstream; do
+benchmark, every benchmark needs a redistribution review, and only excluded
+benchmarks may omit `tasks.jsonl`. Identical prompts are allowed because
+published datasets such as MMLU contain repeated items. Investigate repeated prompts against upstream; do
 not silently drop records or alter wording. Preserve distinct upstream records
 under their own stable keys and document any duplicates. Read JSONL by iterating
 file lines, rather than splitting text on all Unicode line separators, which

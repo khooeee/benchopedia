@@ -34,8 +34,8 @@ erDiagram
         TEXT dataset_url
         TEXT dataset_revision "upstream revision imported"
         TEXT released_on "YYYY-MM-DD"
-        INTEGER task_count "declared size"
-        INTEGER has_solutions "boolean, 0 or 1"
+        INTEGER task_count "declared size, null if excluded"
+        INTEGER has_solutions "boolean, null if excluded"
         TEXT overview "article section"
         TEXT methodology "article section"
         TEXT scoring "article section"
@@ -102,7 +102,8 @@ Benchopedia's original code and documentation are available under the
 copyrights and license or access terms; the root license does not replace them.
 See each benchmark's `redistribution-review.md` and the
 [benchmark license review](docs/benchmark-license-review.md) for the reviewed
-terms and unresolved issues.
+terms and unresolved issues. [`data/exclusions.json`](data/exclusions.json)
+records benchmarks whose tasks are left out, and why.
 
 ## Deployment
 

@@ -162,6 +162,10 @@ unresolved, rather than being a discovered prohibition.
 
 ## What Benchopedia currently distributes
 
+Since 2026-11-15, Benchopedia excludes these tasks entirely; see
+[`data/exclusions.json`](../../data/exclusions.json). This section describes the
+packaging at the time of the research.
+
 The repository copies full prompts and patches into `tasks.jsonl`. The build
 publishes prompts on task pages and in its search JSON, and embeds patches in
 task-page HTML under a disclosure control. Collapsing that control does not
