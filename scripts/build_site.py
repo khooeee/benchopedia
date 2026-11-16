@@ -208,7 +208,6 @@ def task_page(q, previous, following):
 
 def about():
     body = '''<h1>About Benchopedia</h1><article class="prose"><p>Benchopedia is a reference for AI benchmarks: what they measure, how they are scored, and the tasks they contain.</p>
-<section id="sources"><h2>Sources and scope</h2><p>Articles cite original documentation and datasets. Tasks preserve the imported prompts, and dataset counts are calculated from the imported snapshot.</p></section>
 <section id="contribute"><h2>Corrections and suggestions</h2><p>To report an error or suggest a benchmark, <a href="https://github.com/khooeee/benchopedia/issues">open an issue on GitHub</a>.</p></section></article>'''
     write('about/index.html',layout('About',body,'about'))
     write('404.html',layout('Page not found','<h1>Page not found</h1><p>This address does not match a benchmark or task.</p><p><a href="/">Return to the benchmark index</a></p>'))
