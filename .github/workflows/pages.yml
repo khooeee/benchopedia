@@ -27,15 +27,21 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
-      - name: Build website
-        run: python3 scripts/build_site.py
-      - name: Check generated website
-        run: python3 scripts/check_site.py
+      - name: Check local-root build
+        run: |
+          python3 scripts/build_site.py
+          python3 scripts/check_site.py
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v5
+      - name: Build and check Pages website
+        env:
+          BENCHOPEDIA_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+        run: |
+          python3 scripts/build_site.py
+          python3 scripts/check_site.py
       - name: Check browser logic
         run: node scripts/check_ui.cjs
-      - name: Configure Pages
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-        uses: actions/configure-pages@v5
       - name: Upload website
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v4

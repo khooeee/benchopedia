@@ -1,14 +1,25 @@
 # Deployment
 
-The production site uses GitHub Pages at `https://benchopedia.com`. Cloudflare
-manages DNS and redirects the alternate domains to that address.
+The production site uses GitHub Pages at
+`https://khooeee.github.io/benchopedia/`. No Cloudflare changes or custom domain
+are required for the initial deployment.
 
 ## GitHub Pages
 
 In the repository's **Settings → Pages**, select **GitHub Actions** as the
-publishing source and set the custom domain to `benchopedia.com`. Set the domain
-on GitHub before pointing DNS at Pages. With an Actions publishing source, a
-`CNAME` file is unnecessary; the domain lives in repository settings.
+publishing source. Leave the custom domain empty to use the GitHub Pages address.
+
+The workflow reads the site's base path from GitHub Pages before building, so
+navigation, assets, task links, search, and pagination work under `/benchopedia/`.
+Local builds default to `/`. To test the project path locally:
+
+```sh
+BENCHOPEDIA_BASE_PATH=/benchopedia python3 scripts/build_site.py
+BENCHOPEDIA_BASE_PATH=/benchopedia python3 scripts/check_site.py
+```
+
+Serve that output mounted under `/benchopedia/`, or rebuild without the variable
+for the usual local preview. Each workflow also checks the local-root build.
 
 The workflow runs the Python build, generated-site checks, and Node.js UI checks.
 Only successful builds on `main` deploy. Pull requests run the same checks without
@@ -19,7 +30,15 @@ For a manual redeploy, open **Actions → GitHub Pages → Run workflow** and se
 `main`. To roll back, revert the relevant change through a pull request; merging
 the revert rebuilds and redeploys the previous content.
 
-## Cloudflare DNS
+## Optional custom domains
+
+To connect the domains later, set the custom domain to `benchopedia.com` in
+GitHub's Pages settings **before** pointing DNS at Pages. With an Actions
+publishing source, a `CNAME` file is unnecessary; the domain lives in repository
+settings. Run the workflow again after changing the domain: GitHub reports an
+empty base path for the custom domain, and the build adjusts its URLs.
+
+### Cloudflare DNS
 
 For `benchopedia.com`, use these records:
 
@@ -53,7 +72,8 @@ requests, nested paths, and search query strings reach the matching `.com` URL.
 
 After the first deployment, check the homepage, a benchmark article, a task page,
 search, and an unknown URL (which should return the custom 404 page). Check HTTPS
-and redirects for the apex and `www` names on both domains. DNS changes and HTTPS
+at the GitHub Pages address. After connecting custom domains, check redirects
+for the apex and `www` names on both domains. DNS changes and HTTPS
 certificate issuance can take time.
 
 GitHub Pages limits the published site to 1 GB and has a soft bandwidth limit of

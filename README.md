@@ -92,10 +92,11 @@ Model results and saturation indicators await sourced score data.
 
 ## Deployment
 
-GitHub Pages serves the generated `dist/` directory at https://benchopedia.com.
+GitHub Pages serves the generated `dist/` directory at
+https://khooeee.github.io/benchopedia/.
 The GitHub Actions workflow builds the website and runs both checks on pull
 requests. It publishes only from `main`, after all checks pass; pull requests
 never publish a preview. Development and previews stay local.
 
 See [Deployment setup](docs/deployment.md) for the GitHub Pages and Cloudflare
-settings, domain redirects, and manual redeployment.
+settings, optional custom domains, and manual redeployment.
