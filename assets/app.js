@@ -13,17 +13,14 @@
 
   if ($('#benchmark-search')) {
     const search = $('#benchmark-search');
-    const category = $('#benchmark-category');
     const rows = [...document.querySelectorAll('[data-benchmark]')];
     const params = new URLSearchParams(location.search);
     search.value = params.get('q') || '';
-    const initialCategory = params.get('category') || '';
-    if ([...category.options].some((option) => option.value === initialCategory)) category.value = initialCategory;
     function filterBenchmarks() {
       const terms = search.value.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
       let count = 0;
       rows.forEach((row) => {
-        row.hidden = !((!category.value || row.dataset.category === category.value) && terms.every((term) => row.dataset.search.includes(term)));
+        row.hidden = !terms.every((term) => row.dataset.search.includes(term));
         if (!row.hidden) count++;
       });
       document.querySelectorAll('.year-group').forEach((group) => {
@@ -33,15 +30,12 @@
       $('#benchmark-empty').hidden = count !== 0;
       const params = new URLSearchParams();
       if (search.value) params.set('q', search.value);
-      if (category.value) params.set('category', category.value);
       history.replaceState(null, '', '/' + (params.size ? '?' + params : ''));
     }
     search.addEventListener('input', filterBenchmarks);
-    category.addEventListener('change', filterBenchmarks);
     $('.search-form').addEventListener('submit', (event) => { event.preventDefault(); filterBenchmarks(); });
     $('#reset-benchmarks').addEventListener('click', () => {
       search.value = '';
-      category.value = '';
       filterBenchmarks();
       search.focus();
     });

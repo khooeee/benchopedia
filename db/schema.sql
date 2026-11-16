@@ -5,7 +5,6 @@ CREATE TABLE benchmark (
     id               TEXT PRIMARY KEY CHECK (id <> '' AND id NOT GLOB '*[^a-z0-9-]*'),
     name             TEXT NOT NULL UNIQUE CHECK (trim(name) <> ''),
     summary          TEXT NOT NULL CHECK (trim(summary) <> ''),
-    category         TEXT NOT NULL CHECK (trim(category) <> ''),
     homepage_url    TEXT NOT NULL CHECK (homepage_url LIKE 'https://%'),
     dataset_url      TEXT NOT NULL CHECK (dataset_url LIKE 'https://%'),
     -- Upstream revision that data/<id>/tasks.jsonl was imported from.

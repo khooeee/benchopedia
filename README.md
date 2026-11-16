@@ -32,7 +32,6 @@ erDiagram
         TEXT id PK "its directory name under data/"
         TEXT name UK
         TEXT summary
-        TEXT category
         TEXT homepage_url
         TEXT dataset_url
         TEXT dataset_revision "upstream revision imported"

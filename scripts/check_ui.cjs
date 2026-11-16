@@ -45,12 +45,11 @@ async function library(search = '', fail = false, records = data) {
 
 function catalog(search = '') {
   const elements = Object.fromEntries([
-    '#benchmark-search','#benchmark-category','#benchmark-count','#benchmark-empty',
+    '#benchmark-search','#benchmark-count','#benchmark-empty',
     '#reset-benchmarks','.search-form',
   ].map((key) => [key, new Element()]));
-  elements['#benchmark-category'].options = [{value:''},{value:'Software engineering'}];
   const row = new Element();
-  row.dataset = {category:'Software engineering',search:'swe-bench verified software engineering real github issues'};
+  row.dataset = {search:'swe-bench verified real github issues'};
   const group = new Element();
   group.querySelectorAll = () => [row];
   const context = {
@@ -63,7 +62,7 @@ function catalog(search = '') {
 }
 
 (async () => {
-  const home = catalog('?q=verified&category=Software+engineering');
+  const home = catalog('?q=verified');
   assert.equal(home.elements['#benchmark-count'].textContent,'1 benchmark');
   assert.equal(home.row.hidden,false);
   home.elements['#benchmark-search'].value = 'no-such-benchmark';
@@ -105,5 +104,5 @@ function catalog(search = '') {
   assert.equal(deep.elements['#task-count'].textContent,'1–25 of 501 tasks');
   const failed = await library('',true);
   assert.ok(failed.elements['#task-count'].innerHTML.includes('/tasks/all/'));
-  console.log('OK: benchmark search/categories, numbered task lists, combined filters, empty/reset states, pagination, deep links and fetch failure fallback');
+  console.log('OK: benchmark search, numbered task lists, combined filters, empty/reset states, pagination, deep links and fetch failure fallback');
 })().catch((error) => {console.error(error);process.exitCode = 1;});

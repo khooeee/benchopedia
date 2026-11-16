@@ -37,7 +37,6 @@ footer { border-top: 1px solid #ccc; padding: 14px 36px 20px; font-size: .8rem; 
 .page-description { margin: 0 0 20px; }
 .search-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 20px 0; font-size: .9rem; }
 #benchmark-search { width: 330px; }
-#benchmark-category { min-width: 160px; }
 .list-summary { border-bottom: 1px solid #aaa; padding-bottom: 12px; font-size: .9rem; margin-top: 20px; }
 .year-group h2 { background: #eee; font-size: 1.1rem; margin: 20px 0 10px; padding: 7px 10px; border-top: 1px solid #ddd; border-bottom: 1px solid #ddd; }
 .entry-list { margin: 12px 0 24px; padding-left: 45px; }
@@ -96,7 +95,6 @@ summary { cursor: pointer; }
   h1 { font-size: 1.65rem; overflow-wrap: anywhere; }
   .search-form { align-items: stretch; }
   #benchmark-search { flex: 1; min-width: 180px; }
-  #benchmark-category { min-width: 0; }
   .entry-list { padding-left: 29px; }
   .entry-list > li { padding-left: 6px; }
   .metadata > div { display: block; margin: 6px 0; }

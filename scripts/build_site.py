@@ -132,22 +132,20 @@ def task_list(rows, start=1):
 
 
 def home():
-    categories = sorted({b['category'] for b in BENCHMARKS})
-    options = ''.join(f'<option value="{esc(c)}">{esc(c)}</option>' for c in categories)
     ordered = sorted(BENCHMARKS, key=lambda b: (b['released_on'],b['name']), reverse=True)
     groups = []
     for year in sorted({b['released_on'][:4] for b in ordered}, reverse=True):
         entries = []
         for b in (b for b in ordered if b['released_on'].startswith(year)):
             url = benchmark_url(b)
-            entries.append(f'''<li data-benchmark data-category="{esc(b['category'])}" data-search="{esc((b['name']+' '+b['id']+' '+b['summary']+' '+b['category']).lower())}">
+            entries.append(f'''<li data-benchmark data-search="{esc((b['name']+' '+b['id']+' '+b['summary']).lower())}">
 <div class="entry-title"><a href="{url}">{esc(b['name'])}</a></div>
 <div class="entry-links"><a href="/tasks/?benchmark={quote(b['id'])}">tasks</a> · <a href="{esc(b['homepage_url'])}">website</a> · <a href="{esc(b['dataset_url'])}">dataset</a></div>
 <p class="entry-summary">{esc(b['summary'])}</p>
-<div class="entry-meta">Category: {esc(b['category'])}<br>Released: {esc(b['released_on'])} · Tasks: {b['task_count']:,}</div></li>''')
+<div class="entry-meta">Released: {esc(b['released_on'])} · Tasks: {b['task_count']:,}</div></li>''')
         groups.append(f'<section class="year-group"><h2>{year}</h2><ol class="entry-list">' + ''.join(entries) + '</ol></section>')
     body = f'''<h1>AI benchmarks</h1>
-<form class="search-form" role="search"><label for="benchmark-search">Search:</label> <input type="search" id="benchmark-search" name="q" placeholder="Name, description, or category"> <label for="benchmark-category">Category:</label> <select id="benchmark-category" name="category"><option value="">All categories</option>{options}</select> <button type="submit">Search</button></form>
+<form class="search-form" role="search"><label for="benchmark-search">Search:</label> <input type="search" id="benchmark-search" name="q" placeholder="Name or description"> <button type="submit">Search</button></form>
 <p class="list-summary"><span id="benchmark-count" role="status" aria-live="polite">{len(BENCHMARKS)} benchmark{'s' if len(BENCHMARKS)!=1 else ''}</span></p>
 <div id="catalog">{''.join(groups)}</div><div id="benchmark-empty" hidden><p>No benchmarks match your search.</p><button type="button" id="reset-benchmarks">Clear search</button></div>'''
     write('index.html',layout('AI benchmarks',body))
@@ -155,7 +153,7 @@ def home():
 
 def benchmark_page(b):
     qs = [q for q in TASKS if q['benchmark_id']==b['id']]
-    facts = [('Category',b['category']),('Released',b['released_on']),('Tasks',f'{len(qs):,}')]
+    facts = [('Released',b['released_on']),('Tasks',f'{len(qs):,}')]
     sources = json.loads(b['sources'])
     source_list = ''.join(f'<li><a href="{esc(s["url"])}">{esc(s["title"])}</a></li>' for s in sources)
     body = f'''<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Benchmarks</a> &gt; {esc(b['name'])}</nav>
