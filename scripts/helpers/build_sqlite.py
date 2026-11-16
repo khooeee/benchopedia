@@ -1,7 +1,7 @@
 """Build build/benchopedia.db from data/ and run every check against it.
 
 Two layers of checking:
-  1. schema.sql constraints, enforced as each row is inserted.
+  1. db/schema.sql constraints, enforced as each row is inserted.
   2. Shared check queries in checks/*.sql. Each is a
      SELECT that returns the rows violating a rule, so a passing check returns nothing.
 
@@ -65,7 +65,7 @@ def main():
     db = sqlite3.connect(DB_PATH)
     db.row_factory = sqlite3.Row
     db.execute("PRAGMA foreign_keys = ON")
-    db.executescript((ROOT / "schema.sql").read_text(encoding="utf-8"))
+    db.executescript((ROOT / "db" / "schema.sql").read_text(encoding="utf-8"))
 
     errors = []
     for benchmark_dir in sorted(p for p in DATA_DIR.iterdir() if p.is_dir()):

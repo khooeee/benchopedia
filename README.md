@@ -10,7 +10,7 @@ The encyclopedia of AI benchmarks: one readable page per benchmark, with an at-a
 python3 scripts/helpers/build_sqlite.py
 ```
 
-loads everything into `build/benchopedia.db` (SQLite) and fails if any constraint in `schema.sql` or any check query is violated. A check is a `SELECT` that returns the rows breaking a rule; shared checks live in `checks/`.
+loads everything into `build/benchopedia.db` (SQLite) and fails if any constraint in `db/schema.sql` or any check query is violated. A check is a `SELECT` that returns the rows breaking a rule; shared checks live in `checks/`.
 
 `scripts/build_site.py` calls this helper automatically before generating the website.
 
@@ -22,7 +22,7 @@ python3 data/swe-bench-verified/import.py
 
 ## Schema
 
-`schema.sql` is authoritative, including the `CHECK` constraints not shown here.
+`db/schema.sql` is authoritative, including the `CHECK` constraints not shown here.
 
 ```mermaid
 erDiagram
