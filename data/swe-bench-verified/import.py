@@ -13,7 +13,7 @@ from pathlib import Path
 DATASET = "princeton-nlp/SWE-bench_Verified"
 PAGE_SIZE = 100
 
-BENCHMARK_DIR = Path(__file__).resolve().parent.parent / "data" / "swe-bench-verified"
+BENCHMARK_DIR = Path(__file__).resolve().parent
 
 
 def get_json(url):

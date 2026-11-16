@@ -12,7 +12,11 @@ python3 scripts/build.py
 
 loads everything into `build/benchopedia.db` (SQLite) and fails if any constraint in `schema.sql` or any check query is violated. A check is a `SELECT` that returns the rows breaking a rule; shared checks live in `checks/`.
 
-`scripts/import_<benchmark>.py` re-snapshots a benchmark's tasks from its upstream dataset.
+`data/<benchmark>/import.py` re-snapshots a benchmark's tasks from its upstream dataset. For SWE-bench Verified:
+
+```sh
+python3 data/swe-bench-verified/import.py
+```
 
 ## Schema
 
