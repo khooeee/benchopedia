@@ -19,6 +19,8 @@ class Page(HTMLParser):
         self.title = False
         self.benchmarks = {}
         self.solution_filter = False
+        self.task_filter = False
+        self.benchmark_tasks = {}
         self.solution = None
         self.reading_solution = False
         self.section = None
@@ -30,10 +32,15 @@ class Page(HTMLParser):
         attrs = dict(attrs)
         if "data-benchmark" in attrs:
             self.benchmarks[attrs["data-benchmark"]] = attrs.get("data-has-solutions")
+            self.benchmark_tasks[attrs["data-benchmark"]] = attrs.get("data-has-tasks")
         if tag == "input" and attrs.get("id") == "filter-solutions":
             self.solution_filter = (attrs.get("type") == "checkbox"
                                     and attrs.get("name") == "has_solutions"
                                     and attrs.get("value") == "1")
+        if tag == "input" and attrs.get("id") == "filter-tasks":
+            self.task_filter = (attrs.get("type") == "checkbox"
+                                and attrs.get("name") == "has_tasks"
+                                and attrs.get("value") == "1")
         if "id" in attrs:
             self.ids.add(attrs["id"])
         if tag == "section":
@@ -68,13 +75,17 @@ def main():
     errors = []
     catalog = pages[OUT / "index.html"]
     expected_flags = {}
+    expected_tasks = {}
     for metadata in (ROOT / "data").glob("*/benchmark.json"):
         benchmark = json.loads(metadata.read_text(encoding="utf-8"))
         expected_flags[benchmark["id"]] = str(bool(benchmark["has_solutions"])).lower()
+        expected_tasks[benchmark["id"]] = str(bool(benchmark["task_count"])).lower()
         page = pages.get(OUT / "benchmarks" / benchmark["id"] / "index.html")
         assert page and "license" in page.sections, f"Missing License section: {benchmark['id']}"
     assert catalog.benchmarks == expected_flags, "Catalog solution flags differ from metadata"
     assert catalog.solution_filter, "Missing benchmark solutions checkbox"
+    assert catalog.benchmark_tasks == expected_tasks, "Catalog task flags differ from metadata"
+    assert catalog.task_filter, "Missing benchmark tasks checkbox"
     for path, page in pages.items():
         if not page.title:
             errors.append(f"{path}: missing title")

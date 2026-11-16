@@ -147,14 +147,14 @@ def home():
         for b in (b for b in ordered if b['released_on'].startswith(year)):
             url = benchmark_url(b)
             task_link = f'<a href="/tasks/?benchmark={quote(b["id"])}">tasks</a> · ' if b['task_count'] else ''
-            entries.append(f'''<li data-benchmark="{esc(b['id'])}" data-has-solutions="{str(bool(b['has_solutions'])).lower()}" data-search="{esc((b['name']+' '+b['id']+' '+b['summary']).lower())}">
+            entries.append(f'''<li data-benchmark="{esc(b['id'])}" data-has-tasks="{str(bool(b['task_count'])).lower()}" data-has-solutions="{str(bool(b['has_solutions'])).lower()}" data-search="{esc((b['name']+' '+b['id']+' '+b['summary']).lower())}">
 <div class="entry-title"><a href="{url}">{esc(b['name'])}</a></div>
 <div class="entry-links">{task_link}<a href="{esc(b['homepage_url'])}">website</a> · <a href="{esc(b['dataset_url'])}">dataset</a></div>
 <p class="entry-summary">{esc(b['summary'])}</p>
 <div class="entry-meta">Released: {esc(b['released_on'])} · Tasks: {task_count_label(b)}</div></li>''')
         groups.append(f'<section class="year-group"><h2>{year}</h2><ol class="entry-list">' + ''.join(entries) + '</ol></section>')
     body = f'''<h1>Benchmarks</h1>
-<form class="search-form" role="search"><label for="benchmark-search">Search:</label> <input type="search" id="benchmark-search" name="q" placeholder="Name or description"> <button type="submit">Search</button> <label class="solution-filter"><input type="checkbox" id="filter-solutions" name="has_solutions" value="1"> Has solutions</label></form>
+<form class="search-form" role="search"><label for="benchmark-search">Search:</label> <input type="search" id="benchmark-search" name="q" placeholder="Name or description"> <button type="submit">Search</button> <label class="benchmark-filter"><input type="checkbox" id="filter-tasks" name="has_tasks" value="1"> Has tasks</label> <label class="benchmark-filter"><input type="checkbox" id="filter-solutions" name="has_solutions" value="1"> Has solutions</label></form>
 <p class="list-summary"><span id="benchmark-count" role="status" aria-live="polite">{len(BENCHMARKS)} benchmark{'s' if len(BENCHMARKS)!=1 else ''}</span></p>
 <div id="catalog">{''.join(groups)}</div><div id="benchmark-empty" hidden><p>No benchmarks match your search.</p><button type="button" id="reset-benchmarks">Clear filters</button></div>'''
     write('index.html',layout('Benchmarks',body))
