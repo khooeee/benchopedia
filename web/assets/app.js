@@ -58,13 +58,13 @@
         setTimeout(() => { $('#copy-prompt').textContent = 'copy prompt'; }, 2000);
       } catch {
         status.classList.remove('sr-only');
-        status.textContent = 'Clipboard unavailable. Use the download prompt link instead.';
+        status.textContent = 'Clipboard unavailable. Select the problem statement below and copy it manually.';
       }
     });
   }
 
   if (!$('#question-search')) return;
-  const fields = {q:$('#question-search'),benchmark:$('#filter-benchmark'),sort:$('#question-sort')};
+  const fields = {q:$('#question-search'),benchmark:$('#filter-benchmark')};
   let questions = [], page = 1;
   const pageSize = 25;
   const initialParams = new URLSearchParams(location.search);
@@ -77,7 +77,7 @@
   function updateURL() {
     const params = new URLSearchParams();
     for (const [key, field] of Object.entries(fields)) {
-      if (field.value && !(key === 'sort' && field.value === 'id')) params.set(key, field.value);
+      if (field.value) params.set(key, field.value);
     }
     if (page > 1) params.set('page', page);
     history.replaceState(null, '', '/questions/' + (params.size ? '?' + params : ''));
@@ -89,14 +89,13 @@
       (!fields.benchmark.value || q.benchmark_id === fields.benchmark.value) &&
       terms.every((term) => q.search.includes(term))
     ));
-    if (fields.sort.value === 'title') filtered.sort((a,b) => a.title.localeCompare(b.title));
     const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
     page = Math.min(page, pages);
     const visible = filtered.slice((page-1)*pageSize, page*pageSize);
     const rows = visible.map((q) => {
       const url = escape(q.url);
-      const source = q.source_url ? ` · <a href="${escape(q.source_url)}">source</a>` : '';
-      return `<li><div class="entry-links"><a href="${url}">${escape(q.key)}</a> [<a href="${url}">question</a>${source}]</div><div class="entry-title"><a href="${url}">${escape(q.title)}</a></div></li>`;
+      const source = q.source_url ? ` [<a href="${escape(q.source_url)}">source</a>]` : '';
+      return `<li><div class="entry-links"><a href="${url}">${escape(q.key)}</a>${source}</div><div class="entry-title"><a href="${url}">${escape(q.title)}</a></div><div class="entry-meta">Benchmark: <a href="${escape(q.benchmark_url)}">${escape(q.benchmark_name)}</a></div></li>`;
     }).join('');
     $('#question-results').innerHTML = `<ol class="entry-list" start="${(page-1)*pageSize+1}">${rows}</ol>`;
     $('#question-results').hidden = !filtered.length;
@@ -111,7 +110,7 @@
   }
 
   function reset() {
-    for (const [key, field] of Object.entries(fields)) field.value = key === 'sort' ? 'id' : '';
+    for (const field of Object.values(fields)) field.value = '';
     page = 1;
     render();
   }

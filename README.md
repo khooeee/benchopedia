@@ -51,19 +51,19 @@ erDiagram
 ```sh
 python3 scripts/build_site.py # Rebuild and validate SQLite, then generate the website in dist/.
 python3 scripts/check_site.py # Check generated pages, internal links, and original prompt fidelity.
-node scripts/check_ui.cjs     # Test search, filters, sorting, and pagination without a browser.
+node scripts/check_ui.cjs     # Test search, filters, and pagination without a browser.
 python3 -m http.server 8765 --directory dist
 ```
 
 Open http://localhost:8765. Python 3.9+ with SQLite 3.37+ is required; there are no
-third-party build dependencies. JavaScript adds search, filters, sorting and
+third-party build dependencies. JavaScript adds search, filters and
 pagination. Articles and every question also have their own static HTML pages.
 The optional UI checks use Node.js and exercise the browser logic without external
 test packages.
 
 The website build first rebuilds and validates SQLite, then reads it to generate
 `dist/`. It includes the benchmark index, article pages, a question library,
-individual question pages and original prompt downloads. Generated files and the
+individual question pages and prompt copying. Generated files and the
 database are ignored by Git.
 
 The interface is a compact archive: benchmarks listed by release year, numbered

@@ -20,14 +20,13 @@ class Element {
 
 async function library(search = '', fail = false, records = data) {
   const elements = Object.fromEntries([
-    '#question-search','#filter-benchmark','#question-sort',
+    '#question-search','#filter-benchmark',
     '#question-results','#question-empty','#question-count','#page-status','#page-prev',
     '#page-next','.pagination','#clear-filters','[data-clear-questions]','.library-summary',
   ].map((key) => [key, new Element()]));
   elements['#question-search'].tagName = 'INPUT';
   for (const [key, values] of Object.entries({
     '#filter-benchmark':['',...new Set(records.map((q) => q.benchmark_id))],
-    '#question-sort':['id','title'],
   })) {
     elements[key].tagName = 'SELECT';
     elements[key].value = values[0];
@@ -77,6 +76,7 @@ function catalog(search = '') {
   const {elements:e,context:c} = await library();
   assert.equal(e['#question-count'].textContent,'1–25 of 500 questions');
   assert.equal(e['#page-prev'].disabled,true);
+  assert.ok(e['#question-results'].innerHTML.includes('Benchmark: <a href="/benchmarks/swe-bench-verified/">SWE-bench Verified</a>'));
   e['#page-next'].emit('click');
   assert.equal(e['#question-count'].textContent,'26–50 of 500 questions');
   assert.ok(e['#question-results'].innerHTML.includes('start="26"'));
@@ -91,15 +91,12 @@ function catalog(search = '') {
   assert.equal(e['#question-empty'].hidden,false);
   e['[data-clear-questions]'].emit('click');
   assert.equal(e['#question-count'].textContent,'1–25 of 500 questions');
-  e['#question-sort'].value = 'title';
-  e['#question-sort'].emit('change');
-  const first = [...data].sort((a,b) => a.title.localeCompare(b.title))[0];
-  assert.ok(e['#question-results'].innerHTML.indexOf(first.url) >= 0);
-  const other = {benchmark_id:'another-benchmark',key:'example-1',title:'Example task',prompt:'Example prompt',url:'/example-1/'};
+  const other = {benchmark_id:'another-benchmark',benchmark_name:'Another benchmark',benchmark_url:'/benchmarks/another-benchmark/',key:'example-1',title:'Example task',prompt:'Example prompt',url:'/example-1/'};
   const deep = await library('?benchmark=another-benchmark&page=999',false,[...data,other]);
   assert.equal(deep.elements['#question-count'].textContent,'1–1 of 1 questions');
   assert.equal(deep.elements['#page-status'].textContent,'Page 1 of 1');
   assert.ok(deep.elements['#question-results'].innerHTML.includes('Example task'));
+  assert.ok(deep.elements['#question-results'].innerHTML.includes('Benchmark: <a href="/benchmarks/another-benchmark/">Another benchmark</a>'));
   assert.ok(!deep.elements['#question-results'].innerHTML.includes('astropy__astropy-12907'));
   deep.elements['#question-search'].value = 'no-match';
   deep.elements['#question-search'].emit('input');
@@ -108,5 +105,5 @@ function catalog(search = '') {
   assert.equal(deep.elements['#question-count'].textContent,'1–25 of 501 questions');
   const failed = await library('',true);
   assert.ok(failed.elements['#question-count'].innerHTML.includes('/questions/all/'));
-  console.log('OK: benchmark search/categories, numbered question lists, combined filters, empty/reset states, sorting, pagination, deep links and fetch failure fallback');
+  console.log('OK: benchmark search/categories, numbered question lists, combined filters, empty/reset states, pagination, deep links and fetch failure fallback');
 })().catch((error) => {console.error(error);process.exitCode = 1;});

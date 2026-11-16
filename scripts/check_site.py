@@ -57,7 +57,6 @@ def main():
         assert q["prompt"] == originals[key], f"Search prompt changed: {key}"
         question_dir = OUT / q["url"].lstrip("/")
         assert (question_dir / "index.html").exists(), f"Missing question page: {key}"
-        assert (question_dir / "prompt.txt").read_bytes().decode() == originals[key], f"Download changed: {key}"
         # The raw prompt must round-trip through the inert JSON script.
         text = (question_dir / "index.html").read_text()
         embedded = text.split('<script type="application/json" id="prompt-data">', 1)[1].split('</script>', 1)[0]

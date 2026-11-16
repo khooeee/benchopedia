@@ -124,9 +124,10 @@ def task_list(rows, start=1):
     entries = []
     for q in rows:
         url = question_url(q)
-        source = f' · <a href="{esc(q["source_url"])}">source</a>' if q.get('source_url') else ''
-        entries.append(f'''<li><div class="entry-links"><a href="{url}">{esc(q['key'])}</a> [<a href="{url}">question</a>{source}]</div>
-<div class="entry-title"><a href="{url}">{esc(q['title'])}</a></div></li>''')
+        source = f' [<a href="{esc(q["source_url"])}">source</a>]' if q.get('source_url') else ''
+        entries.append(f'''<li><div class="entry-links"><a href="{url}">{esc(q['key'])}</a>{source}</div>
+<div class="entry-title"><a href="{url}">{esc(q['title'])}</a></div>
+<div class="entry-meta">Benchmark: <a href="{esc(q['benchmark_url'])}">{esc(q['benchmark_name'])}</a></div></li>''')
     return f'<ol class="entry-list" start="{start}">' + ''.join(entries) + '</ol>'
 
 
@@ -175,13 +176,13 @@ def library():
     body = f'''<h1>Questions</h1><p class="page-description">Original tasks from the benchmark datasets.</p>
 <section class="question-library" aria-label="Browse questions"><label class="question-search-label" for="question-search">Search:</label> <input type="search" id="question-search" placeholder="Question text or task ID">
 <div class="filter-bar">{selectors}<button type="button" id="clear-filters">Clear filters</button></div>
-<div class="library-summary"><p id="question-count" role="status" aria-live="polite">1–{min(25,len(QUESTIONS))} of {len(QUESTIONS):,} questions</p><label>Sort: <select id="question-sort"><option value="id">Task ID</option><option value="title">Title A–Z</option></select></label></div>
+<div class="library-summary"><p id="question-count" role="status" aria-live="polite">1–{min(25,len(QUESTIONS))} of {len(QUESTIONS):,} questions</p></div>
 <nav class="pagination" aria-label="Question pages"><button type="button" id="page-prev" disabled>Previous</button> <span id="page-status">Page 1 of {max(1,(len(QUESTIONS)+24)//25)}</span> <button type="button" id="page-next">Next</button></nav>
 <div id="question-results">{task_list(QUESTIONS[:25])}</div><div id="question-empty" hidden><p>No questions match your search.</p><button type="button" data-clear-questions>Clear filters</button></div>
 <p class="all-questions-link"><a href="/questions/all/">View all {len(QUESTIONS):,} questions on one page</a></p><noscript><p>Search and filters require JavaScript. Use the complete question index above to browse without it.</p></noscript></section>'''
     write('questions/index.html',layout('Questions',body,'questions'))
     write('questions/all/index.html',layout('All questions','<h1>All questions</h1><p><a href="/questions/">Search and filter questions</a></p>'+task_list(QUESTIONS),'questions'))
-    search_data = [{k:q[k] for k in ('benchmark_id','key','title','prompt','source_url')} | {'url':question_url(q)} for q in QUESTIONS]
+    search_data = [{k:q[k] for k in ('benchmark_id','benchmark_name','benchmark_url','key','title','prompt','source_url')} | {'url':question_url(q)} for q in QUESTIONS]
     write('assets/questions.json',json.dumps(search_data,ensure_ascii=False,separators=(',',':')))
 
 
@@ -189,16 +190,15 @@ def question_page(q, previous, following):
     b = next(b for b in BENCHMARKS if b['id']==q['benchmark_id'])
     prev_link = f'<a href="{question_url(previous)}">Previous question</a>' if previous else '<span></span>'
     next_link = f'<a href="{question_url(following)}">Next question</a>' if following else '<span></span>'
-    source_link = f'<a href="{esc(q["source_url"])}">source pull request</a> · ' if q.get('source_url') else ''
+    source_link = f'<a href="{esc(q["source_url"])}">source</a> · ' if q.get('source_url') else ''
     body = f'''<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Benchmarks</a> &gt; <a href="{benchmark_url(b)}">{esc(b['name'])}</a> &gt; <a href="/questions/?benchmark={quote(b['id'])}">Questions</a></nav>
 <p class="task-id">{esc(q['key'])}</p><h1>{esc(q['title'])}</h1>
-<p class="resource-links">[{source_link}<a href="prompt.txt" download>download prompt</a> · <button type="button" id="copy-prompt" class="link-button">copy prompt</button>]</p><p class="sr-only" role="status" id="copy-status"></p>
+<p class="resource-links">[{source_link}<button type="button" id="copy-prompt" class="link-button">copy prompt</button>]</p><p class="sr-only" role="status" id="copy-status"></p>
 <article class="prose"><section><h2>Problem statement</h2><div class="prompt-content">{markdown(q['prompt'])}</div></section></article>
 <nav class="question-adjacent" aria-label="Adjacent questions">{prev_link}<a href="/questions/?benchmark={quote(b['id'])}">Question index</a>{next_link}</nav>
 <script type="application/json" id="prompt-data">{json.dumps(q['prompt'],ensure_ascii=False).replace('<',chr(92)+'u003c')}</script>'''
     relative = question_url(q).lstrip('/')
     write(relative+'index.html',layout(q['title'],body,'questions',description=q['title']))
-    write(relative+'prompt.txt',q['prompt'])
 
 
 def about():
@@ -216,8 +216,12 @@ def main():
         db.row_factory = sqlite3.Row
         BENCHMARKS = [dict(r) for r in db.execute('SELECT * FROM benchmark ORDER BY name')]
         QUESTIONS = [dict(r) for r in db.execute('SELECT * FROM question ORDER BY benchmark_id, key')]
+    benchmark_by_id = {b['id']:b for b in BENCHMARKS}
     for q in QUESTIONS:
         q['title'] = question_title(q['prompt'])
+        benchmark = benchmark_by_id[q['benchmark_id']]
+        q['benchmark_name'] = benchmark['name']
+        q['benchmark_url'] = benchmark_url(benchmark)
     OUT.mkdir(exist_ok=True)
     # Only this generator's output directory is cleared.
     for child in OUT.iterdir():
