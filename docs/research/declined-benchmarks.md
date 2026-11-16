@@ -83,3 +83,26 @@ site cannot display; a text-only subset would not be the complete split.
 
 Resume only if the publishers permit Benchopedia to publish the questions and
 the site can display their images.
+
+## MT-Bench
+
+Reviewed 2026-11-16 for the 80 questions in
+[`question.jsonl` at lm-sys/FastChat `587d5cfa1609a43d192cedb8441cac3c17db105d`](https://github.com/lm-sys/FastChat/blob/587d5cfa1609a43d192cedb8441cac3c17db105d/fastchat/llm_judge/data/mt_bench/question.jsonl)
+and its GPT-4 reference answers.
+
+The repository is offered under the
+[Apache License 2.0](https://github.com/lm-sys/FastChat/blob/587d5cfa1609a43d192cedb8441cac3c17db105d/LICENSE),
+but that license can cover only text its contributors could license. The second
+turn of question 157 is a close paraphrase of an Analyze an Argument topic in
+ETS's published GRE pool, the memo from the marketing director of Lamfonz Pet
+Stores. It follows the topic sentence by sentence with the names and some words
+changed, and it repeats the topic's task instruction word for word. The pool
+states "Copyright © 2022 by ETS. All rights reserved." The paper says the authors
+manually designed the questions, and neither it nor the MT-Bench README notes
+this source or any permission from ETS. Publishing every question
+would republish that adapted text, and leaving the question out would publish
+an incomplete set. [GRE argument pool](https://www.ets.org/pdfs/gre/argument-pool.pdf)
+and [original paper](https://arxiv.org/abs/2306.05685)
+
+Resume if ETS permits redistribution of the adapted topic, or the publishers
+replace question 157 in a new release.
