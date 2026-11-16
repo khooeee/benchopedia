@@ -37,7 +37,7 @@ async function library(search = '', fail = false, records = data) {
   const elements = Object.fromEntries([
     '#task-search','#filter-benchmark',
     '#task-results','#task-empty','#task-count','#page-status','#page-prev',
-    '#page-next','.pagination','#clear-filters','[data-clear-tasks]','.library-summary',
+    '#page-next','.pagination','[data-clear-tasks]','.library-summary',
   ].map((key) => [key, new Element()]));
   elements['#task-search'].tagName = 'INPUT';
   for (const [key, values] of Object.entries({
@@ -131,7 +131,7 @@ function catalog(search = '') {
   deep.elements['#task-search'].value = 'no-match';
   deep.elements['#task-search'].emit('input');
   assert.equal(deep.elements['#task-count'].textContent,'0 tasks');
-  deep.elements['#clear-filters'].emit('click');
+  deep.elements['[data-clear-tasks]'].emit('click');
   assert.equal(deep.elements['#task-count'].textContent,`1–25 of ${data.length} tasks`);
   const single = await library('',false,[task('small', 1)]);
   assert.equal(single.elements['#task-count'].textContent,'1–1 of 1 tasks');
