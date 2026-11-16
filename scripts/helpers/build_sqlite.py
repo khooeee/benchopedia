@@ -8,18 +8,19 @@ Two layers of checking:
 Exits non-zero if anything fails.
 """
 
+from datetime import date
 import json
+import re
 import sqlite3
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT / "data"
-EXCLUSIONS_FILE = DATA_DIR / "exclusions.json"
 DB_PATH = ROOT / "build" / "benchopedia.db"
 
 MAX_VIOLATIONS_SHOWN = 10
-EXCLUSION_FIELDS = ("benchmark_id", "since", "reason", "restore_when")
+EXCLUSION_SECTIONS = ("Since", "Reason", "Restore when")
 
 
 def insert(db, table, row, origin, errors):
@@ -32,16 +33,35 @@ def insert(db, table, row, origin, errors):
 
 
 def load_exclusions(errors):
-    """Return the IDs of benchmarks whose tasks are deliberately left out."""
-    origin = EXCLUSIONS_FILE.relative_to(ROOT)
-    exclusions = json.loads(EXCLUSIONS_FILE.read_text(encoding="utf-8"))
-    for index, exclusion in enumerate(exclusions):
-        if not all(isinstance(exclusion.get(field), str) and exclusion[field].strip()
-                   for field in EXCLUSION_FIELDS):
-            errors.append(f"{origin}[{index}]: requires {', '.join(EXCLUSION_FIELDS)}")
-        elif not (DATA_DIR / exclusion["benchmark_id"]).is_dir():
-            errors.append(f"{origin}[{index}]: unknown benchmark {exclusion['benchmark_id']}")
-    return {exclusion.get("benchmark_id") for exclusion in exclusions}
+    """Discover and validate each benchmark's optional task-exclusion record."""
+    records = sorted(DATA_DIR.glob("*/exclusions.md"))
+    for record in records:
+        origin = record.relative_to(ROOT)
+        if not record.is_file():
+            errors.append(f"{origin}: must be a Markdown file")
+            continue
+        text = record.read_text(encoding="utf-8")
+        headings = list(re.finditer(r"^##[ \t]+(.+?)[ \t]*$", text, re.MULTILINE))
+        sections = {}
+        for index, heading in enumerate(headings):
+            name = heading.group(1)
+            end = headings[index + 1].start() if index + 1 < len(headings) else len(text)
+            if name in EXCLUSION_SECTIONS:
+                if name in sections:
+                    errors.append(f"{origin}: duplicate ## {name} section")
+                sections[name] = text[heading.end():end].strip()
+        if any(not sections.get(name) for name in EXCLUSION_SECTIONS):
+            errors.append(f"{origin}: requires nonempty ## Since, ## Reason, and ## Restore when sections")
+            continue
+        since = sections["Since"]
+        try:
+            if not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", since):
+                raise ValueError
+            date.fromisoformat(since)
+        except ValueError:
+            errors.append(f"{origin}: ## Since must contain a YYYY-MM-DD date")
+    # Even a malformed record excludes the tasks; its errors still fail the build.
+    return {record.parent.name for record in records}
 
 
 def load_benchmark(db, benchmark_dir, excluded, errors):
@@ -74,11 +94,12 @@ def load_benchmark(db, benchmark_dir, excluded, errors):
         # Excluded tasks stay out of the repository so they cannot be republished by accident.
         if tasks_file.exists():
             errors.append(f"{tasks_file.relative_to(ROOT)}: tasks are excluded in "
-                          f"{EXCLUSIONS_FILE.relative_to(ROOT)}; delete them or clear the exclusion")
+                          f"{(benchmark_dir / 'exclusions.md').relative_to(ROOT)}; "
+                          "delete them or clear the exclusion")
         return
     if not tasks_file.is_file():
         errors.append(f"{tasks_file.relative_to(ROOT)}: missing; record any exclusion in "
-                      f"{EXCLUSIONS_FILE.relative_to(ROOT)}")
+                      f"{(benchmark_dir / 'exclusions.md').relative_to(ROOT)}")
         return
     with tasks_file.open(encoding="utf-8", newline="") as f:
         for line_number, line in enumerate(f, start=1):

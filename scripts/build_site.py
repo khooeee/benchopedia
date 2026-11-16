@@ -135,7 +135,7 @@ def task_list(rows, start=1):
 
 
 def task_count_label(b):
-    # A null count means data/exclusions.json leaves the tasks out.
+    # A null count means data/<id>/exclusions.md leaves the tasks out.
     return f"{b['task_count']:,}" if b['task_count'] else 'not included'
 
 

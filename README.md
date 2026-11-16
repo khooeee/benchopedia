@@ -60,6 +60,7 @@ erDiagram
 python3 scripts/build_site.py # Rebuild and validate SQLite, then generate the website in dist/.
 python3 scripts/check_site.py # Check generated pages, links, prompts and solutions.
 node scripts/check_ui.cjs     # Test search, filters, and pagination without a browser.
+python3 scripts/check_exclusions.py # Check exclusion records and task-loading safeguards.
 python3 -m http.server 8765 --directory dist
 ```
 
@@ -102,8 +103,8 @@ Benchopedia's original code and documentation are available under the
 copyrights and license or access terms; the root license does not replace them.
 See each benchmark's `redistribution-review.md` and the
 [benchmark license review](docs/benchmark-license-review.md) for the reviewed
-terms and unresolved issues. [`data/exclusions.json`](data/exclusions.json)
-records benchmarks whose tasks are left out, and why.
+terms and unresolved issues. A benchmark’s optional `data/<id>/exclusions.md`
+records why its tasks are left out and what is required to restore them.
 
 ## Deployment
 
