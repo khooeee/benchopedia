@@ -1,4 +1,4 @@
-"""Snapshot SWE-bench Verified's questions into data/swe-bench-verified/questions.jsonl.
+"""Snapshot SWE-bench Verified's tasks into data/swe-bench-verified/tasks.jsonl.
 
 Refuses to run if the upstream dataset is no longer at the revision pinned in
 benchmark.json, so picking up an upstream change is always a deliberate edit.
@@ -46,7 +46,7 @@ def fetch_rows():
     return rows
 
 
-def to_question(row):
+def to_task(row):
     # Instance ids are "<owner>__<repo>-<pull request number>".
     pull_number = row["instance_id"].rsplit("-", 1)[1]
     return {
@@ -65,16 +65,16 @@ def main():
             "Update dataset_revision in benchmark.json to import the new revision."
         )
 
-    questions = sorted((to_question(row) for row in fetch_rows()), key=lambda q: q["key"])
+    tasks = sorted((to_task(row) for row in fetch_rows()), key=lambda q: q["key"])
 
     if upstream_revision() != before:
         sys.exit(f"{DATASET} changed during the import; run it again.")
 
-    out = BENCHMARK_DIR / "questions.jsonl"
+    out = BENCHMARK_DIR / "tasks.jsonl"
     with out.open("w", encoding="utf-8", newline="\n") as f:
-        for question in questions:
-            f.write(json.dumps(question, ensure_ascii=False) + "\n")
-    print(f"Wrote {len(questions)} questions to {out}")
+        for task in tasks:
+            f.write(json.dumps(task, ensure_ascii=False) + "\n")
+    print(f"Wrote {len(tasks)} tasks to {out}")
 
 
 if __name__ == "__main__":

@@ -38,13 +38,13 @@ def load_benchmark(db, benchmark_dir, errors):
     benchmark["sources"] = json.dumps(benchmark.get("sources"), ensure_ascii=False)
     insert(db, "benchmark", benchmark, benchmark_file.relative_to(ROOT), errors)
 
-    questions_file = benchmark_dir / "questions.jsonl"
-    with questions_file.open(encoding="utf-8", newline="") as f:
+    tasks_file = benchmark_dir / "tasks.jsonl"
+    with tasks_file.open(encoding="utf-8", newline="") as f:
         for line_number, line in enumerate(f, start=1):
-            question = json.loads(line)
-            question["benchmark_id"] = benchmark["id"]
-            origin = f"{questions_file.relative_to(ROOT)}:{line_number}"
-            insert(db, "question", question, origin, errors)
+            task = json.loads(line)
+            task["benchmark_id"] = benchmark["id"]
+            origin = f"{tasks_file.relative_to(ROOT)}:{line_number}"
+            insert(db, "task", task, origin, errors)
 
 
 def run_checks(db, errors):
@@ -74,13 +74,13 @@ def main():
     check_count = run_checks(db, errors)
 
     benchmarks = db.execute("SELECT count(*) FROM benchmark").fetchone()[0]
-    questions = db.execute("SELECT count(*) FROM question").fetchone()[0]
+    tasks = db.execute("SELECT count(*) FROM task").fetchone()[0]
     db.close()
 
     if errors:
         print("\n".join(errors), file=sys.stderr)
         sys.exit(f"\nFAILED: {len(errors)} problem line(s) above")
-    print(f"OK: {benchmarks} benchmark(s), {questions} question(s), {check_count} check(s) passed")
+    print(f"OK: {benchmarks} benchmark(s), {tasks} task(s), {check_count} check(s) passed")
     print(f"Built {DB_PATH.relative_to(ROOT)}")
 
 

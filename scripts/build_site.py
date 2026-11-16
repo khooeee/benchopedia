@@ -79,7 +79,7 @@ def markdown(text):
     return "\n".join(blocks)
 
 
-def question_title(prompt):
+def task_title(prompt):
     for line in re.sub(r"<!--.*?-->", "", prompt, flags=re.S).splitlines():
         line = line.strip().lstrip("# ")
         if line:
@@ -87,8 +87,8 @@ def question_title(prompt):
     return "Untitled task"
 
 
-def question_url(q):
-    return f'/benchmarks/{quote(q["benchmark_id"], safe="")}/questions/{quote(q["key"], safe="")}/'
+def task_url(q):
+    return f'/benchmarks/{quote(q["benchmark_id"], safe="")}/tasks/{quote(q["key"], safe="")}/'
 
 
 def benchmark_url(b):
@@ -102,7 +102,7 @@ def write(path, content):
 
 
 
-def layout(title, body, active="benchmarks", description="Descriptions, datasets, and questions for AI benchmarks."):
+def layout(title, body, active="benchmarks", description="Descriptions, datasets, and tasks for AI benchmarks."):
     def nav(key, url, label):
         current = ' aria-current="page"' if active == key else ''
         return f'<a href="{url}"{current}>{label}</a>'
@@ -114,7 +114,7 @@ def layout(title, body, active="benchmarks", description="Descriptions, datasets
 <link rel="stylesheet" href="/assets/style.css"><script src="/assets/app.js" defer></script></head>
 <body><a class="skip" href="#main">Skip to content</a>
 <header class="site-header"><div class="header-inner"><a class="site-name" href="/">Benchopedia</a><span class="site-description">The AI benchmark encyclopedia</span>
-<nav aria-label="Main navigation">{nav('benchmarks','/','Benchmarks')} <span aria-hidden="true">|</span> {nav('questions','/questions/','Questions')} <span aria-hidden="true">|</span> {nav('about','/about/','About')}</nav></div></header>
+<nav aria-label="Main navigation">{nav('benchmarks','/','Benchmarks')} <span aria-hidden="true">|</span> {nav('tasks','/tasks/','Tasks')} <span aria-hidden="true">|</span> {nav('about','/about/','About')}</nav></div></header>
 <main id="main" tabindex="-1">{body}</main>
 <footer><a href="/about/">About Benchopedia</a> · <a href="https://github.com/khooeee/benchopedia/issues">Corrections &amp; suggestions</a></footer>
 </body></html>'''
@@ -123,7 +123,7 @@ def layout(title, body, active="benchmarks", description="Descriptions, datasets
 def task_list(rows, start=1):
     entries = []
     for q in rows:
-        url = question_url(q)
+        url = task_url(q)
         source = f' [<a href="{esc(q["source_url"])}">source</a>]' if q.get('source_url') else ''
         entries.append(f'''<li><div class="entry-links"><a href="{url}">{esc(q['key'])}</a>{source}</div>
 <div class="entry-title"><a href="{url}">{esc(q['title'])}</a></div>
@@ -142,9 +142,9 @@ def home():
             url = benchmark_url(b)
             entries.append(f'''<li data-benchmark data-category="{esc(b['category'])}" data-search="{esc((b['name']+' '+b['id']+' '+b['summary']+' '+b['category']).lower())}">
 <div class="entry-title"><a href="{url}">{esc(b['name'])}</a></div>
-<div class="entry-links"><a href="/questions/?benchmark={quote(b['id'])}">questions</a> · <a href="{esc(b['homepage_url'])}">website</a> · <a href="{esc(b['dataset_url'])}">dataset</a></div>
+<div class="entry-links"><a href="/tasks/?benchmark={quote(b['id'])}">tasks</a> · <a href="{esc(b['homepage_url'])}">website</a> · <a href="{esc(b['dataset_url'])}">dataset</a></div>
 <p class="entry-summary">{esc(b['summary'])}</p>
-<div class="entry-meta">Category: {esc(b['category'])}<br>Released: {esc(b['released_on'])} · Questions: {b['question_count']:,}</div></li>''')
+<div class="entry-meta">Category: {esc(b['category'])}<br>Released: {esc(b['released_on'])} · Tasks: {b['task_count']:,}</div></li>''')
         groups.append(f'<section class="year-group"><h2>{year}</h2><ol class="entry-list">' + ''.join(entries) + '</ol></section>')
     body = f'''<h1>AI benchmarks</h1>
 <form class="search-form" role="search"><label for="benchmark-search">Search:</label> <input type="search" id="benchmark-search" name="q" placeholder="Name, description, or category"> <label for="benchmark-category">Category:</label> <select id="benchmark-category" name="category"><option value="">All categories</option>{options}</select> <button type="submit">Search</button></form>
@@ -154,17 +154,17 @@ def home():
 
 
 def benchmark_page(b):
-    qs = [q for q in QUESTIONS if q['benchmark_id']==b['id']]
-    facts = [('Category',b['category']),('Released',b['released_on']),('Questions',f'{len(qs):,}')]
+    qs = [q for q in TASKS if q['benchmark_id']==b['id']]
+    facts = [('Category',b['category']),('Released',b['released_on']),('Tasks',f'{len(qs):,}')]
     sources = json.loads(b['sources'])
     source_list = ''.join(f'<li><a href="{esc(s["url"])}">{esc(s["title"])}</a></li>' for s in sources)
     body = f'''<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Benchmarks</a> &gt; {esc(b['name'])}</nav>
-<h1>{esc(b['name'])}</h1><p class="resource-links">[<a href="/questions/?benchmark={quote(b['id'])}">browse {len(qs):,} questions</a> · <a href="{esc(b['homepage_url'])}">official website</a> · <a href="{esc(b['dataset_url'])}">dataset</a>]</p>
+<h1>{esc(b['name'])}</h1><p class="resource-links">[<a href="/tasks/?benchmark={quote(b['id'])}">browse {len(qs):,} tasks</a> · <a href="{esc(b['homepage_url'])}">official website</a> · <a href="{esc(b['dataset_url'])}">dataset</a>]</p>
 <p>{esc(b['summary'])}</p><dl class="metadata">{''.join(f'<div><dt>{esc(k)}:</dt><dd>{esc(v)}</dd></div>' for k,v in facts)}</dl>
 <article class="prose"><section id="overview"><h2>Overview</h2>{markdown(b['overview'])}</section>
 <section id="methodology"><h2>Methodology</h2>{markdown(b['methodology'])}</section>
 <section id="scoring"><h2>Scoring</h2>{markdown(b['scoring'])}</section>
-<section id="dataset"><h2>Dataset</h2><p>{len(qs):,} questions in this snapshot. <a href="/questions/?benchmark={quote(b['id'])}">Browse questions</a> or visit <a href="{esc(b['dataset_url'])}">the upstream dataset</a>.</p></section>
+<section id="dataset"><h2>Dataset</h2><p>{len(qs):,} tasks in this snapshot. <a href="/tasks/?benchmark={quote(b['id'])}">Browse tasks</a> or visit <a href="{esc(b['dataset_url'])}">the upstream dataset</a>.</p></section>
 <section id="limitations"><h2>Limitations</h2>{markdown(b['limitations'])}</section>
 <section id="sources"><h2>Sources</h2><ol>{source_list}</ol><details class="snapshot"><summary>Dataset revision</summary><p>Snapshot of <a href="{esc(b['dataset_url'])}">the upstream dataset</a> at revision <code>{esc(b['dataset_revision'])}</code>.</p></details></section></article>'''
     write(f'benchmarks/{b["id"]}/index.html',layout(b['name'],body,description=b['summary']))
@@ -173,52 +173,52 @@ def benchmark_page(b):
 def library():
     option = lambda val,label: f'<option value="{esc(val)}">{esc(label)}</option>'
     selectors = f'<label>Benchmark: <select id="filter-benchmark"><option value="">All benchmarks</option>{"".join(option(b["id"],b["name"]) for b in BENCHMARKS)}</select></label>'
-    body = f'''<h1>Questions</h1><p class="page-description">Original tasks from the benchmark datasets.</p>
-<section class="question-library" aria-label="Browse questions"><label class="question-search-label" for="question-search">Search:</label> <input type="search" id="question-search" placeholder="Question text or task ID">
+    body = f'''<h1>Tasks</h1><p class="page-description">Original tasks from the benchmark datasets.</p>
+<section class="task-library" aria-label="Browse tasks"><label class="task-search-label" for="task-search">Search:</label> <input type="search" id="task-search" placeholder="Task text or task ID">
 <div class="filter-bar">{selectors}<button type="button" id="clear-filters">Clear filters</button></div>
-<div class="library-summary"><p id="question-count" role="status" aria-live="polite">1–{min(25,len(QUESTIONS))} of {len(QUESTIONS):,} questions</p></div>
-<nav class="pagination" aria-label="Question pages"><button type="button" id="page-prev" disabled>Previous</button> <span id="page-status">Page 1 of {max(1,(len(QUESTIONS)+24)//25)}</span> <button type="button" id="page-next">Next</button></nav>
-<div id="question-results">{task_list(QUESTIONS[:25])}</div><div id="question-empty" hidden><p>No questions match your search.</p><button type="button" data-clear-questions>Clear filters</button></div>
-<p class="all-questions-link"><a href="/questions/all/">View all {len(QUESTIONS):,} questions on one page</a></p><noscript><p>Search and filters require JavaScript. Use the complete question index above to browse without it.</p></noscript></section>'''
-    write('questions/index.html',layout('Questions',body,'questions'))
-    write('questions/all/index.html',layout('All questions','<h1>All questions</h1><p><a href="/questions/">Search and filter questions</a></p>'+task_list(QUESTIONS),'questions'))
-    search_data = [{k:q[k] for k in ('benchmark_id','benchmark_name','benchmark_url','key','title','prompt','source_url')} | {'url':question_url(q)} for q in QUESTIONS]
-    write('assets/questions.json',json.dumps(search_data,ensure_ascii=False,separators=(',',':')))
+<div class="library-summary"><p id="task-count" role="status" aria-live="polite">1–{min(25,len(TASKS))} of {len(TASKS):,} tasks</p></div>
+<nav class="pagination" aria-label="Task pages"><button type="button" id="page-prev" disabled>Previous</button> <span id="page-status">Page 1 of {max(1,(len(TASKS)+24)//25)}</span> <button type="button" id="page-next">Next</button></nav>
+<div id="task-results">{task_list(TASKS[:25])}</div><div id="task-empty" hidden><p>No tasks match your search.</p><button type="button" data-clear-tasks>Clear filters</button></div>
+<p class="all-tasks-link"><a href="/tasks/all/">View all {len(TASKS):,} tasks on one page</a></p><noscript><p>Search and filters require JavaScript. Use the complete task index above to browse without it.</p></noscript></section>'''
+    write('tasks/index.html',layout('Tasks',body,'tasks'))
+    write('tasks/all/index.html',layout('All tasks','<h1>All tasks</h1><p><a href="/tasks/">Search and filter tasks</a></p>'+task_list(TASKS),'tasks'))
+    search_data = [{k:q[k] for k in ('benchmark_id','benchmark_name','benchmark_url','key','title','prompt','source_url')} | {'url':task_url(q)} for q in TASKS]
+    write('assets/tasks.json',json.dumps(search_data,ensure_ascii=False,separators=(',',':')))
 
 
-def question_page(q, previous, following):
+def task_page(q, previous, following):
     b = next(b for b in BENCHMARKS if b['id']==q['benchmark_id'])
-    prev_link = f'<a href="{question_url(previous)}">Previous question</a>' if previous else '<span></span>'
-    next_link = f'<a href="{question_url(following)}">Next question</a>' if following else '<span></span>'
+    prev_link = f'<a href="{task_url(previous)}">Previous task</a>' if previous else '<span></span>'
+    next_link = f'<a href="{task_url(following)}">Next task</a>' if following else '<span></span>'
     source_link = f'<a href="{esc(q["source_url"])}">source</a> · ' if q.get('source_url') else ''
-    body = f'''<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Benchmarks</a> &gt; <a href="{benchmark_url(b)}">{esc(b['name'])}</a> &gt; <a href="/questions/?benchmark={quote(b['id'])}">Questions</a></nav>
+    body = f'''<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Benchmarks</a> &gt; <a href="{benchmark_url(b)}">{esc(b['name'])}</a> &gt; <a href="/tasks/?benchmark={quote(b['id'])}">Tasks</a></nav>
 <p class="task-id">{esc(q['key'])}</p><h1>{esc(q['title'])}</h1>
 <p class="resource-links">[{source_link}<button type="button" id="copy-prompt" class="link-button">copy prompt</button>]</p><p class="sr-only" role="status" id="copy-status"></p>
 <article class="prose"><section><h2>Problem statement</h2><div class="prompt-content">{markdown(q['prompt'])}</div></section></article>
-<nav class="question-adjacent" aria-label="Adjacent questions">{prev_link}<a href="/questions/?benchmark={quote(b['id'])}">Question index</a>{next_link}</nav>
+<nav class="task-adjacent" aria-label="Adjacent tasks">{prev_link}<a href="/tasks/?benchmark={quote(b['id'])}">Task index</a>{next_link}</nav>
 <script type="application/json" id="prompt-data">{json.dumps(q['prompt'],ensure_ascii=False).replace('<',chr(92)+'u003c')}</script>'''
-    relative = question_url(q).lstrip('/')
-    write(relative+'index.html',layout(q['title'],body,'questions',description=q['title']))
+    relative = task_url(q).lstrip('/')
+    write(relative+'index.html',layout(q['title'],body,'tasks',description=q['title']))
 
 
 def about():
-    body = '''<h1>About Benchopedia</h1><article class="prose"><p>Benchopedia is a reference for AI benchmarks: what they measure, how they are scored, and the questions they contain.</p>
-<section id="sources"><h2>Sources and scope</h2><p>Articles cite original documentation and datasets. Questions preserve the imported prompts, and dataset counts are calculated from the imported snapshot.</p></section>
+    body = '''<h1>About Benchopedia</h1><article class="prose"><p>Benchopedia is a reference for AI benchmarks: what they measure, how they are scored, and the tasks they contain.</p>
+<section id="sources"><h2>Sources and scope</h2><p>Articles cite original documentation and datasets. Tasks preserve the imported prompts, and dataset counts are calculated from the imported snapshot.</p></section>
 <section id="contribute"><h2>Corrections and suggestions</h2><p>To report an error or suggest a benchmark, <a href="https://github.com/khooeee/benchopedia/issues">open an issue on GitHub</a>.</p></section></article>'''
     write('about/index.html',layout('About',body,'about'))
-    write('404.html',layout('Page not found','<h1>Page not found</h1><p>This address does not match a benchmark or question.</p><p><a href="/">Return to the benchmark index</a></p>'))
+    write('404.html',layout('Page not found','<h1>Page not found</h1><p>This address does not match a benchmark or task.</p><p><a href="/">Return to the benchmark index</a></p>'))
 
 
 def main():
-    global BENCHMARKS, QUESTIONS
+    global BENCHMARKS, TASKS
     build_database()
     with sqlite3.connect(ROOT/'build'/'benchopedia.db') as db:
         db.row_factory = sqlite3.Row
         BENCHMARKS = [dict(r) for r in db.execute('SELECT * FROM benchmark ORDER BY name')]
-        QUESTIONS = [dict(r) for r in db.execute('SELECT * FROM question ORDER BY benchmark_id, key')]
+        TASKS = [dict(r) for r in db.execute('SELECT * FROM task ORDER BY benchmark_id, key')]
     benchmark_by_id = {b['id']:b for b in BENCHMARKS}
-    for q in QUESTIONS:
-        q['title'] = question_title(q['prompt'])
+    for q in TASKS:
+        q['title'] = task_title(q['prompt'])
         benchmark = benchmark_by_id[q['benchmark_id']]
         q['benchmark_name'] = benchmark['name']
         q['benchmark_url'] = benchmark_url(benchmark)
@@ -234,9 +234,9 @@ def main():
     for b in BENCHMARKS:
         benchmark_page(b)
     library()
-    for i,q in enumerate(QUESTIONS):
+    for i,q in enumerate(TASKS):
         same = lambda other: other if other and other['benchmark_id']==q['benchmark_id'] else None
-        question_page(q,same(QUESTIONS[i-1] if i else None),same(QUESTIONS[i+1] if i+1<len(QUESTIONS) else None))
+        task_page(q,same(TASKS[i-1] if i else None),same(TASKS[i+1] if i+1<len(TASKS) else None))
     about()
     print(f'Built {len(list(OUT.rglob("*.html"))):,} pages in dist/')
 

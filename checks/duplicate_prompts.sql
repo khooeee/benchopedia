@@ -1,5 +1,5 @@
--- No two questions in a benchmark share the same prompt.
+-- No two tasks in a benchmark share the same prompt.
 SELECT benchmark_id, group_concat(key, ', ') AS keys
-FROM question
+FROM task
 GROUP BY benchmark_id, prompt
 HAVING count(*) > 1;

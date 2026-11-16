@@ -8,11 +8,11 @@ CREATE TABLE benchmark (
     category         TEXT NOT NULL CHECK (trim(category) <> ''),
     homepage_url    TEXT NOT NULL CHECK (homepage_url LIKE 'https://%'),
     dataset_url      TEXT NOT NULL CHECK (dataset_url LIKE 'https://%'),
-    -- Upstream revision that data/<id>/questions.jsonl was imported from.
+    -- Upstream revision that data/<id>/tasks.jsonl was imported from.
     dataset_revision TEXT NOT NULL CHECK (trim(dataset_revision) <> ''),
     released_on      TEXT NOT NULL CHECK (released_on = date(released_on)),
-    -- Declared size; checks/question_count.sql compares it to the rows actually loaded.
-    question_count   INTEGER NOT NULL CHECK (question_count > 0),
+    -- Declared size; checks/task_count.sql compares it to the rows actually loaded.
+    task_count       INTEGER NOT NULL CHECK (task_count > 0),
     -- Article sections for the benchmark's encyclopedia page.
     overview         TEXT NOT NULL CHECK (trim(overview) <> ''),
     methodology      TEXT NOT NULL CHECK (trim(methodology) <> ''),
@@ -22,9 +22,9 @@ CREATE TABLE benchmark (
                                          AND json_array_length(sources) > 0)
 ) STRICT;
 
-CREATE TABLE question (
+CREATE TABLE task (
     benchmark_id TEXT NOT NULL REFERENCES benchmark (id),
-    -- The benchmark's own identifier for the question.
+    -- The benchmark's own identifier for the task.
     key          TEXT NOT NULL CHECK (key <> '' AND key = trim(key)),
     -- What the model is given.
     prompt       TEXT NOT NULL CHECK (trim(prompt) <> ''),

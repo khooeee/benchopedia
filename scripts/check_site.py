@@ -45,25 +45,25 @@ def main():
                 errors.append(f"{path}: missing {href}")
             elif url.fragment and target in pages and url.fragment not in pages[target].ids:
                 errors.append(f"{path}: missing anchor {href}")
-    questions = json.loads((OUT / "assets/questions.json").read_text())
+    tasks = json.loads((OUT / "assets/tasks.json").read_text())
     originals = {}
-    for path in (ROOT / "data").glob("*/questions.jsonl"):
+    for path in (ROOT / "data").glob("*/tasks.jsonl"):
         for line in path.read_text().splitlines():
-            question = json.loads(line)
-            originals[(path.parent.name, question["key"])] = question["prompt"]
-    assert len(questions) == len(originals), "Search index is incomplete"
-    for q in questions:
+            task = json.loads(line)
+            originals[(path.parent.name, task["key"])] = task["prompt"]
+    assert len(tasks) == len(originals), "Search index is incomplete"
+    for q in tasks:
         key = (q["benchmark_id"], q["key"])
         assert q["prompt"] == originals[key], f"Search prompt changed: {key}"
-        question_dir = OUT / q["url"].lstrip("/")
-        assert (question_dir / "index.html").exists(), f"Missing question page: {key}"
+        task_dir = OUT / q["url"].lstrip("/")
+        assert (task_dir / "index.html").exists(), f"Missing task page: {key}"
         # The raw prompt must round-trip through the inert JSON script.
-        text = (question_dir / "index.html").read_text()
+        text = (task_dir / "index.html").read_text()
         embedded = text.split('<script type="application/json" id="prompt-data">', 1)[1].split('</script>', 1)[0]
         assert json.loads(embedded) == originals[key], f"Copy prompt changed: {key}"
     if errors:
         raise SystemExit("\n".join(errors))
-    print(f"OK: {len(pages)} pages, all internal links/anchors, {len(questions)} question routes and exact original prompts")
+    print(f"OK: {len(pages)} pages, all internal links/anchors, {len(tasks)} task routes and exact original prompts")
 
 
 if __name__ == "__main__":
