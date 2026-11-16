@@ -1,0 +1,41 @@
+{
+  "id": "ds-1000",
+  "name": "DS-1000",
+  "summary": "1,000 data science coding problems adapted from Stack Overflow questions about seven Python libraries, including NumPy, pandas, and Matplotlib, each with a reference solution.",
+  "homepage_url": "https://ds1000-code-gen.github.io/",
+  "dataset_url": "https://huggingface.co/datasets/xlangai/DS-1000",
+  "dataset_revision": "4416080ac5cb80bdf7576aefb8f9a0b4d5426a44",
+  "released_on": "2022-11-18",
+  "task_count": 1000,
+  "has_solutions": true,
+  "overview": "DS-1000 tests code generation for everyday data science work in Python. Its 1,000 problems use seven libraries: NumPy, pandas, TensorFlow, PyTorch, SciPy, scikit-learn, and Matplotlib. Each problem asks for a short piece of code that fills a gap in a given code context, and the answer is checked by running it against test cases and, for some problems, by checking which APIs or constructs it uses. The benchmark was introduced in November 2022. [Original paper](https://arxiv.org/abs/2211.11501)\n\nThe authors scraped Stack Overflow questions under each library's tag, kept popular ones with an accepted answer, and had annotators score a random pool of 4,500 for clarity, usefulness, difficulty, and testability. The 451 problems they kept were rewritten to be unambiguous and given an executable context, and reference solutions were adapted from high-vote answers. Matplotlib questions, which often rely on example figures, were rewritten as code and text. Because models may have seen the original questions in training, more than half of the problems are perturbations: surface perturbations paraphrase the problem or change its code context without changing the solution, semantic perturbations change what must be computed, and difficult rewrites combine several changes. [Original paper](https://arxiv.org/abs/2211.11501)",
+  "methodology": "This snapshot contains all 1,000 problems in the simplified format at the pinned dataset revision, which matches data/ds1000.jsonl.gz in the GitHub repository. By library there are 291 pandas, 220 NumPy, 155 Matplotlib, 115 scikit-learn, 106 SciPy, 68 PyTorch, and 45 TensorFlow problems. The upstream metadata labels 452 problems Origin, 152 Surface, 234 Semantic, and 162 Difficult-Rewrite; the paper counts 451 original problems and 235 semantic perturbations. The simplified format, released in April 2024, keeps only the Completion prompts. It drops the Insertion (fill-in-the-middle) prompts the paper chose as its official format, merges the tests into one code_context field per problem, and moves the environment to Python 3.10 with newer library versions. [Dataset card](https://huggingface.co/datasets/xlangai/DS-1000/blob/4416080ac5cb80bdf7576aefb8f9a0b4d5426a44/README.md) and [repository README](https://github.com/xlang-ai/DS-1000/blob/b39aab71da6d23ef8d3cac59a7c5f834516ab334/README.md)\n\nEach Task Prompt begins with a heading built from the upstream metadata: the library as upstream spells it, such as Numpy or Sklearn, the problem's number within that library, and its perturbation type, with the original problem's number for perturbations. The upstream prompt follows verbatim inside a fenced block; the heading and fence are display formatting. Most prompts start with Problem:, describe the task with example data, and end with setup code and a marker where the solution goes, such as BEGIN SOLUTION followed by <code>. Matplotlib prompts are Python code whose comments describe the plot and end with # SOLUTION START. Problem 305's prompt begins with a stray Origin line, and the metadata for Sklearn problem 54 names problem 53 as its origin although 53 is itself a perturbation; both are kept as published. [Repository README](https://github.com/xlang-ai/DS-1000/blob/b39aab71da6d23ef8d3cac59a7c5f834516ab334/README.md)\n\nThe Solution is the upstream reference_code, the code that fills the gap. The test code in code_context is not imported. Four pairs of problems have identical prompts: pandas 137 and 179, pandas 138 and 180, Matplotlib 4 and 5, and Matplotlib 110 and 111. Each keeps its own key; the pandas pairs and Matplotlib 4 and 5 have different tests. IDs are problem- followed by the three-digit upstream problem_id, such as problem-000. Prompt and solution source links point to the pinned data file without per-problem anchors. The environment link points to the conda environment file for the official test script. The importer uses only Python's standard library and can be rerun with python3 data/ds-1000/import.py.",
+  "scoring": "A problem is solved when the generated code passes every check in its code_context. The official test script appends the generated code to that context, then calls test_execution and, for the 159 problems that define it, test_string. test_execution inserts the code into the problem's setup, runs it on each generated test input, and compares the result with the reference solution's output. test_string enforces surface-form constraints, such as requiring a particular API or forbidding loops. Matplotlib tests save the figure and compare it with the reference figure, falling back to checks on the plot's properties. Each program runs in its own process with a 120-second limit. The script reports the share of problems solved overall, by library, and by perturbation type. [Test script](https://github.com/xlang-ai/DS-1000/blob/b39aab71da6d23ef8d3cac59a7c5f834516ab334/test_ds1000.py) and [repository README](https://github.com/xlang-ai/DS-1000/blob/b39aab71da6d23ef8d3cac59a7c5f834516ab334/README.md)\n\nThe paper reports pass@1 estimated from 40 samples per problem at temperature 0.2, with </code> and # SOLUTION END as stop sequences. In a manual review of Codex-002 predictions, 1.8% of the predictions that passed the automatic checks were judged incorrect, and 0.5% of those that failed were judged correct. [Original paper](https://arxiv.org/abs/2211.11501)\n\nCompare results that use the same format, Insertion or Completion, the same library versions, and the same answer post-processing. Benchopedia stores the problems and reference solutions. It does not run evaluations or publish model scores for this snapshot.",
+  "limitations": "Problems average about 1.6 test cases, so the checks can accept some incorrect code or reject some correct code, as the paper's manual review found. The README notes that a small number of errors and ambiguities are expected in human-labeled data, that TensorFlow and Matplotlib executions can carry state between problems unless each runs in its own process, and that some solutions that are wrong only in their imports may pass. [Original paper](https://arxiv.org/abs/2211.11501) and [repository README](https://github.com/xlang-ai/DS-1000/blob/b39aab71da6d23ef8d3cac59a7c5f834516ab334/README.md)\n\nThe problems cover seven Python libraries and short completions, about 3.6 lines of reference code on average, so a score does not establish skill with longer programs or other languages. Library behavior changes over time, so results depend on the versions installed. The original questions and their answers are public on Stack Overflow, and the perturbations reduce but do not remove the chance that a model has seen them. Results from the paper's Insertion format and from the simplified Completion format are not directly comparable. [Original paper](https://arxiv.org/abs/2211.11501)",
+  "sources": [
+    {
+      "title": "DS-1000 · Original paper",
+      "url": "https://arxiv.org/abs/2211.11501"
+    },
+    {
+      "title": "DS-1000 · Project page",
+      "url": "https://ds1000-code-gen.github.io/"
+    },
+    {
+      "title": "DS-1000 · Dataset card at the imported revision",
+      "url": "https://huggingface.co/datasets/xlangai/DS-1000/blob/4416080ac5cb80bdf7576aefb8f9a0b4d5426a44/README.md"
+    },
+    {
+      "title": "DS-1000 · Repository README",
+      "url": "https://github.com/xlang-ai/DS-1000/blob/b39aab71da6d23ef8d3cac59a7c5f834516ab334/README.md"
+    },
+    {
+      "title": "DS-1000 · Test script",
+      "url": "https://github.com/xlang-ai/DS-1000/blob/b39aab71da6d23ef8d3cac59a7c5f834516ab334/test_ds1000.py"
+    },
+    {
+      "title": "DS-1000 · Test environment",
+      "url": "https://github.com/xlang-ai/DS-1000/blob/b39aab71da6d23ef8d3cac59a7c5f834516ab334/environment.yml"
+    }
+  ]
+}
