@@ -4,6 +4,8 @@ The encyclopedia of AI benchmarks: one readable page per benchmark, with an at-a
 
 ## How it works
 
+For the full import and verification process, see [Adding a benchmark](docs/adding-a-benchmark.md).
+
 `data/` is the source of truth: one directory per benchmark, holding `benchmark.json` and `tasks.jsonl`.
 
 ```sh
@@ -66,8 +68,9 @@ python3 -m http.server 8765 --directory dist
 Open http://localhost:8765. Python 3.9+ with SQLite 3.37+ is required; there are no
 third-party build dependencies. JavaScript adds search, filters and
 pagination. Articles and every task also have their own static HTML pages.
-The optional UI checks use Node.js and exercise the browser logic without external
-test packages.
+The optional UI checks use Node.js and exercise the browser logic with fictional
+fixtures, without external test packages or a generated site. They do not depend
+on which benchmarks have been imported.
 
 The website build first rebuilds and validates SQLite, then reads it to generate
 `dist/`. It includes the benchmark index, article pages, a task library,
