@@ -5,6 +5,8 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from helpers.site_path import output_path
+
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "dist"
 
@@ -63,7 +65,7 @@ def main():
             url = urlsplit(href)
             if url.scheme or url.netloc or not href:
                 continue
-            target = OUT / url.path.lstrip("/") if url.path.startswith("/") else path.parent / url.path
+            target = OUT / output_path(url.path) if url.path.startswith("/") else path.parent / url.path
             if target.is_dir():
                 target = target / "index.html"
             if not target.exists():
@@ -85,7 +87,7 @@ def main():
     for q in tasks:
         key = (q["benchmark_id"], q["key"])
         assert q["prompt"] == originals[key]["prompt"], f"Search prompt changed: {key}"
-        task_dir = OUT / q["url"].lstrip("/")
+        task_dir = OUT / output_path(q["url"])
         assert (task_dir / "index.html").exists(), f"Missing task page: {key}"
         assert pages[task_dir / "index.html"].solution == originals[key].get("solution"), f"Solution changed: {key}"
         page = pages[task_dir / "index.html"]

@@ -2,6 +2,8 @@
 (() => {
   'use strict';
   const $ = (selector) => document.querySelector(selector);
+  const basePath = $('meta[name="site-base-path"]')?.content || '';
+  const siteURL = (path) => basePath + path;
   const escape = (value) => String(value).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
   document.addEventListener('keydown', (event) => {
@@ -30,7 +32,7 @@
       $('#benchmark-empty').hidden = count !== 0;
       const params = new URLSearchParams();
       if (search.value) params.set('q', search.value);
-      history.replaceState(null, '', '/' + (params.size ? '?' + params : ''));
+      history.replaceState(null, '', siteURL('/') + (params.size ? '?' + params : ''));
     }
     search.addEventListener('input', filterBenchmarks);
     $('.search-form').addEventListener('submit', (event) => { event.preventDefault(); filterBenchmarks(); });
@@ -60,7 +62,7 @@
       if (field.value) params.set(key, field.value);
     }
     if (page > 1) params.set('page', page);
-    history.replaceState(null, '', '/tasks/' + (params.size ? '?' + params : ''));
+    history.replaceState(null, '', siteURL('/tasks/') + (params.size ? '?' + params : ''));
   }
 
   function render() {
@@ -112,7 +114,7 @@
   Object.values(fields).forEach((field) => { field.disabled = true; });
   benchmarkAutocomplete.input.disabled = true;
   $('#page-next').disabled = true;
-  fetch('/assets/tasks.json').then((response) => {
+  fetch(siteURL('/assets/tasks.json')).then((response) => {
     if (!response.ok) throw new Error('Task index could not be loaded');
     return response.json();
   }).then((data) => {
@@ -121,7 +123,7 @@
     benchmarkAutocomplete.input.disabled = false;
     render();
   }).catch(() => {
-    $('#task-count').innerHTML = 'Search is unavailable. <a href="/tasks/all/">Browse all tasks instead →</a>';
+    $('#task-count').innerHTML = `Search is unavailable. <a href="${escape(siteURL('/tasks/all/'))}">Browse all tasks instead →</a>`;
     $('.pagination').hidden = true;
   });
 })();
