@@ -65,3 +65,21 @@ its redistribution. [Original paper](https://arxiv.org/abs/1905.07830) and
 
 Resume only if wikiHow permits redistribution of the WikiHow-derived contexts,
 or the dispute is resolved in a way that clears them.
+
+## Humanity's Last Exam
+
+Reviewed 2026-11-16 for the 2,500-question test split of
+[`cais/hle` at `5a81a4c7271a2a2a312b9a690f0c2fde837e4c29`](https://huggingface.co/datasets/cais/hle/blob/5a81a4c7271a2a2a312b9a690f0c2fde837e4c29/README.md).
+
+The dataset card declares MIT, but it also asks: "Please help us protect the
+integrity of this benchmark by not publicly sharing, re-uploading, or
+distributing the dataset." The data files are gated and return HTTP 401 without
+an accepted access request. Republishing the questions in a public repository
+and on a crawlable website would go against that request and around the gate.
+
+The paper also reports that around 14% of questions require an image, which the
+site cannot display; a text-only subset would not be the complete split.
+[Paper](https://arxiv.org/abs/2501.14249)
+
+Resume only if the publishers permit Benchopedia to publish the questions and
+the site can display their images.
