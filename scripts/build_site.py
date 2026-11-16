@@ -154,7 +154,7 @@ def home():
 <div class="entry-meta">Released: {esc(b['released_on'])} · Tasks: {task_count_label(b)}</div></li>''')
         groups.append(f'<section class="year-group"><h2>{year}</h2><ol class="entry-list">' + ''.join(entries) + '</ol></section>')
     body = f'''<h1>Benchmarks</h1>
-<form class="search-form" role="search"><label for="benchmark-search">Search:</label> <input type="search" id="benchmark-search" name="q" placeholder="Name or description"> <button type="submit">Search</button> <label class="benchmark-filter"><input type="checkbox" id="filter-solutions" name="has_solutions" value="1"> Has solutions</label> <label class="benchmark-filter"><input type="checkbox" id="filter-tasks" name="has_tasks" value="1"> Has tasks</label></form>
+<form class="search-form" role="search"><label for="benchmark-search">Search:</label> <input type="search" id="benchmark-search" name="q" placeholder="Name or description"> <button type="submit">Search</button> <label class="benchmark-filter"><input type="checkbox" id="filter-tasks" name="has_tasks" value="1"> Has tasks</label> <label class="benchmark-filter"><input type="checkbox" id="filter-solutions" name="has_solutions" value="1"> Has solutions</label></form>
 <p class="list-summary"><span id="benchmark-count" role="status" aria-live="polite">{len(BENCHMARKS)} benchmark{'s' if len(BENCHMARKS)!=1 else ''}</span></p>
 <div id="catalog">{''.join(groups)}</div><div id="benchmark-empty" hidden><p>No benchmarks match your search.</p><button type="button" id="reset-benchmarks">Clear filters</button></div>'''
     write('index.html',layout('Benchmarks',body))
