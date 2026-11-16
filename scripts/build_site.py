@@ -189,10 +189,13 @@ def task_page(q, previous, following):
     prev_link = f'<a href="{task_url(previous)}">Previous task</a>' if previous else '<span></span>'
     next_link = f'<a href="{task_url(following)}">Next task</a>' if following else '<span></span>'
     source_link = f'<a href="{esc(q["source_url"])}">source</a> · ' if q.get('source_url') else ''
+    solution_section = ''
+    if q.get('solution') is not None:
+        solution_section = f'<section><h2>Solution</h2><details><summary>Show reference solution</summary><pre><code id="solution-text">{esc(q["solution"])}</code></pre></details></section>'
     body = f'''<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Benchmarks</a> &gt; <a href="{benchmark_url(b)}">{esc(b['name'])}</a> &gt; <a href="/tasks/?benchmark={quote(b['id'])}">Tasks</a></nav>
 <p class="task-id">{esc(q['key'])}</p><h1>{esc(q['title'])}</h1>
 <p class="resource-links">[{source_link}<button type="button" id="copy-prompt" class="link-button">copy prompt</button>]</p><p class="sr-only" role="status" id="copy-status"></p>
-<article class="prose"><section><h2>Task Prompt</h2><div class="prompt-content">{markdown(q['prompt'])}</div></section></article>
+<article class="prose"><section><h2>Task Prompt</h2><div class="prompt-content">{markdown(q['prompt'])}</div></section>{solution_section}</article>
 <nav class="task-adjacent" aria-label="Adjacent tasks">{prev_link}<a href="/tasks/?benchmark={quote(b['id'])}">Task index</a>{next_link}</nav>
 <script type="application/json" id="prompt-data">{json.dumps(q['prompt'],ensure_ascii=False).replace('<',chr(92)+'u003c')}</script>'''
     relative = task_url(q).lstrip('/')

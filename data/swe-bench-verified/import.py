@@ -39,6 +39,9 @@ def fetch_rows():
             }
         )
         page = get_json(f"https://datasets-server.huggingface.co/rows?{query}")
+        for item in page["rows"]:
+            if {"patch", "problem_statement"}.intersection(item.get("truncated_cells", [])):
+                sys.exit("Upstream returned a truncated prompt or reference patch; import cancelled.")
         if not page["rows"]:
             break
         total = page["num_rows_total"]
@@ -49,15 +52,20 @@ def fetch_rows():
 def to_task(row):
     # Instance ids are "<owner>__<repo>-<pull request number>".
     pull_number = row["instance_id"].rsplit("-", 1)[1]
+    solution = row["patch"]
+    if not isinstance(solution, str) or not solution.strip():
+        raise ValueError(f"{row['instance_id']}: missing reference patch")
     return {
         "key": row["instance_id"],
         "prompt": row["problem_statement"],
+        "solution": solution,
         "source_url": f"https://github.com/{row['repo']}/pull/{pull_number}",
     }
 
 
 def main():
-    pinned = json.loads((BENCHMARK_DIR / "benchmark.json").read_text())["dataset_revision"]
+    benchmark = json.loads((BENCHMARK_DIR / "benchmark.json").read_text())
+    pinned = benchmark["dataset_revision"]
     before = upstream_revision()
     if before != pinned:
         sys.exit(
@@ -66,14 +74,18 @@ def main():
         )
 
     tasks = sorted((to_task(row) for row in fetch_rows()), key=lambda q: q["key"])
+    if len(tasks) != benchmark["task_count"] or len({task["key"] for task in tasks}) != len(tasks):
+        sys.exit("Upstream task count or identifiers do not match the benchmark; import cancelled.")
 
     if upstream_revision() != before:
         sys.exit(f"{DATASET} changed during the import; run it again.")
 
     out = BENCHMARK_DIR / "tasks.jsonl"
-    with out.open("w", encoding="utf-8", newline="\n") as f:
+    temporary = out.with_suffix(".jsonl.tmp")
+    with temporary.open("w", encoding="utf-8", newline="\n") as f:
         for task in tasks:
             f.write(json.dumps(task, ensure_ascii=False) + "\n")
+    temporary.replace(out)
     print(f"Wrote {len(tasks)} tasks to {out}")
 
 

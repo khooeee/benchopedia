@@ -1,4 +1,4 @@
-"""Check generated routes, anchors, data completeness and prompt fidelity."""
+"""Check generated routes, anchors, data completeness, prompts and solutions."""
 
 import json
 from html.parser import HTMLParser
@@ -15,6 +15,8 @@ class Page(HTMLParser):
         self.links = []
         self.ids = set()
         self.title = False
+        self.solution = None
+        self.reading_solution = False
         self.feed(text)
 
     def handle_starttag(self, tag, attrs):
@@ -25,6 +27,17 @@ class Page(HTMLParser):
             self.links.append(attrs.get("href", attrs.get("src", "")))
         if tag == "title":
             self.title = True
+        if tag == "code" and attrs.get("id") == "solution-text":
+            self.solution = ""
+            self.reading_solution = True
+
+    def handle_data(self, data):
+        if self.reading_solution:
+            self.solution += data
+
+    def handle_endtag(self, tag):
+        if tag == "code":
+            self.reading_solution = False
 
 
 def main():
@@ -50,20 +63,21 @@ def main():
     for path in (ROOT / "data").glob("*/tasks.jsonl"):
         for line in path.read_text().splitlines():
             task = json.loads(line)
-            originals[(path.parent.name, task["key"])] = task["prompt"]
+            originals[(path.parent.name, task["key"])] = task
     assert len(tasks) == len(originals), "Search index is incomplete"
     for q in tasks:
         key = (q["benchmark_id"], q["key"])
-        assert q["prompt"] == originals[key], f"Search prompt changed: {key}"
+        assert q["prompt"] == originals[key]["prompt"], f"Search prompt changed: {key}"
         task_dir = OUT / q["url"].lstrip("/")
         assert (task_dir / "index.html").exists(), f"Missing task page: {key}"
         # The raw prompt must round-trip through the inert JSON script.
         text = (task_dir / "index.html").read_text()
         embedded = text.split('<script type="application/json" id="prompt-data">', 1)[1].split('</script>', 1)[0]
-        assert json.loads(embedded) == originals[key], f"Copy prompt changed: {key}"
+        assert json.loads(embedded) == originals[key]["prompt"], f"Copy prompt changed: {key}"
+        assert pages[task_dir / "index.html"].solution == originals[key].get("solution"), f"Solution changed: {key}"
     if errors:
         raise SystemExit("\n".join(errors))
-    print(f"OK: {len(pages)} pages, all internal links/anchors, {len(tasks)} task routes and exact original prompts")
+    print(f"OK: {len(pages)} pages, all internal links/anchors, {len(tasks)} task routes and exact original prompts/solutions")
 
 
 if __name__ == "__main__":

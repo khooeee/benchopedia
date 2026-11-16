@@ -27,6 +27,8 @@ CREATE TABLE task (
     key          TEXT NOT NULL CHECK (key <> '' AND key = trim(key)),
     -- What the model is given.
     prompt       TEXT NOT NULL CHECK (trim(prompt) <> ''),
+    -- Reference solution supplied by the dataset, when available.
+    solution     TEXT CHECK (trim(solution) <> ''),
     source_url   TEXT CHECK (source_url LIKE 'https://%'),
     PRIMARY KEY (benchmark_id, key)
 ) STRICT;

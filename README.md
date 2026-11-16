@@ -47,6 +47,7 @@ erDiagram
         TEXT benchmark_id PK, FK
         TEXT key PK "the benchmark's own identifier"
         TEXT prompt "what the model is given"
+        TEXT solution "reference solution, nullable"
         TEXT source_url "nullable"
     }
 ```
@@ -55,7 +56,7 @@ erDiagram
 
 ```sh
 python3 scripts/build_site.py # Rebuild and validate SQLite, then generate the website in dist/.
-python3 scripts/check_site.py # Check generated pages, internal links, and original prompt fidelity.
+python3 scripts/check_site.py # Check generated pages, links, prompts and solutions.
 node scripts/check_ui.cjs     # Test search, filters, and pagination without a browser.
 python3 -m http.server 8765 --directory dist
 ```
@@ -68,7 +69,7 @@ test packages.
 
 The website build first rebuilds and validates SQLite, then reads it to generate
 `dist/`. It includes the benchmark index, article pages, a task library,
-individual task pages and prompt copying. Generated files and the
+individual task pages, reference solutions when available, and prompt copying. Generated files and the
 database are ignored by Git.
 
 The interface is a compact archive: benchmarks listed by release year, numbered
@@ -83,7 +84,10 @@ and HTTP(S) links. Source HTML is escaped.
 To add a benchmark, add its metadata, article and tasks under `data/<id>/`,
 then rebuild. Counts, navigation
 and search indexes are generated from the database. Each task stores its
-benchmark link, key, prompt and optional source URL.
+benchmark link, key, prompt, optional reference solution and optional source URL.
+
+For SWE-bench Verified, `solution` contains the upstream `patch`: the reference
+code changes that fixed the issue. Task pages show it in a collapsible section.
 
 The first version includes SWE-bench Verified. Model results and saturation
 indicators await sourced score data.
