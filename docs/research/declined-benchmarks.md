@@ -151,3 +151,25 @@ and [original paper](https://arxiv.org/abs/2306.05685)
 
 Resume if ETS permits redistribution of the adapted topic, or the publishers
 replace question 157 in a new release.
+
+## WebArena
+
+Reviewed 2026-11-16 for all 812 tasks in
+[`config_files/test.raw.json` at web-arena-x/webarena `dce04686a56253aefba7b18a4fa0937cf1dc987b`](https://github.com/web-arena-x/webarena/blob/dce04686a56253aefba7b18a4fa0937cf1dc987b/config_files/test.raw.json).
+
+The repository is offered under the
+[Apache License 2.0](https://github.com/web-arena-x/webarena/blob/dce04686a56253aefba7b18a4fa0937cf1dc987b/LICENSE),
+but that license can cover only text its contributors could license. The paper
+says the shopping site's roughly 90,000 products, including their reviews, were
+imported from real online stores, such as the Amazon product data in the
+WebShop data dump. Tasks 163, 165, and 167 ask for the main criticisms of a
+product, and each reference answer quotes six sentences from that product's
+customer reviews word for word. The reviewers or Amazon hold the rights in that
+text. Neither the paper nor the WebArena README notes permission to
+redistribute it. Publishing every task would republish the review excerpts, and
+leaving the three tasks out would publish an incomplete set.
+[Original paper](https://arxiv.org/abs/2307.13854) and
+[README](https://github.com/web-arena-x/webarena/blob/dce04686a56253aefba7b18a4fa0937cf1dc987b/README.md)
+
+Resume if the publishers replace those reference answers with text they can
+license, or the review text is shown to be cleared for redistribution.
