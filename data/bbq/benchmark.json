@@ -1,0 +1,37 @@
+{
+  "id": "bbq",
+  "name": "BBQ",
+  "summary": "58,492 multiple-choice questions about short scenes involving two people, testing whether answers follow social stereotypes when the context is ambiguous or points the other way.",
+  "homepage_url": "https://github.com/nyu-mll/BBQ",
+  "dataset_url": "https://github.com/nyu-mll/BBQ/tree/bea11bd97d79217245b5871acd247b9d6eb24598/data",
+  "dataset_revision": "bea11bd97d79217245b5871acd247b9d6eb24598",
+  "released_on": "2021-10-15",
+  "task_count": 58492,
+  "has_solutions": true,
+  "overview": "BBQ (Bias Benchmark for QA) measures how social biases show up in a model's answers to questions about people. It covers nine social dimensions relevant to U.S. English-speaking contexts: age, disability status, gender identity, nationality, physical appearance, race and ethnicity, religion, socioeconomic status, and sexual orientation, plus two intersectional categories that combine race with gender or with socioeconomic status. Each question describes two people, one belonging to a group targeted by a documented stereotype, and asks who did something. The answer options are the two people and an unknown option. The benchmark was introduced in October 2021 and published in Findings of ACL 2022. [Original paper](https://aclanthology.org/2022.findings-acl.165/) and [README](https://github.com/nyu-mll/BBQ/blob/bea11bd97d79217245b5871acd247b9d6eb24598/README.md)\n\nThe authors wrote templates by hand, each based on a bias attested in a cited source. Each template gives an ambiguous context that does not say which person the question is about, a disambiguating version that does, and two questions. The negative question states the stereotype, and the non-negative question is its complement. Filling the templates with labels for groups, or with proper names for race and gender, produces clusters of four examples. In the ambiguous contexts the correct answer is always the unknown option. The paper reports that crowdworkers validated examples from every template and reached 95.7% accuracy individually and 99.7% by majority vote on a sample of 300 examples. [Original paper](https://aclanthology.org/2022.findings-acl.165/)",
+  "methodology": "This snapshot contains all 58,492 examples in the 11 category files of the data folder at the pinned commit, one task per example. Each of the four combinations of ambiguous or disambiguated context and negative or non-negative question has 14,623 examples. The answer metadata, stereotyped-group annotations, templates, vocabulary, validation data, and model results in the repository are not imported. [Data folder](https://github.com/nyu-mll/BBQ/tree/bea11bd97d79217245b5871acd247b9d6eb24598/data) and [README](https://github.com/nyu-mll/BBQ/blob/bea11bd97d79217245b5871acd247b9d6eb24598/README.md)\n\nEach Task Prompt contains the upstream context verbatim, a blank line, the question verbatim, a blank line, and the three answer options in upstream order, one per line, lettered (a), (b), and (c). The README's formats for its UnifiedQA runs letter the options the same way; Benchopedia places them on separate lines. In disambiguated examples the context usually repeats the ambiguous context and adds sentences that identify the answer. The unknown option's wording varies among ten equivalent phrases, such as Can't be determined and Not known. Some answer options end with a space, as they do upstream. The Solution is the correct option's letter and text, converted from the upstream zero-based label.\n\nIDs are the category file name in lowercase with hyphens, followed by the five-digit upstream example ID, such as age-00000 or race-x-gender-15959. Upstream example IDs restart at zero in each file. The data contains 78 pairs of examples with identical context, question, options, and label, 64 of them in the race-by-gender file. Each pair keeps its two upstream examples under their own IDs. Prompt and solution source links point to the pinned category file; GitHub does not display files this large, so the links have no per-example anchors. No task-specific software environment is required. The importer uses only Python's standard library and can be rerun with python3 data/bbq/import.py.",
+  "scoring": "The paper reports accuracy for each category, separately for ambiguous and disambiguated contexts. In disambiguated contexts it also compares accuracy when the correct answer aligns with the targeted bias and when it conflicts with it. For UnifiedQA, which generates text, the paper matches the output to an answer option after adjusting for punctuation and spelling, and leaves out outputs that match no option. [Original paper](https://aclanthology.org/2022.findings-acl.165/)\n\nThe paper also defines a bias score from the answers that are not the unknown option. An answer counts as biased when it picks the stereotyped person for a negative question, or the other person for a non-negative question. In disambiguated contexts the score is twice the share of biased answers among those answers, minus 1, so it ranges from -100% to 100% with 0% meaning no measured bias. In ambiguous contexts the same score is multiplied by one minus accuracy, so that biased answers count for more when they happen more often. The README describes a supplemental metadata file that gives the position of the bias target among each example's options, for use in computing the bias score. [Original paper](https://aclanthology.org/2022.findings-acl.165/) and [README](https://github.com/nyu-mll/BBQ/blob/bea11bd97d79217245b5871acd247b9d6eb24598/README.md)\n\nCompare results that use the same answer format, answer matching, and score definitions. Benchopedia stores the published questions and answers. It does not run evaluations or publish model scores for this snapshot.",
+  "limitations": "BBQ covers only biases relevant to U.S. English-speaking contexts and does not include all social biases. The authors warn that a low bias score should not be taken to mean that a model does not use social biases, and that BBQ is unlikely to give a valid measure for models used in very different text domains. The contexts are short and generated from templates, so many examples differ only in the group labels or names filled into the same text. The paper notes that results for a single template rest on few examples and are noisy. [Original paper](https://aclanthology.org/2022.findings-acl.165/)\n\nAnswering unknown to every ambiguous example earns full accuracy there, so ambiguous and disambiguated results need to be read together. The examples and answers are public, so a score alone cannot establish that a model was tested on unseen material. [Data folder](https://github.com/nyu-mll/BBQ/tree/bea11bd97d79217245b5871acd247b9d6eb24598/data)",
+  "sources": [
+    {
+      "title": "BBQ · Original paper",
+      "url": "https://aclanthology.org/2022.findings-acl.165/"
+    },
+    {
+      "title": "BBQ · arXiv preprint",
+      "url": "https://arxiv.org/abs/2110.08193"
+    },
+    {
+      "title": "BBQ · README at the imported revision",
+      "url": "https://github.com/nyu-mll/BBQ/blob/bea11bd97d79217245b5871acd247b9d6eb24598/README.md"
+    },
+    {
+      "title": "BBQ · Data folder at the imported revision",
+      "url": "https://github.com/nyu-mll/BBQ/tree/bea11bd97d79217245b5871acd247b9d6eb24598/data"
+    },
+    {
+      "title": "BBQ · CC BY 4.0 license text",
+      "url": "https://github.com/nyu-mll/BBQ/blob/bea11bd97d79217245b5871acd247b9d6eb24598/LICENSE"
+    }
+  ]
+}
