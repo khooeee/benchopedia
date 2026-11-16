@@ -11,7 +11,8 @@ CREATE TABLE benchmark (
     dataset_revision TEXT NOT NULL CHECK (trim(dataset_revision) <> ''),
     released_on      TEXT NOT NULL CHECK (released_on = date(released_on)),
     -- Declared size; checks/task_count.sql compares it to the rows actually loaded.
-    task_count       INTEGER NOT NULL CHECK (task_count > 0),
+    -- 0 only for benchmarks whose tasks data/exclusions.json leaves out.
+    task_count       INTEGER NOT NULL CHECK (task_count >= 0),
     -- Boolean: at least one imported task contains reference solution text.
     has_solutions    INTEGER NOT NULL CHECK (has_solutions IN (0, 1)),
     -- Article sections for the benchmark's encyclopedia page.
@@ -37,13 +38,4 @@ CREATE TABLE task (
     solution_source_url TEXT CHECK (solution_source_url LIKE 'https://%'),
     prompt_source_url   TEXT CHECK (prompt_source_url LIKE 'https://%'),
     PRIMARY KEY (benchmark_id, key)
-) STRICT;
-
--- data/exclusions.json: benchmarks whose tasks are withheld from the website.
--- The tasks are still loaded and validated; the article page stays published.
-CREATE TABLE exclusion (
-    benchmark_id TEXT PRIMARY KEY REFERENCES benchmark (id),
-    since        TEXT NOT NULL CHECK (since = date(since)),
-    reason       TEXT NOT NULL CHECK (trim(reason) <> ''),
-    restore_when TEXT NOT NULL CHECK (trim(restore_when) <> '')
 ) STRICT;

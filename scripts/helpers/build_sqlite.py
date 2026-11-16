@@ -19,6 +19,7 @@ EXCLUSIONS_FILE = DATA_DIR / "exclusions.json"
 DB_PATH = ROOT / "build" / "benchopedia.db"
 
 MAX_VIOLATIONS_SHOWN = 10
+EXCLUSION_FIELDS = ("benchmark_id", "since", "reason", "restore_when")
 
 
 def insert(db, table, row, origin, errors):
@@ -30,7 +31,20 @@ def insert(db, table, row, origin, errors):
         errors.append(f"{origin}: {e}")
 
 
-def load_benchmark(db, benchmark_dir, errors):
+def load_exclusions(errors):
+    """Return the IDs of benchmarks whose tasks are deliberately left out."""
+    origin = EXCLUSIONS_FILE.relative_to(ROOT)
+    exclusions = json.loads(EXCLUSIONS_FILE.read_text(encoding="utf-8"))
+    for index, exclusion in enumerate(exclusions):
+        if not all(isinstance(exclusion.get(field), str) and exclusion[field].strip()
+                   for field in EXCLUSION_FIELDS):
+            errors.append(f"{origin}[{index}]: requires {', '.join(EXCLUSION_FIELDS)}")
+        elif not (DATA_DIR / exclusion["benchmark_id"]).is_dir():
+            errors.append(f"{origin}[{index}]: unknown benchmark {exclusion['benchmark_id']}")
+    return {exclusion.get("benchmark_id") for exclusion in exclusions}
+
+
+def load_benchmark(db, benchmark_dir, excluded, errors):
     benchmark_file = benchmark_dir / "benchmark.json"
     benchmark = json.loads(benchmark_file.read_text(encoding="utf-8"))
     if benchmark.get("id") != benchmark_dir.name:
@@ -48,19 +62,22 @@ def load_benchmark(db, benchmark_dir, errors):
     insert(db, "benchmark", benchmark, benchmark_file.relative_to(ROOT), errors)
 
     tasks_file = benchmark_dir / "tasks.jsonl"
+    if benchmark["id"] in excluded:
+        # Excluded tasks stay out of the repository so they cannot be republished by accident.
+        if tasks_file.exists():
+            errors.append(f"{tasks_file.relative_to(ROOT)}: tasks are excluded in "
+                          f"{EXCLUSIONS_FILE.relative_to(ROOT)}; delete them or clear the exclusion")
+        return
+    if not tasks_file.is_file():
+        errors.append(f"{tasks_file.relative_to(ROOT)}: missing; record any exclusion in "
+                      f"{EXCLUSIONS_FILE.relative_to(ROOT)}")
+        return
     with tasks_file.open(encoding="utf-8", newline="") as f:
         for line_number, line in enumerate(f, start=1):
             task = json.loads(line)
             task["benchmark_id"] = benchmark["id"]
             origin = f"{tasks_file.relative_to(ROOT)}:{line_number}"
             insert(db, "task", task, origin, errors)
-
-
-def load_exclusions(db, errors):
-    exclusions = json.loads(EXCLUSIONS_FILE.read_text(encoding="utf-8"))
-    for index, exclusion in enumerate(exclusions):
-        origin = f"{EXCLUSIONS_FILE.relative_to(ROOT)}[{index}]"
-        insert(db, "exclusion", exclusion, origin, errors)
 
 
 def run_checks(db, errors):
@@ -84,9 +101,9 @@ def main():
     db.executescript((ROOT / "db" / "schema.sql").read_text(encoding="utf-8"))
 
     errors = []
+    excluded = load_exclusions(errors)
     for benchmark_dir in sorted(p for p in DATA_DIR.iterdir() if p.is_dir()):
-        load_benchmark(db, benchmark_dir, errors)
-    load_exclusions(db, errors)
+        load_benchmark(db, benchmark_dir, excluded, errors)
     db.commit()
     check_count = run_checks(db, errors)
 

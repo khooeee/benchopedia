@@ -2,7 +2,7 @@
   {
     "benchmark_id": "swe-bench-verified",
     "since": "2026-11-15",
-    "reason": "Redistribution is not cleared. The dataset has no license declaration, the copied reference patches lack the copyright notices and license texts their projects require, and permission to republish the issue text is unresolved, especially the 231 Django prompts collected from Trac tickets.",
-    "restore_when": "The SWE-bench maintainers or rights holders confirm a basis for republishing the issue text, and the project and file-level notices for the copied patches are published with the tasks."
+    "reason": "Redistribution of the 500 task prompts and reference patches is not cleared. The dataset has no license declaration, the patches need copyright notices and license texts from their source projects, and permission to republish the issue text is unresolved, especially the 231 Django prompts collected from Trac tickets.",
+    "restore_when": "The SWE-bench maintainers or rights holders confirm a basis for republishing the issue text, and the project and file-level notices for the copied patches can be published with the tasks."
   }
 ]

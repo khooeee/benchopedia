@@ -67,17 +67,12 @@ def main():
     assert pages, "Build the website first"
     errors = []
     catalog = pages[OUT / "index.html"]
-    exclusions = json.loads((ROOT / "data/exclusions.json").read_text(encoding="utf-8"))
-    excluded = {exclusion["benchmark_id"] for exclusion in exclusions}
     expected_flags = {}
     for metadata in (ROOT / "data").glob("*/benchmark.json"):
         benchmark = json.loads(metadata.read_text(encoding="utf-8"))
-        withheld = benchmark["id"] in excluded
-        expected_flags[benchmark["id"]] = str(benchmark["has_solutions"] and not withheld).lower()
+        expected_flags[benchmark["id"]] = str(benchmark["has_solutions"]).lower()
         page = pages.get(OUT / "benchmarks" / benchmark["id"] / "index.html")
         assert page and "license" in page.sections, f"Missing License section: {benchmark['id']}"
-        if withheld:
-            assert not (OUT / "benchmarks" / benchmark["id"] / "tasks").exists(), f"Withheld tasks published: {benchmark['id']}"
     assert catalog.benchmarks == expected_flags, "Catalog solution flags differ from metadata"
     assert catalog.solution_filter, "Missing benchmark solutions checkbox"
     for path, page in pages.items():
@@ -97,8 +92,6 @@ def main():
     tasks = json.loads((OUT / "assets/tasks.json").read_text())
     originals = {}
     for path in (ROOT / "data").glob("*/tasks.jsonl"):
-        if path.parent.name in excluded:
-            continue
         # JSONL records are separated by LF, not Unicode separators that can
         # legitimately appear inside imported text (including MMLU prompts).
         with path.open(encoding="utf-8") as stream:
@@ -110,7 +103,6 @@ def main():
     assert len(tasks) == len(originals), "Search index is incomplete"
     for q in tasks:
         key = (q["benchmark_id"], q["key"])
-        assert q["benchmark_id"] not in excluded, f"Withheld task in search index: {key}"
         assert q["prompt"] == originals[key]["prompt"], f"Search prompt changed: {key}"
         task_dir = OUT / output_path(q["url"])
         assert (task_dir / "index.html").exists(), f"Missing task page: {key}"
