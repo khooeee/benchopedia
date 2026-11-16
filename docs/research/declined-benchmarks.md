@@ -30,3 +30,21 @@ attribution.
 Resume when the publisher states one set of terms for the passages and
 questions, and the source Wikipedia article for each passage can be identified
 for attribution.
+
+## GPQA
+
+Reviewed 2026-11-16 for the GPQA question sets in the authors' repository at
+commit `56686c06f5e19865c153de0fdb11be3890014df7` and the
+[Hugging Face dataset at `83022cefff930aea54f654c0b282e74b9eeda5c6`](https://huggingface.co/datasets/Idavidrein/gpqa/tree/83022cefff930aea54f654c0b282e74b9eeda5c6).
+
+The Hugging Face dataset is gated. Access requires agreeing "to NOT reveal
+examples from this dataset in plain text or images online, to reduce the risk
+of leakage into foundation model training corpora." The authors' repository
+keeps the data in a password-protected `dataset.zip` for the same reason, beside
+an MIT license for the repository and a CC BY 4.0 declaration on the dataset
+card. Publishing the questions in a public repository and on a crawlable website
+would break that access condition, and the open licenses do not waive it.
+[Repository README](https://github.com/idavidrein/gpqa/blob/56686c06f5e19865c153de0fdb11be3890014df7/README.md)
+
+Resume only if the authors publish GPQA without that condition or permit
+Benchopedia to publish it.
