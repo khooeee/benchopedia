@@ -11,10 +11,11 @@ CREATE TABLE benchmark (
     dataset_revision TEXT NOT NULL CHECK (trim(dataset_revision) <> ''),
     released_on      TEXT NOT NULL CHECK (released_on = date(released_on)),
     -- Declared size; checks/task_count.sql compares it to the rows actually loaded.
-    -- 0 only for benchmarks whose tasks data/exclusions.json leaves out.
-    task_count       INTEGER NOT NULL CHECK (task_count >= 0),
+    -- This and has_solutions are NULL exactly when data/exclusions.json leaves
+    -- the tasks out; the loader enforces that.
+    task_count       INTEGER CHECK (task_count > 0),
     -- Boolean: at least one imported task contains reference solution text.
-    has_solutions    INTEGER NOT NULL CHECK (has_solutions IN (0, 1)),
+    has_solutions    INTEGER CHECK (has_solutions IN (0, 1)),
     -- Article sections for the benchmark's encyclopedia page.
     overview         TEXT NOT NULL CHECK (trim(overview) <> ''),
     methodology      TEXT NOT NULL CHECK (trim(methodology) <> ''),

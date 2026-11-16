@@ -50,7 +50,15 @@ def load_benchmark(db, benchmark_dir, excluded, errors):
     if benchmark.get("id") != benchmark_dir.name:
         errors.append(f"{benchmark_file.relative_to(ROOT)}: id must match the directory name")
         return
-    if type(benchmark.get("has_solutions")) is not bool:
+    if benchmark["id"] in excluded:
+        if benchmark.get("task_count") is not None or benchmark.get("has_solutions") is not None:
+            errors.append(f"{benchmark_file.relative_to(ROOT)}: task_count and has_solutions "
+                          "must be null while the tasks are excluded")
+            return
+    elif benchmark.get("task_count") is None:
+        errors.append(f"{benchmark_file.relative_to(ROOT)}: task_count is required")
+        return
+    elif type(benchmark.get("has_solutions")) is not bool:
         errors.append(f"{benchmark_file.relative_to(ROOT)}: has_solutions must be a JSON boolean")
         return
     review_file = benchmark_dir / "redistribution-review.md"

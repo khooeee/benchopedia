@@ -111,6 +111,8 @@ the included benchmark variant in `YYYY-MM-DD` format.
 contains reference solution text, and `false` when none do. A source link or
 evaluator alone does not count as a reference solution. SQLite stores this flag
 as 0 or 1; the build checks it against the tasks so it stays accurate after imports.
+Both `task_count` and `has_solutions` are `null` when the tasks are
+[excluded](#excluding-tasks), and only then.
 
 The overview, methodology, scoring, and limitations are sections on the benchmark
 page, not separate files. Write concise explanations supported by primary sources.
@@ -164,7 +166,7 @@ Keep any separate upstream license or attribution file, such as `LICENSE` or
 
 When the tasks cannot be published, keep the benchmark's article but leave its
 tasks out of both the repository and the website. Delete its `tasks.jsonl`, set
-`task_count` to 0 and `has_solutions` to `false`, and add an entry to
+`task_count` and `has_solutions` to `null`, and add an entry to
 [`data/exclusions.json`](../data/exclusions.json), which records every exclusion
 and why:
 
