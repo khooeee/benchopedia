@@ -94,6 +94,46 @@ would break that access condition, and the open licenses do not waive it.
 Resume only if the authors publish GPQA without that condition or permit
 Benchopedia to publish it.
 
+## HarmBench
+
+Reviewed 2026-11-17 for the 320 text behaviors in
+[`data/behavior_datasets/harmbench_behaviors_text_test.csv` at centerforaisafety/HarmBench `8e1604d1171fe8a48d8febecd22f600e462bdcdd`](https://github.com/centerforaisafety/HarmBench/blob/8e1604d1171fe8a48d8febecd22f600e462bdcdd/data/behavior_datasets/harmbench_behaviors_text_test.csv).
+
+The repository is offered under the
+[MIT license](https://github.com/centerforaisafety/HarmBench/blob/8e1604d1171fe8a48d8febecd22f600e462bdcdd/LICENSE),
+but that license can cover only text its contributors could license. Of the
+320 behaviors, 81 are contextual: each pairs a request with a context string,
+and those 81 strings hold about 110,000 characters of material the authors did
+not write. Eleven behaviors describe their context as a section or paragraphs
+of a named Wikipedia article, so that text is shared under CC BY-SA and
+requires attribution to the article and its authors. Others present excerpts
+the behavior attributes to published research papers, and others present
+third-party program source code. The file's columns are the behavior, its
+categories, tags, context string, and ID; none records where a context string
+came from or under what terms, so Benchopedia cannot supply the attribution
+CC BY-SA requires or establish permission for the rest. This is the same gap
+that stopped the DROP import. Publishing every behavior would republish that
+material, and leaving the 81 contextual behaviors out would publish an
+incomplete split. [Original paper](https://arxiv.org/abs/2402.04249)
+
+The 80 copyright behaviors do not raise this problem: they name a book or song
+and ask a model to reproduce it, and the repository ships hashes of the
+original works for its classifier rather than their text.
+
+A second reason stands on its own. The paper says the contextual behaviors are
+included to be "differentially harmful", meaning the request cannot be carried
+out with a search engine, and reports a 0% searchability rate for them against
+50% and 55% for two earlier behavior datasets. Their context strings
+accordingly supply specific operational detail, and several target named
+individuals. Benchopedia publishes every imported prompt in a public
+repository and on a crawlable website, which is not an appropriate venue for
+that material even where the terms allow it. A red-teaming set of this kind
+needs the controlled distribution its publishers use, not a catalog page.
+
+Resume only if the publishers record a redistributable source and terms for
+each context string, and a way to publish the behaviors that does not put the
+contextual material on a crawlable page.
+
 ## HellaSwag
 
 Reviewed 2026-11-16 for the validation set published in the authors' repository,
