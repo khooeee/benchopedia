@@ -1,0 +1,33 @@
+{
+  "id": "boolq",
+  "name": "BoolQ",
+  "summary": "3,270 yes/no questions from the labeled development split, each paired with a passage and a reference answer.",
+  "homepage_url": "https://github.com/google-research-datasets/boolean-questions",
+  "dataset_url": "https://huggingface.co/datasets/google/boolq",
+  "dataset_revision": "35b264d03638db9f4ce671b711558bf7ff0f80d5",
+  "released_on": "2019-05-24",
+  "task_count": 3270,
+  "has_solutions": true,
+  "overview": "BoolQ tests answering naturally occurring yes/no questions from a passage. The questions were sampled from information-seeking queries rather than written for a dataset. Each example has a passage and a reference yes or no answer. The benchmark was introduced in May 2019. [Original paper](https://arxiv.org/abs/1905.10044)",
+  "methodology": "This snapshot contains all 3,270 labeled development examples at the pinned dataset revision. It excludes the 9,427 training examples. The authors' test file has 3,245 unlabeled examples and is not in this public mirror, so it is not included. The development count matches the authors' dev.jsonl description. [Authors' notes](https://github.com/google-research-datasets/boolean-questions/blob/90af34107399cc7a446b373dc4ee35b8001da7c2/README.md) and [dataset card](https://huggingface.co/datasets/google/boolq/blob/35b264d03638db9f4ce671b711558bf7ff0f80d5/README.md)\n\nThe authors' storage links for the original files require a Google login and did not return the files anonymously. This snapshot uses the public mirror at the pinned revision, which has the same development and training counts and the fields question, passage, and answer. It does not include the optional page title from the authors' example format.\n\nEach Task Prompt preserves the question, then a blank line, then the passage. The Solution is yes when the upstream answer is true and no when it is false. The source has no example IDs. IDs are boolq-0001 through boolq-3270, from one-based row order in the pinned development file. Source links open that row in the dataset viewer, which follows the current dataset revision. No task-specific software environment is required to read them.\n\nThe importer reads the pinned Parquet file with PyArrow and can be rerun with python3 data/boolq/import.py.",
+  "scoring": "A question is correct when the predicted yes or no matches the reference answer. Accuracy is the fraction of the evaluated questions answered correctly. The authors describe the development file as the labeled set for development and the test file as unlabeled. [Authors' notes](https://github.com/google-research-datasets/boolean-questions/blob/90af34107399cc7a446b373dc4ee35b8001da7c2/README.md) and [original paper](https://arxiv.org/abs/1905.10044)\n\nCompare results that use the same split. A development score is not a hidden-test score. Benchopedia stores the development questions, passages, and answers. It does not run evaluations or publish model scores for this snapshot.",
+  "limitations": "These are English yes/no questions about a supplied passage, so a score does not by itself establish open-ended question answering or reasoning without a passage. The reference answer does not explain which part of the passage supports it. The text is preserved as published rather than independently corrected. [Original paper](https://arxiv.org/abs/1905.10044)\n\nThis is the labeled development split, not the unlabeled test split. The questions, passages, and answers are public, so a score alone cannot establish that a model was tested on unseen material.",
+  "sources": [
+    {
+      "title": "BoolQ · Original paper",
+      "url": "https://arxiv.org/abs/1905.10044"
+    },
+    {
+      "title": "BoolQ · Authors' notes",
+      "url": "https://github.com/google-research-datasets/boolean-questions/blob/90af34107399cc7a446b373dc4ee35b8001da7c2/README.md"
+    },
+    {
+      "title": "BoolQ · Dataset card at the imported revision",
+      "url": "https://huggingface.co/datasets/google/boolq/blob/35b264d03638db9f4ce671b711558bf7ff0f80d5/README.md"
+    },
+    {
+      "title": "BoolQ · CC BY-SA 3.0",
+      "url": "https://creativecommons.org/licenses/by-sa/3.0/"
+    }
+  ]
+}
