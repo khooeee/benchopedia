@@ -1,0 +1,45 @@
+{
+  "id": "natural-plan",
+  "name": "NATURAL PLAN",
+  "summary": "3,600 planning problems in natural language: European trip itineraries over direct flights, meetings with friends across San Francisco, and meeting times that fit several people's calendars.",
+  "homepage_url": "https://github.com/google-deepmind/natural-plan",
+  "dataset_url": "https://github.com/google-deepmind/natural-plan/tree/ca76db336072ff8931db43bc1ca8d381038cf073/data",
+  "dataset_revision": "ca76db336072ff8931db43bc1ca8d381038cf073",
+  "released_on": "2024-06-06",
+  "task_count": 3600,
+  "has_solutions": true,
+  "overview": "NATURAL PLAN tests whether a language model can plan when every fact it needs is written in the prompt. It has three tasks: Trip Planning, Meeting Planning, and Calendar Scheduling. Rather than asking the model to call tools, each prompt includes the kind of information tools such as Google Flights, Google Maps, and Google Calendar would return, so planning can be evaluated without a tool-use environment. The benchmark was introduced in June 2024. [Original paper](https://arxiv.org/abs/2406.04520)\n\nThe authors built the problems synthetically. Trip Planning samples 3 to 10 of the 48 most visited European cities, a length of stay in each, and dated constraints such as meeting a friend, and allows travel only on direct flights listed from Google Flights. Meeting Planning samples friends, San Francisco locations, and availability windows, gives driving times from Google Maps, and asks for a schedule that meets as many friends as possible. Calendar Scheduling asks for a 30-minute or one-hour slot that fits every attendee's existing meetings and added preferences, which the authors chose so that a single solution exists. One subset varies the number of attendees on a single day, and another varies the number of work days for two attendees. [Original paper](https://arxiv.org/abs/2406.04520)",
+  "methodology": "This snapshot contains all 3,600 test examples in the three data files at the pinned commit. Trip Planning has 1,600 examples, 200 for each number of cities from 3 to 10. Meeting Planning has 1,000, 100 for each number of friends from 1 to 10. Calendar Scheduling has 1,000: 600 single-day examples with 2 to 7 attendees and 400 two-attendee examples spanning 2 to 5 days. The five-shot prompts, the Gemini 1.5 Pro responses stored with each example, and the structured constraint fields are not imported. [Data folder](https://github.com/google-deepmind/natural-plan/tree/ca76db336072ff8931db43bc1ca8d381038cf073/data) and [data README](https://github.com/google-deepmind/natural-plan/blob/ca76db336072ff8931db43bc1ca8d381038cf073/data/README.md)\n\nEach Task Prompt begins with the upstream example ID, such as trip_planning_example_0, followed by the upstream zero-shot prompt verbatim. The data README directs inference on the five-shot prompt instead, which places five solved examples from the same task before the question so that answers follow a parseable format. The calendar-scheduling zero-shot prompts keep the line Here are a few example tasks and solutions: even though no examples follow, as they do upstream. [Data README](https://github.com/google-deepmind/natural-plan/blob/ca76db336072ff8931db43bc1ca8d381038cf073/data/README.md) and [original paper](https://arxiv.org/abs/2406.04520)\n\nThe Solution is the upstream golden plan. Meeting-planning plans are stored upstream as lists of steps and are joined here with line breaks; trip-planning and calendar-scheduling plans are single strings, and the calendar plans end with a space as they do upstream.\n\nIDs are the task name with hyphens and the four-digit upstream example number, such as trip-planning-0000 or calendar-scheduling-0999. Prompt and solution source links point to the pinned data file; GitHub does not display files this large, so the links have no per-example anchors. No task-specific software environment is required. The importer uses only Python's standard library and can be rerun with python3 data/natural-plan/import.py.",
+  "scoring": "Each task is scored by exact match after parsing the response with the authors' evaluation scripts, which rely on answers following the format of the few-shot examples. For Trip Planning, the script reads the stay ranges and flight days from the response and reconstructs the order of cities and the length of each stay; the answer is correct only if the whole sequence matches the golden plan. For Calendar Scheduling, the script takes the first day and time range written as Day, HH:MM - HH:MM and requires the day, start, and end to match the golden plan. [Trip-planning evaluation](https://github.com/google-deepmind/natural-plan/blob/ca76db336072ff8931db43bc1ca8d381038cf073/evaluate_trip_planning.py) and [calendar-scheduling evaluation](https://github.com/google-deepmind/natural-plan/blob/ca76db336072ff8931db43bc1ca8d381038cf073/evaluate_calendar_scheduling.py)\n\nFor Meeting Planning, the script splits the plan into sentences and replays the start, travel, wait, and meet steps against the travel times and each friend's location, window, and minimum meeting length, stopping at the first invalid step. The answer is correct when it validly meets as many friends as the golden plan does, so a different schedule with the same count also passes. [Meeting-planning evaluation](https://github.com/google-deepmind/natural-plan/blob/ca76db336072ff8931db43bc1ca8d381038cf073/evaluate_meeting_planning.py)\n\nThe paper reports the share of examples solved in a five-shot setup for each task and by problem size, and studies self-correction, more few-shot examples, and long-context in-context planning. Compare results that use the same prompts, number of examples, and parsing. Benchopedia stores the published prompts and golden plans. It does not run evaluations or publish model scores for this snapshot. [Original paper](https://arxiv.org/abs/2406.04520)",
+  "limitations": "The problems are generated from templates, and each task has a fixed structure, so the benchmark measures planning within these three formats rather than open-ended planning. Flight connections and driving times come from tool queries made when the dataset was built, so they may not match current schedules or traffic. [Original paper](https://arxiv.org/abs/2406.04520)\n\nScoring depends on parsing the response with regular expressions and fixed phrasings, so a correct plan written in another format can be scored as wrong. Trip and calendar answers are compared with a single golden plan. The examples and golden plans are public, so a score alone cannot establish that a model was tested on unseen material. [Trip-planning evaluation](https://github.com/google-deepmind/natural-plan/blob/ca76db336072ff8931db43bc1ca8d381038cf073/evaluate_trip_planning.py)",
+  "sources": [
+    {
+      "title": "NATURAL PLAN · Original paper",
+      "url": "https://arxiv.org/abs/2406.04520"
+    },
+    {
+      "title": "NATURAL PLAN · README at the imported revision",
+      "url": "https://github.com/google-deepmind/natural-plan/blob/ca76db336072ff8931db43bc1ca8d381038cf073/README.md"
+    },
+    {
+      "title": "NATURAL PLAN · Data README",
+      "url": "https://github.com/google-deepmind/natural-plan/blob/ca76db336072ff8931db43bc1ca8d381038cf073/data/README.md"
+    },
+    {
+      "title": "NATURAL PLAN · Data folder at the imported revision",
+      "url": "https://github.com/google-deepmind/natural-plan/tree/ca76db336072ff8931db43bc1ca8d381038cf073/data"
+    },
+    {
+      "title": "NATURAL PLAN · Trip-planning evaluation",
+      "url": "https://github.com/google-deepmind/natural-plan/blob/ca76db336072ff8931db43bc1ca8d381038cf073/evaluate_trip_planning.py"
+    },
+    {
+      "title": "NATURAL PLAN · Meeting-planning evaluation",
+      "url": "https://github.com/google-deepmind/natural-plan/blob/ca76db336072ff8931db43bc1ca8d381038cf073/evaluate_meeting_planning.py"
+    },
+    {
+      "title": "NATURAL PLAN · Calendar-scheduling evaluation",
+      "url": "https://github.com/google-deepmind/natural-plan/blob/ca76db336072ff8931db43bc1ca8d381038cf073/evaluate_calendar_scheduling.py"
+    }
+  ]
+}
