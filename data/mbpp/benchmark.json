@@ -1,0 +1,33 @@
+{
+  "id": "mbpp",
+  "name": "MBPP",
+  "summary": "500 entry-level Python programming problems from the official test split, each with a reference solution and three automated tests.",
+  "homepage_url": "https://github.com/google-research/google-research/tree/bb18d9b0cb460fee1a080fa2eeb4109fe3805275/mbpp",
+  "dataset_url": "https://github.com/google-research/google-research/blob/bb18d9b0cb460fee1a080fa2eeb4109fe3805275/mbpp/mbpp.jsonl",
+  "dataset_revision": "bb18d9b0cb460fee1a080fa2eeb4109fe3805275",
+  "released_on": "2021-08-16",
+  "task_count": 500,
+  "has_solutions": true,
+  "overview": "MBPP (Mostly Basic Python Problems) tests writing short Python programs from a natural-language task. Crowd workers wrote the problems, reference solutions, and tests. The tasks cover programming fundamentals and the standard library, at about an entry-level difficulty. The benchmark was introduced in August 2021. [Original paper](https://arxiv.org/abs/2108.07732) and [authors' dataset notes](https://github.com/google-research/google-research/blob/bb18d9b0cb460fee1a080fa2eeb4109fe3805275/mbpp/README.md)",
+  "methodology": "This snapshot contains the 500 problems whose upstream task IDs are 11 through 510, the test split named in the authors' notes. It excludes task IDs 1 through 10, which were few-shot examples, IDs 511 through 600, which were validation problems, and IDs 601 through 974, which were training problems. It also does not substitute the later hand-edited sanitized subset. The count and ID coverage are calculated from the pinned file. [Dataset notes](https://github.com/google-research/google-research/blob/bb18d9b0cb460fee1a080fa2eeb4109fe3805275/mbpp/README.md)\n\nEach Task Prompt preserves the upstream problem text, then the test setup when that field is non-empty, then the three tests. Eleven problems also include their additional tests after those three. The Solution preserves the reference program. Upstream programs use Windows line endings; the snapshot stores those as line feeds, and changes no other characters. IDs are mbpp-0011 through mbpp-0510, from the upstream task ID. Source links point at the problem's line in the pinned file. These pages do not add the three-shot examples or the expert-programmer wrapper used in the original evaluation. [Dataset notes](https://github.com/google-research/google-research/blob/bb18d9b0cb460fee1a080fa2eeb4109fe3805275/mbpp/README.md)\n\nThe importer checks the pinned file checksum and can be rerun with python3 data/mbpp/import.py.",
+  "scoring": "A problem is correct when the program passes that problem's three tests. The authors describe those tests as the automated checks for the task and specify task IDs 11 through 510 as the test split. Their reported runs used three-shot prompts built from task IDs 2, 3, and 4, with the tests shown to the model before it wrote code. The dataset directory does not include a separate grader. [Dataset notes](https://github.com/google-research/google-research/blob/bb18d9b0cb460fee1a080fa2eeb4109fe3805275/mbpp/README.md) and [original paper](https://arxiv.org/abs/2108.07732)\n\nCompare results that use the same examples, prompt wrapper, and tests. Eleven test problems also carry additional tests; those are preserved on the page and are not a second score. Benchopedia stores the problems, tests, and reference programs. It does not execute them or publish model scores for this snapshot.",
+  "limitations": "These are short English Python tasks aimed at entry-level programmers, so a score does not by itself establish skill at large programs, other languages, or general reasoning. Passing three tests does not establish that the program is correct for every input. The reference programs and tests are preserved as published rather than independently corrected. [Dataset notes](https://github.com/google-research/google-research/blob/bb18d9b0cb460fee1a080fa2eeb4109fe3805275/mbpp/README.md)\n\nTask IDs 76 and 347 use the same problem text and have different reference programs and tests. Both records are kept. This is the original test split, not the hand-edited sanitized subset. The problems, tests, and solutions are public, so a score alone cannot establish that a model was tested on unseen material.",
+  "sources": [
+    {
+      "title": "MBPP · Original paper",
+      "url": "https://arxiv.org/abs/2108.07732"
+    },
+    {
+      "title": "MBPP · Dataset notes at the imported revision",
+      "url": "https://github.com/google-research/google-research/blob/bb18d9b0cb460fee1a080fa2eeb4109fe3805275/mbpp/README.md"
+    },
+    {
+      "title": "MBPP · Dataset file at the imported revision",
+      "url": "https://github.com/google-research/google-research/blob/bb18d9b0cb460fee1a080fa2eeb4109fe3805275/mbpp/mbpp.jsonl"
+    },
+    {
+      "title": "MBPP · Apache 2.0 license",
+      "url": "https://github.com/google-research/google-research/blob/bb18d9b0cb460fee1a080fa2eeb4109fe3805275/LICENSE"
+    }
+  ]
+}
