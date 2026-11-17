@@ -32,6 +32,78 @@ Resume if the lyrics' rights holders permit redistribution, the song is shown to
 be in the public domain in this version, or the publishers replace the exercise
 in a new release.
 
+## CodeContests
+
+Reviewed 2026-11-17 for the 165-problem test split of
+[google-deepmind/code_contests at `fa7a4f8139aab08362503f3344778eb86901709a`](https://github.com/google-deepmind/code_contests/tree/fa7a4f8139aab08362503f3344778eb86901709a).
+
+Every problem in that split comes from Codeforces. Each record carries a
+`source` field whose values are the enum in `contest_problem.proto`, where
+`CODEFORCES = 2`, and all 165 test rows hold that value, read row by row from
+the Hugging Face mirror at revision `802411c3010cb00d1b05bad57ca77365a3c699d6`;
+the problems are named for their Codeforces contest and index, beginning
+`1575_A. Another Sorting Problem`. There is no part of the split that avoids the
+question below.
+[Problem definition](https://github.com/google-deepmind/code_contests/blob/fa7a4f8139aab08362503f3344778eb86901709a/contest_problem.proto)
+and [mirror at that revision](https://huggingface.co/datasets/deepmind/code_contests/tree/802411c3010cb00d1b05bad57ca77365a3c699d6)
+
+The publisher declares terms and then withdraws them for exactly this material.
+The README licenses the code under Apache 2.0 and says "All non-code materials
+provided are made available under the terms of the CC BY 4.0 license". It then
+records that "Codeforces materials are sourced from http://codeforces.com" and
+closes: "Use of the third-party software, libraries code or data may be governed
+by separate terms and conditions or license provisions. Your use of the
+third-party software, libraries or code may be subject to any such terms. We
+make no representations here with respect to rights or abilities to use any such
+materials." The problem statements are that third-party data, so the declaration
+is not a statement that DeepMind could license them.
+[README at the pinned commit](https://github.com/google-deepmind/code_contests/blob/fa7a4f8139aab08362503f3344778eb86901709a/README.md#license)
+
+Codeforces itself grants no public right to republish. Its current Terms and
+Conditions, a binding agreement with CODEFORCES GLOBAL - FZCO, say "You are
+expressly and emphatically restricted from all of the following: selling,
+sublicensing and/or otherwise commercializing any Website material", and the
+only content license they describe runs from a user to Codeforces, not from
+Codeforces to the public. Benchopedia's repository is under the MIT license,
+which would purport to sublicense the statements to anyone who clones it.
+[Terms and Conditions](https://codeforces.com/terms), as
+[archived on 2026-11-04](https://web.archive.org/web/20261104183935/https://codeforces.com/terms)
+
+The one permission Codeforces has published is old and written against this use.
+A 2010 blog post by MikeMirzayanov sets out a "Codeforces materials usage
+license (v. 0.1)" whose first paragraph reads: "You may publish the texts of
+Codeforces problems in any open sources, but you must preserve a direct link to
+the site http://codeforces.ru (http://codeforces.com for English statements) and
+indicate Codeforces as the problem source. These data should be located in the
+close proximity to the statement, be easily noticeable and readable. It is
+forbidden to publish Codeforces problems in open sources supporting automatic
+testing (such as online judges or similar resources)." The second paragraph adds
+"You must not use tests and other materials of the problems (generators,
+checkers, validators) to publish tasks in open sources supporting automatic
+testing (such as online judges or similar resources) even provided the original
+problem conditions has been changed", and the third requires that "The secondary
+(subsequent) distribution of the tasks should contain this license and comply
+fully with the license's rules". A
+benchmark catalog publishes these problems so that programs can be tested
+against them automatically, and the tests are what makes the dataset scorable,
+so both restrictions bear on the import; the share-alike-style third paragraph
+also cannot be reconciled with the repository's MIT grant. The post calls the
+text version 0.1 and says "we will perhaps change a lot in it", a comment asking
+whether it is still current drew no reply, and the terms page above is the site's
+present statement.
+[Problems' Materials Publishing](https://codeforces.com/blog/entry/967), as
+[archived on 2025-12-19](https://web.archive.org/web/20251219042748/https://codeforces.com/blog/entry/967)
+
+Two practical obstacles were noted and are not the reason for the decline: the
+published files are Riegeli protobuf records that the repository reads with
+bazel, and the Hugging Face mirror ships Parquet, so an importer would need a
+reader beyond Python's standard library.
+
+Resume if Codeforces states, in its terms or in a grant it confirms is current,
+that problem statements and tests may be republished by others, including from a
+repository under a permissive license; or if the publishers release a split whose
+problems come only from sources that grant that.
+
 ## DROP
 
 Reviewed 2026-11-16 for the development set in the official
