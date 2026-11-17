@@ -1,0 +1,45 @@
+{
+  "id": "bird-sql",
+  "name": "BIRD-SQL",
+  "summary": "1,534 natural-language questions over 11 real SQLite databases from BIRD's cleaned development split, each with the gold SQL query that answers it.",
+  "homepage_url": "https://bird-bench.github.io/",
+  "dataset_url": "https://huggingface.co/datasets/birdsql/bird_sql_dev_20251106",
+  "dataset_revision": "3c11fb193e5439b338e23677fa0aae11e8b85db9",
+  "released_on": "2025-11-06",
+  "task_count": 1534,
+  "has_solutions": true,
+  "overview": "BIRD (BIg Bench for LaRge-scale Database Grounded Text-to-SQL Evaluation) tests whether a model can turn a question written in English into a SQL query that returns the right answer from a large, real database. Its authors argue that earlier text-to-SQL benchmarks such as Spider and WikiSQL focus on database schemas with few rows of values, so BIRD's questions depend on messy values, outside knowledge, and queries that must run efficiently on big tables. The full benchmark has 12,751 question and SQL pairs over 95 databases in 37 professional domains: 69 databases for training, 11 for development, and 15 for a hidden test set. It was introduced in May 2023. [Original paper](https://arxiv.org/abs/2305.03111)\n\nMost databases came from Kaggle and the CTU Prague Relational Learning Repository; the rest were assembled from open tables. Native English speakers who passed the authors' exams wrote questions from each database and its description files. Two SQL annotators then wrote a query for each question independently; queries that returned the same result were kept, and experts settled the others. Many questions come with an external knowledge evidence sentence, such as a formula, a domain definition, a synonym, or how a value is stored, which the paper treats as an input alongside the question and the database. [Original paper](https://arxiv.org/abs/2305.03111)",
+  "methodology": "This snapshot contains all 1,534 questions in bird-sql-dev-1106, the development split released on 2025-11-06, at the pinned dataset revision. The questions cover 11 databases: california_schools, card_games, codebase_community, debit_card_specializing, european_football_2, financial, formula_1, student_club, superhero, thrombosis_prediction, and toxicology. The upstream difficulty labels mark 860 as simple, 443 as moderate, and 231 as challenging. This release came out of a quality review that refined questions and evidence and corrected SQL so every query runs on the released databases. Earlier versions of the development split, the training split, and the 500-question Mini-Dev subset are not imported, and the test split is not published. [Dataset card](https://huggingface.co/datasets/birdsql/bird_sql_dev_20251106/blob/3c11fb193e5439b338e23677fa0aae11e8b85db9/README.md) and [BIRD homepage](https://bird-bench.github.io/)\n\nEach Task Prompt shows the upstream question, then a Database: line with the upstream database name, then an Evidence: line with the upstream evidence text. 157 questions have empty or whitespace-only evidence, and their prompts have no Evidence line. Eleven others have the evidence text [Remove Evidence], and one each has No evidence needed and N/A; these lines are kept as published. Difficulty labels are not shown. The prompts do not include the database schema or contents. BIRD's baseline code builds the model input from the SQLite file, starting with each table's CREATE TABLE statement and optionally adding example rows, and evaluation runs queries against the same file. The dataset card links the database package, and each task's environment link points to that card. [Dataset card](https://huggingface.co/datasets/birdsql/bird_sql_dev_20251106/blob/3c11fb193e5439b338e23677fa0aae11e8b85db9/README.md) and [baseline prompt code](https://github.com/AlibabaResearch/DAMO-ConvAI/blob/7635e3f7fd7136cddc462d7f184fd497d5bd5e4c/bird/llm/src/gpt_request.py)\n\nThe Solution is the upstream gold SQL query, unchanged. Questions 863 and 875 in formula_1 have the same question text and SQL but different evidence, and both are kept. Four questions contain stray line breaks, which are kept as published. IDs are question- followed by the four-digit upstream question_id, such as question-0000. Prompt and solution source links point to the pinned data file without per-question anchors. The importer uses only Python's standard library and can be rerun with python3 data/bird-sql/import.py.",
+  "scoring": "BIRD's main metric is execution accuracy (EX): the share of questions for which the predicted query returns the same result as the gold query on the question's database. The authors' evaluation script runs both queries in SQLite and compares the results as sets of rows, so row order and repeated rows do not affect the match. A query that fails or exceeds the time limit, 30 seconds by default, counts as wrong. The script reports accuracy for each difficulty level and overall. [Original paper](https://arxiv.org/abs/2305.03111) and [evaluation script](https://github.com/AlibabaResearch/DAMO-ConvAI/blob/7635e3f7fd7136cddc462d7f184fd497d5bd5e4c/bird/llm/src/evaluation.py)\n\nThe paper also defines the Valid Efficiency Score (VES). It credits only queries whose results match and weights each one by the square root of the gold query's running time divided by the predicted query's, with that ratio averaged over repeated runs. Since August 2024 the leaderboard has used a reward-based version, R-VES, for test submissions. The leaderboard marks results that use the evidence as oracle knowledge. [VES script](https://github.com/AlibabaResearch/DAMO-ConvAI/blob/7635e3f7fd7136cddc462d7f184fd497d5bd5e4c/bird/llm/src/evaluation_ves.py) and [BIRD homepage](https://bird-bench.github.io/)\n\nCompare results that use the same development release, the same choice about evidence, and the same schema prompt. Benchopedia stores the questions and gold queries. It does not run evaluations or publish model scores for this snapshot.",
+  "limitations": "The evidence sentences were written by annotators for each question, so a score that uses them measures SQL writing given hints a real user might not supply. The paper reports that its baseline models generally score higher when the evidence is given. The dataset card notes that some ambiguity remains after its review, and the authors plan an interactive setting where models can ask clarifying questions. [Original paper](https://arxiv.org/abs/2305.03111) and [dataset card](https://huggingface.co/datasets/birdsql/bird_sql_dev_20251106/blob/3c11fb193e5439b338e23677fa0aae11e8b85db9/README.md)\n\nExecution accuracy checks results on one database, so a query can match the gold result without being equivalent in general, and the set comparison ignores row order even when a question asks for sorted output. The development split was revised in September 2023 and again in November 2025, so development scores from different releases are not directly comparable. The questions and gold queries are public, so a score alone cannot establish that a model was tested on unseen material. [Evaluation script](https://github.com/AlibabaResearch/DAMO-ConvAI/blob/7635e3f7fd7136cddc462d7f184fd497d5bd5e4c/bird/llm/src/evaluation.py) and [BIRD homepage](https://bird-bench.github.io/)",
+  "sources": [
+    {
+      "title": "BIRD · Original paper",
+      "url": "https://arxiv.org/abs/2305.03111"
+    },
+    {
+      "title": "BIRD · Homepage and leaderboard",
+      "url": "https://bird-bench.github.io/"
+    },
+    {
+      "title": "BIRD · Dataset card at the imported revision",
+      "url": "https://huggingface.co/datasets/birdsql/bird_sql_dev_20251106/blob/3c11fb193e5439b338e23677fa0aae11e8b85db9/README.md"
+    },
+    {
+      "title": "BIRD · Repository README",
+      "url": "https://github.com/AlibabaResearch/DAMO-ConvAI/blob/7635e3f7fd7136cddc462d7f184fd497d5bd5e4c/bird/README.md"
+    },
+    {
+      "title": "BIRD · Execution accuracy script",
+      "url": "https://github.com/AlibabaResearch/DAMO-ConvAI/blob/7635e3f7fd7136cddc462d7f184fd497d5bd5e4c/bird/llm/src/evaluation.py"
+    },
+    {
+      "title": "BIRD · Valid Efficiency Score script",
+      "url": "https://github.com/AlibabaResearch/DAMO-ConvAI/blob/7635e3f7fd7136cddc462d7f184fd497d5bd5e4c/bird/llm/src/evaluation_ves.py"
+    },
+    {
+      "title": "BIRD · Baseline prompt code",
+      "url": "https://github.com/AlibabaResearch/DAMO-ConvAI/blob/7635e3f7fd7136cddc462d7f184fd497d5bd5e4c/bird/llm/src/gpt_request.py"
+    }
+  ]
+}
