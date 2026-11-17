@@ -1,0 +1,33 @@
+{
+  "id": "arc-challenge",
+  "name": "ARC-Challenge",
+  "summary": "1,172 grade-school science multiple-choice test questions that both a retrieval baseline and a word co-occurrence baseline missed, with reference answers.",
+  "homepage_url": "https://allenai.org/data/arc",
+  "dataset_url": "https://huggingface.co/datasets/allenai/ai2_arc",
+  "dataset_revision": "210d026faf9955653af8916fad021475a3f00453",
+  "released_on": "2018-03-14",
+  "task_count": 1172,
+  "has_solutions": true,
+  "overview": "ARC (AI2 Reasoning Challenge) measures science question answering at grade-school level. The Challenge set keeps only questions that both a retrieval baseline and a word co-occurrence baseline answered incorrectly. Each question has a reference answer among its choices. The benchmark was introduced in March 2018. [Original paper](https://arxiv.org/abs/1803.05457)",
+  "methodology": "This snapshot contains all 1,172 records in the ARC-Challenge test split at the pinned dataset revision. It excludes the Challenge train and validation splits, and it excludes ARC-Easy entirely. The accompanying corpus of science sentences is not included. The count is taken from the pinned dataset card. [Dataset card](https://huggingface.co/datasets/allenai/ai2_arc/blob/210d026faf9955653af8916fad021475a3f00453/README.md)\n\nEach Task Prompt preserves the upstream question, then the choices in their original order with their original labels. Of the 1,172 questions, 1,165 have four choices, 4 have three, and 3 have five. Some items use letter labels and some use number labels. The Solution shows the reference label and the matching choice text. IDs are the upstream question IDs. Source links open the row in the dataset viewer, which follows the current dataset revision. These pages show individual test questions without added few-shot examples. No task-specific software environment is required to read them. [Dataset card](https://huggingface.co/datasets/allenai/ai2_arc/blob/210d026faf9955653af8916fad021475a3f00453/README.md)\n\nThe importer reads the pinned Parquet file with PyArrow and can be rerun with python3 data/arc-challenge/import.py.",
+  "scoring": "A question is correct when the predicted choice label matches the reference label. The usual summary is the fraction of the Challenge test set answered correctly. The original challenge definition compares systems with a retrieval baseline and a word co-occurrence baseline, both of which miss every question in this set by construction. [Original paper](https://arxiv.org/abs/1803.05457)\n\nCompare results that use the same split, prompt format, and answer-selection method. Benchopedia stores the questions and reference answers. It does not run evaluations or publish model scores for this snapshot.",
+  "limitations": "These are English grade-school science questions with the answer present among the choices, so a score does not by itself establish open-ended scientific reasoning or skill outside this question style. The Challenge set was filtered by two older baselines, so it is not a random sample of grade-school science questions. [Original paper](https://arxiv.org/abs/1803.05457)\n\nTwo pairs share the same question text and are kept under their own IDs. TIMSS_2003_8_pg47 and Mercury_SC_LBS10597 have different reference labels. Mercury_7116183 and Mercury_406639 have the same reference label. The imported questions and labels are preserved as published rather than independently corrected. This is the ARC-Challenge test split, not ARC-Easy and not a smaller sample. The questions and answers are public, so a score alone cannot establish that a model was tested on unseen material.",
+  "sources": [
+    {
+      "title": "ARC · Original paper",
+      "url": "https://arxiv.org/abs/1803.05457"
+    },
+    {
+      "title": "ARC · Dataset card at the imported revision",
+      "url": "https://huggingface.co/datasets/allenai/ai2_arc/blob/210d026faf9955653af8916fad021475a3f00453/README.md"
+    },
+    {
+      "title": "ARC · Allen Institute data page",
+      "url": "https://allenai.org/data/arc"
+    },
+    {
+      "title": "ARC · CC BY-SA 4.0",
+      "url": "https://creativecommons.org/licenses/by-sa/4.0/"
+    }
+  ]
+}
