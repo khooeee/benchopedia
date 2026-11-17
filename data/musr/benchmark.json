@@ -1,0 +1,45 @@
+{
+  "id": "musr",
+  "name": "MuSR",
+  "summary": "756 multiple-choice questions about long generated narratives: murder mysteries, object placements, and team allocations that need multistep commonsense reasoning.",
+  "homepage_url": "https://zayne-sprague.github.io/MuSR/",
+  "dataset_url": "https://github.com/Zayne-sprague/MuSR/tree/b1f4d4168a9cfc6760e8b74d728e4516023dfaa5/datasets",
+  "dataset_revision": "b1f4d4168a9cfc6760e8b74d728e4516023dfaa5",
+  "released_on": "2023-10-24",
+  "task_count": 756,
+  "has_solutions": true,
+  "overview": "MuSR (Multistep Soft Reasoning) tests whether a model can combine facts stated in a long narrative with unstated commonsense knowledge to answer a question. It has three domains: identifying the murderer in a murder mystery, predicting where a character will look for an object that others have moved, and assigning people to two tasks so that both are done well. In this snapshot the narratives average about 900 words for murder mysteries, 800 for object placements, and 500 for team allocations. GPT-4 wrote them from reasoning trees of facts that the authors' pipeline built first, so each answer follows from facts placed in the story. The benchmark was introduced in October 2023 and published at ICLR 2024. [Original paper](https://arxiv.org/abs/2310.16049) and [project website](https://zayne-sprague.github.io/MuSR/)",
+  "methodology": "This snapshot contains all 756 questions in the three dataset files at the pinned commit: 250 murder mysteries with two suspects each, 256 object-placement questions about 64 stories with two to five locations each, and 250 team allocations with three options each. The reasoning trees and intermediate data stored with each question are not imported. [Dataset files](https://github.com/Zayne-sprague/MuSR/tree/b1f4d4168a9cfc6760e8b74d728e4516023dfaa5/datasets)\n\nThe authors also publish the same questions on Hugging Face. Its CSV files match the pinned GitHub files question for question, so this import uses the GitHub files that the authors' evaluation script reads. [Hugging Face copy](https://huggingface.co/datasets/TAUR-Lab/MuSR/blob/7c365b439a222150f317764d4f16ae6c96d7d94a/README.md) and [evaluation script](https://github.com/Zayne-sprague/MuSR/blob/b1f4d4168a9cfc6760e8b74d728e4516023dfaa5/eval/eval.py)\n\nEach Task Prompt contains the upstream narrative verbatim, a blank line, the question verbatim, a blank line, and the choices numbered from 1 in upstream order, one per line, as in the authors' evaluation prompt. The evaluation prompt's surrounding instructions vary by prompting strategy and are not included. The Solution is the correct choice number and text; the upstream answer is a zero-based index into the choices. [Evaluation script](https://github.com/Zayne-sprague/MuSR/blob/b1f4d4168a9cfc6760e8b74d728e4516023dfaa5/eval/eval.py)\n\nThe source has no question IDs. IDs are the domain followed by the one-based question number in that file, counting the questions of each story in order, such as murder-mystery-001 or object-placements-256. Object-placement stories each have several questions, so their narratives repeat across tasks. Prompt and solution source links point to the pinned file; it has no per-question anchors. No task-specific software environment is required. The importer uses only Python's standard library and can be rerun with python3 data/musr/import.py.",
+  "scoring": "A question is correct when the model picks the correct choice. The paper reports accuracy for each domain and compares prompting strategies, including chain-of-thought prompting with a description of the domain's reasoning, and several neurosymbolic methods. [Original paper](https://arxiv.org/abs/2310.16049)\n\nThe authors' evaluation script asks the model to end its answer with the choice number. When no choice number can be found in the output, the script picks a random choice. To check that the answers follow from the narratives, the paper reports accuracy for seven human annotators and for the majority vote of three, and it compares simple rule baselines that score near chance. [Evaluation script](https://github.com/Zayne-sprague/MuSR/blob/b1f4d4168a9cfc6760e8b74d728e4516023dfaa5/eval/eval.py) and [original paper](https://arxiv.org/abs/2310.16049)\n\nCompare results that use the same prompting strategy, answer extraction, and handling of unparseable answers. Benchopedia stores the published questions and answers. It does not run evaluations or publish model scores for this snapshot.",
+  "limitations": "The narratives were written by GPT-4 from generated reasoning trees, so they share that model's style, and the three domains follow fixed templates for what must be inferred. The paper notes that GPT-4 could not reliably build deeper reasoning trees, so each narrative rests on shallow chains of deductions. [Original paper](https://arxiv.org/abs/2310.16049)\n\nThe answer choices are few, so random guessing scores well above zero: 50% on murder mysteries, and 33% on team allocations. Object-placement questions share stories, so they are not independent samples. The narratives and answers are public, so a score alone cannot establish that a model was tested on unseen material. [Dataset files](https://github.com/Zayne-sprague/MuSR/tree/b1f4d4168a9cfc6760e8b74d728e4516023dfaa5/datasets)",
+  "sources": [
+    {
+      "title": "MuSR · Original paper",
+      "url": "https://arxiv.org/abs/2310.16049"
+    },
+    {
+      "title": "MuSR · Project website",
+      "url": "https://zayne-sprague.github.io/MuSR/"
+    },
+    {
+      "title": "MuSR · README at the imported revision",
+      "url": "https://github.com/Zayne-sprague/MuSR/blob/b1f4d4168a9cfc6760e8b74d728e4516023dfaa5/README.md"
+    },
+    {
+      "title": "MuSR · Dataset files at the imported revision",
+      "url": "https://github.com/Zayne-sprague/MuSR/tree/b1f4d4168a9cfc6760e8b74d728e4516023dfaa5/datasets"
+    },
+    {
+      "title": "MuSR · Evaluation script",
+      "url": "https://github.com/Zayne-sprague/MuSR/blob/b1f4d4168a9cfc6760e8b74d728e4516023dfaa5/eval/eval.py"
+    },
+    {
+      "title": "MuSR · Hugging Face copy",
+      "url": "https://huggingface.co/datasets/TAUR-Lab/MuSR/blob/7c365b439a222150f317764d4f16ae6c96d7d94a/README.md"
+    },
+    {
+      "title": "MuSR · MIT license",
+      "url": "https://github.com/Zayne-sprague/MuSR/blob/b1f4d4168a9cfc6760e8b74d728e4516023dfaa5/LICENSE"
+    }
+  ]
+}
