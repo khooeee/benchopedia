@@ -1,0 +1,41 @@
+{
+  "id": "mgsm",
+  "name": "MGSM",
+  "summary": "250 grade school math word problems in English and ten human translations, 2,750 tasks in all, each with its numeric answer.",
+  "homepage_url": "https://github.com/google-research/url-nlp/tree/main/mgsm",
+  "dataset_url": "https://github.com/google-research/url-nlp/tree/452a21ad3dae5668c06ceeac21ff073e1e40f9be/mgsm",
+  "dataset_revision": "452a21ad3dae5668c06ceeac21ff073e1e40f9be",
+  "released_on": "2022-10-06",
+  "task_count": 2750,
+  "has_solutions": true,
+  "overview": "MGSM (Multilingual Grade School Math) tests whether a model can solve the same arithmetic word problems in many languages. Professional translators translated 250 GSM8K test problems into Bengali, Chinese, French, German, Japanese, Russian, Spanish, Swahili, Telugu, and Thai, and the English originals are published with them. The authors chose the ten languages to span eight language families and very different amounts of pretraining text. The benchmark was introduced in October 2022 with a study of multilingual chain-of-thought prompting. [Original paper](https://arxiv.org/abs/2210.03057) and [dataset README](https://github.com/google-research/url-nlp/blob/452a21ad3dae5668c06ceeac21ff073e1e40f9be/mgsm/README.md)",
+  "methodology": "This snapshot contains every row of the eleven language files at the pinned commit: the same 250 problems in English and in each of the ten translations, 2,750 tasks in all. MGSM has no training or development split. The translated few-shot examples in exemplars.py are not imported. [Language files](https://github.com/google-research/url-nlp/tree/452a21ad3dae5668c06ceeac21ff073e1e40f9be/mgsm) and [few-shot examples](https://github.com/google-research/url-nlp/blob/452a21ad3dae5668c06ceeac21ff073e1e40f9be/mgsm/exemplars.py)\n\nThe authors took the first 250 problems of the GSM8K test set. The English rows match GSM8K test problems 1 through 250 word for word, so they repeat tasks test-0001 through test-0250 of the GSM8K benchmark in this catalog. Paid professional translators who were native speakers of each target language produced the translations. They agreed not to use machine translation, and the vendor had a sample checked by another translator. Answers stay in Arabic numerals in every language. [Original paper](https://arxiv.org/abs/2210.03057) and [GSM8K test data](https://github.com/openai/grade-school-math/blob/3101c7d5072418e28b9008a6636bde82a006892c/grade_school_math/data/test.jsonl)\n\nEach Task Prompt preserves the question column verbatim. The Solution preserves the answer column verbatim: a whole number, written with thousands separators in four problems, such as 5,600. The files contain final answers only; the worked English solutions remain in GSM8K. The importer checks that each problem has the same answer in all eleven languages.\n\nThe source has no task IDs. IDs are the language code and the one-based line number in that language's file, from bn-001 through zh-250. The same line number is the same problem in every language. Prompt and solution source links point to that line in the pinned file. No task-specific software environment is required to read them. The importer uses only Python's standard library and can be rerun with python3 data/mgsm/import.py.",
+  "scoring": "A problem is correct when the model's final answer equals the reference number. The paper reports accuracy for each language over its 250 problems and compares languages and prompting methods. The dataset directory includes no grading script. [Original paper](https://arxiv.org/abs/2210.03057) and [language files](https://github.com/google-research/url-nlp/tree/452a21ad3dae5668c06ceeac21ff073e1e40f9be/mgsm)\n\nThe paper compares four ways to answer a question: the answer alone, step-by-step reasoning in the question's language, step-by-step reasoning in English, and reasoning in English after Google Translate converts the question to English. Few-shot examples could be in the question's language, in English, or in a mix of languages. The paper used up to six examples and greedy decoding. [Original paper](https://arxiv.org/abs/2210.03057) and [few-shot examples](https://github.com/google-research/url-nlp/blob/452a21ad3dae5668c06ceeac21ff073e1e40f9be/mgsm/exemplars.py)\n\nCompare results that use the same prompting method, example language, number of examples, and answer extraction. Benchopedia stores the published problems and answers. It does not run evaluations or publish model scores for this snapshot.",
+  "limitations": "Each language has only 250 problems, so one problem changes that language's accuracy by 0.4 percentage points. Every language uses the same problems, so differences between languages are not measured on independent questions. Translations keep the original problem content; for example, the first Chinese problem keeps the name Janet and prices in US dollars. [Original paper](https://arxiv.org/abs/2210.03057) and [first Chinese problem](https://github.com/google-research/url-nlp/blob/452a21ad3dae5668c06ceeac21ff073e1e40f9be/mgsm/mgsm_zh.tsv?plain=1#L1)\n\nThe tasks are grade school arithmetic, so a score does not by itself establish advanced mathematics, general reasoning, or broad ability in a language. Final-answer accuracy does not show whether the reasoning steps are correct. The English problems and their answers are public GSM8K test items, and the translations have been public since 2022, so a score alone cannot establish that a model was tested on unseen material. Translations are preserved as published rather than independently checked. [Dataset README](https://github.com/google-research/url-nlp/blob/452a21ad3dae5668c06ceeac21ff073e1e40f9be/mgsm/README.md)",
+  "sources": [
+    {
+      "title": "MGSM · Original paper",
+      "url": "https://arxiv.org/abs/2210.03057"
+    },
+    {
+      "title": "MGSM · Dataset README at the imported revision",
+      "url": "https://github.com/google-research/url-nlp/blob/452a21ad3dae5668c06ceeac21ff073e1e40f9be/mgsm/README.md"
+    },
+    {
+      "title": "MGSM · Language files at the imported revision",
+      "url": "https://github.com/google-research/url-nlp/tree/452a21ad3dae5668c06ceeac21ff073e1e40f9be/mgsm"
+    },
+    {
+      "title": "MGSM · Translated few-shot examples",
+      "url": "https://github.com/google-research/url-nlp/blob/452a21ad3dae5668c06ceeac21ff073e1e40f9be/mgsm/exemplars.py"
+    },
+    {
+      "title": "GSM8K · Test data that MGSM translates",
+      "url": "https://github.com/openai/grade-school-math/blob/3101c7d5072418e28b9008a6636bde82a006892c/grade_school_math/data/test.jsonl"
+    },
+    {
+      "title": "MGSM · CC BY 4.0 license",
+      "url": "https://github.com/google-research/url-nlp/blob/452a21ad3dae5668c06ceeac21ff073e1e40f9be/mgsm/LICENSE"
+    }
+  ]
+}
