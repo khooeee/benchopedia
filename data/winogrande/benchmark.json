@@ -1,0 +1,33 @@
+{
+  "id": "winogrande",
+  "name": "WinoGrande",
+  "summary": "1,267 pronoun-resolution questions from the labeled development split, each with two options and a reference answer.",
+  "homepage_url": "https://github.com/allenai/winogrande/tree/727e837f77521ef38bcc56df3b275c8da43f45af",
+  "dataset_url": "https://storage.googleapis.com/ai2-mosaic/public/winogrande/winogrande_1.1.zip",
+  "dataset_revision": "3619ab104d8be2977b25c90ff420cb42d491707dcc75362a1e5d22bc082b7318",
+  "released_on": "2019-07-24",
+  "task_count": 1267,
+  "has_solutions": true,
+  "overview": "WinoGrande tests whether a model can tell which of two noun phrases a pronoun refers to. Each item is a sentence with a blank and two options that could fill it. The problems were written to be hard for models that exploit statistical shortcuts in smaller pronoun-resolution sets. The benchmark was introduced in July 2019. [Original paper](https://arxiv.org/abs/1907.10641)",
+  "methodology": "This snapshot contains all 1,267 labeled development examples in WinoGrande 1.1. The development file and its label file agree on every line. It excludes the unlabeled test file and every training file, including the smaller training sizes and the bias-reduced training file. Those training files are not the evaluation split. [Package notes](https://github.com/allenai/winogrande/blob/727e837f77521ef38bcc56df3b275c8da43f45af/README.md) and [original paper](https://arxiv.org/abs/1907.10641)\n\nThe questions are not in the git repository. The download script at that commit fetches the public zip, and this snapshot pins that zip by SHA-256. The recorded revision is that checksum.\n\nEach Task Prompt keeps the sentence, then the two options numbered 1 and 2. The blank stays in the sentence. The Solution is the label number and the text of the option it selects. Question IDs are the upstream qID values. Source links open the zip, which is not addressable by line. No task-specific software environment is required to read them.\n\nThe importer checks the zip checksum and can be rerun with python3 data/winogrande/import.py.",
+  "scoring": "A development item is correct when the predicted option number, 1 or 2, matches the reference label. Accuracy is the fraction of evaluated items answered correctly. The package evaluation script scores a prediction file that has one column for each training size and also reports a normalized area under that learning curve. [Evaluation script in the data package](https://storage.googleapis.com/ai2-mosaic/public/winogrande/winogrande_1.1.zip) and [original paper](https://arxiv.org/abs/1907.10641)\n\nCompare results that use the same split. A development score is not a hidden-test score. Benchopedia stores the development sentences, options, and answers. It does not run evaluations or publish model scores for this snapshot.",
+  "limitations": "These are English fill-in-the-blank problems with two short options, so a score does not by itself establish broad language understanding. The reference answer does not explain the reasoning. The text is preserved as published rather than independently corrected. [Original paper](https://arxiv.org/abs/1907.10641)\n\nThis is the labeled development split, not the unlabeled test split. The questions and answers are public, so a score alone cannot establish that a model was tested on unseen material. The smaller training files and the bias-reduced training file are not included.",
+  "sources": [
+    {
+      "title": "WinoGrande · Original paper",
+      "url": "https://arxiv.org/abs/1907.10641"
+    },
+    {
+      "title": "WinoGrande · Repository at the download-script commit",
+      "url": "https://github.com/allenai/winogrande/tree/727e837f77521ef38bcc56df3b275c8da43f45af"
+    },
+    {
+      "title": "WinoGrande · Version 1.1 data package",
+      "url": "https://storage.googleapis.com/ai2-mosaic/public/winogrande/winogrande_1.1.zip"
+    },
+    {
+      "title": "WinoGrande · CC BY 2.0",
+      "url": "https://creativecommons.org/licenses/by/2.0/legalcode"
+    }
+  ]
+}
