@@ -1,0 +1,33 @@
+{
+  "id": "socialiqa",
+  "name": "SocialIQA",
+  "summary": "2,224 social commonsense questions from the labeled test split, each with three answers and a reference choice.",
+  "homepage_url": "https://maartensap.com/social-iqa/",
+  "dataset_url": "https://maartensap.com/social-iqa/data/socialIQa_v1.4.tgz",
+  "dataset_revision": "99a399d50f1a996388e94ab435ba0ceadc6b8ad9d90e6420358c962a4850d217",
+  "released_on": "2019-04-22",
+  "task_count": 2224,
+  "has_solutions": true,
+  "overview": "SocialIQA tests reasoning about social interactions. Each item gives a short context, a question about what someone would do or feel, and three answers. The benchmark was introduced in April 2019. [Original paper](https://arxiv.org/abs/1904.09728)",
+  "methodology": "This snapshot contains all 2,224 examples in the version 1.4 test file. Every example has a context, a question, three answers, and a reference letter. It excludes the 33,410 training examples and the 1,954 development examples. A second download on the project page adds ATOMIC dimensions and answer sources; that package is not this snapshot. [Project page](https://maartensap.com/social-iqa/) and [original paper](https://arxiv.org/abs/1904.09728)\n\nThe questions are published as a gzipped archive. This snapshot pins that archive by SHA-256, and the recorded revision is that checksum.\n\nEach Task Prompt keeps the context, then the question, then the answers labeled A, B, and C. The Solution is the reference letter and the text of the answer it selects. The source has no example IDs. IDs are socialiqa-0001 through socialiqa-2224, from one-based row order in the pinned test file. Source links open the archive, which is not addressable by line. No task-specific software environment is required to read them.\n\nThe published test file contains 21 rows that exactly repeat another row. All 2,224 rows are kept. The importer can be rerun with python3 data/socialiqa/import.py.",
+  "scoring": "An item is correct when the predicted letter, A, B, or C, matches the reference letter. Accuracy is the fraction of evaluated items answered correctly. [Original paper](https://arxiv.org/abs/1904.09728)\n\nCompare results that use the same split. Benchopedia stores the published test contexts, questions, answers, and reference letters. It does not run evaluations or publish model scores for this snapshot.",
+  "limitations": "These are English questions about a short written social situation, with three short answers, so a score does not by itself establish social reasoning in real interactions. The reference answer does not explain why the other answers are worse. The text is preserved as published rather than independently corrected. [Original paper](https://arxiv.org/abs/1904.09728)\n\nThe published test file includes the reference letters, so a score alone cannot establish that a model was tested on unseen material. Twenty-one rows exactly repeat another row. A score that drops those repeats would not match this snapshot.",
+  "sources": [
+    {
+      "title": "SocialIQA · Original paper",
+      "url": "https://arxiv.org/abs/1904.09728"
+    },
+    {
+      "title": "SocialIQA · Project page",
+      "url": "https://maartensap.com/social-iqa/"
+    },
+    {
+      "title": "SocialIQA · Version 1.4 data archive",
+      "url": "https://maartensap.com/social-iqa/data/socialIQa_v1.4.tgz"
+    },
+    {
+      "title": "SocialIQA · CC BY 4.0",
+      "url": "https://creativecommons.org/licenses/by/4.0/legalcode"
+    }
+  ]
+}
