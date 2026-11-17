@@ -1,0 +1,41 @@
+{
+  "id": "simpleqa",
+  "name": "SimpleQA",
+  "summary": "4,326 short fact-seeking questions, each with a single reference answer, for measuring whether models answer correctly or decline when unsure.",
+  "homepage_url": "https://openai.com/index/introducing-simpleqa/",
+  "dataset_url": "https://openaipublic.blob.core.windows.net/simple-evals/simple_qa_test_set.csv",
+  "dataset_revision": "feee3f7e7db3617e94e8fcf1977b756ec420ef8568f4e0fcbbe0e92e9d5fc032",
+  "released_on": "2024-10-30",
+  "task_count": 4326,
+  "has_solutions": true,
+  "overview": "SimpleQA tests short-form factuality: whether a model answers short, fact-seeking questions correctly, and whether it declines to answer when it does not know. Each question was written to have a single, indisputable answer that does not change over time, and was collected adversarially so that at least one of four GPT-4-era model responses got it wrong. OpenAI released the benchmark in October 2024. [Paper](https://cdn.openai.com/papers/simpleqa.pdf) and [announcement](https://openai.com/index/introducing-simpleqa/)",
+  "methodology": "This snapshot contains all 4,326 questions in the published SimpleQA test file, pinned by its SHA-256 checksum because the file is not versioned. The importer refuses to write if the published file differs from that checksum. The pinned evaluation code reads the same file. [Test file](https://openaipublic.blob.core.windows.net/simple-evals/simple_qa_test_set.csv) and [evaluation code](https://github.com/openai/simple-evals/blob/652c89d0ca9df547706735883097e9537d40dc47/simpleqa_eval.py)\n\nHuman annotators, called AI trainers, wrote each question with a reference answer and a link to a supporting webpage. A second trainer answered each question independently, and only questions where both answers matched were kept. Questions had to be answerable as of December 31, 2023. A third trainer answered a random sample of 1,000 questions, and from that check the authors estimate an error rate of about 3%. Topics were tagged afterward with ChatGPT; the most common are science and technology, politics, and art. [Paper](https://cdn.openai.com/papers/simpleqa.pdf)\n\nEach Task Prompt preserves the upstream problem verbatim, and the Solution preserves the upstream answer verbatim. Some questions and answers keep leading or trailing whitespace, including a final line break, as published. The metadata column's topic, answer type, and supporting-source entries are not stored. Those source entries are not uniform: some hold several URLs in one entry, and at least one holds text quoted from a cited page instead of a link.\n\nThe source has no question IDs. IDs are test-0001 through test-4326, assigned by one-based row order in the pinned file. Prompt and solution source links point to the published file, which has no per-question links. No task-specific software environment is required. The importer uses only Python's standard library and can be rerun with python3 data/simpleqa/import.py.",
+  "scoring": "A prompted ChatGPT grader sees the question, the reference answer, and the model's answer, and grades the answer as correct, incorrect, or not attempted. An answer is correct when it fully contains the reference answer without contradicting it, incorrect when it contradicts the reference in any way, even with hedging, and not attempted when it neither gives the full reference answer nor contradicts it. [Paper](https://cdn.openai.com/papers/simpleqa.pdf) and [grader prompt](https://github.com/openai/simple-evals/blob/652c89d0ca9df547706735883097e9537d40dc47/simpleqa_eval.py)\n\nThe paper reports overall correct, the share of all questions answered correctly, and correct given attempted, the share of attempted questions answered correctly. Their harmonic mean is a single F-score. The paper notes that the F-score rewards guessing when a model is at least 50% sure, and suggests an alternative score that subtracts a chosen penalty for each incorrect answer.\n\nCompare results that use the same grader model, grader prompt, and answering setup, such as whether the model may browse the web. Benchopedia stores the published questions and reference answers. It does not run evaluations or publish model scores for this snapshot.",
+  "limitations": "The paper's main stated limitation is that SimpleQA measures factuality only for short, fact-seeking questions with a single verifiable answer; whether that ability carries over to long responses containing many facts is an open question. The questions were selected because GPT-4-era models got them wrong, so they are not a random sample of factual knowledge. [Paper](https://cdn.openai.com/papers/simpleqa.pdf)\n\nGrades come from a model rather than exact matching, and the authors estimate that about 3% of reference answers have problems such as ambiguous questions or conflicting sources. The reference answers are preserved as published rather than independently corrected. A model with web access can look up answers, and the questions and answers are public, so a score alone cannot establish that a model answered from its own knowledge or was tested on unseen material. [Paper](https://cdn.openai.com/papers/simpleqa.pdf)",
+  "sources": [
+    {
+      "title": "SimpleQA · Paper",
+      "url": "https://cdn.openai.com/papers/simpleqa.pdf"
+    },
+    {
+      "title": "SimpleQA · arXiv listing",
+      "url": "https://arxiv.org/abs/2411.04368"
+    },
+    {
+      "title": "SimpleQA · Announcement",
+      "url": "https://openai.com/index/introducing-simpleqa/"
+    },
+    {
+      "title": "SimpleQA · Published test file",
+      "url": "https://openaipublic.blob.core.windows.net/simple-evals/simple_qa_test_set.csv"
+    },
+    {
+      "title": "SimpleQA · Evaluation and grader code",
+      "url": "https://github.com/openai/simple-evals/blob/652c89d0ca9df547706735883097e9537d40dc47/simpleqa_eval.py"
+    },
+    {
+      "title": "SimpleQA · simple-evals README listing its MIT license",
+      "url": "https://github.com/openai/simple-evals/blob/652c89d0ca9df547706735883097e9537d40dc47/README.md"
+    }
+  ]
+}
