@@ -1,0 +1,53 @@
+{
+  "id": "cruxeval",
+  "name": "CRUXEval",
+  "summary": "800 short Python functions, each with one input and its output, for predicting what a function returns or which input produces a given result.",
+  "homepage_url": "https://crux-eval.github.io/",
+  "dataset_url": "https://github.com/facebookresearch/cruxeval/blob/190faf16d175b5847b0af05d937872b1fb395942/data/cruxeval.jsonl",
+  "dataset_revision": "190faf16d175b5847b0af05d937872b1fb395942",
+  "released_on": "2024-01-05",
+  "task_count": 800,
+  "has_solutions": true,
+  "overview": "CRUXEval (Code Reasoning, Understanding, and eXecution Evaluation) tests whether a model can work out what short Python code does without running it. Each of its 800 samples pairs a short Python function with one input and the output the function returns for it. That gives two tasks: CRUXEval-O asks for the output of a given call, and CRUXEval-I asks for any input that produces a given output. The benchmark was introduced in January 2024 as a complement to code-generation benchmarks such as HumanEval and MBPP. [Original paper](https://arxiv.org/abs/2401.03065) and [project website](https://crux-eval.github.io/)\n\nThe authors prompted Code Llama 34B with names of Python standard-library methods, 47 from str, 11 from dict, and 11 from list, and asked it to write a function using the method along with test inputs. Outputs come from executing the functions. The README lists filters for short code with no imports, no floating-point operations, deterministic results, and small computation, aiming for problems a good programmer could solve in about a minute without extra memory. The 800 samples were drawn at random from the functions that passed. [Dataset construction](https://github.com/facebookresearch/cruxeval/blob/190faf16d175b5847b0af05d937872b1fb395942/data/README.md)",
+  "methodology": "This snapshot contains all 800 samples, sample_0 through sample_799, in data/cruxeval.jsonl at the pinned commit. The authors' Hugging Face copy is byte-identical to that file. The evaluation code, prompt templates, model generations, and data-generation prompts are not imported. [Dataset file](https://github.com/facebookresearch/cruxeval/blob/190faf16d175b5847b0af05d937872b1fb395942/data/cruxeval.jsonl) and [Hugging Face copy](https://huggingface.co/datasets/cruxeval-org/cruxeval/blob/b96af0450242eb4da433032b90998f25588a5d0f/README.md)\n\nEach Task Prompt begins with the upstream sample ID and then poses both tasks, each in a Python code block. The output-prediction block contains the upstream code verbatim followed by assert f(input) == ??, and the input-prediction block contains the same code followed by assert f(??) == output, using the upstream input and output text. These are the lines the authors' prompts place between [PYTHON] tags. The function in sample_135 takes no arguments, so its input is empty and its call is f(). The instructions and few-shot examples around them vary by task and prompting strategy and are not included; the headings and fences are display formatting. [Prompt templates](https://github.com/facebookresearch/cruxeval/blob/190faf16d175b5847b0af05d937872b1fb395942/prompts.py)\n\nThe Solution is the completed assertion, assert f(input) == output, with the upstream input and output verbatim. It holds the reference answer for output prediction. For input prediction it shows one input that works; other inputs that produce the same output are also correct.\n\nPage IDs use sample-000 through sample-799, the upstream sample numbers padded for ordering. Prompt and solution source links point to the sample's line in the pinned file. The code uses no imports, and three samples also define module-level variables before f. No task-specific software environment is required beyond Python; the README says the authors' code was tested with Python 3.9. The importer uses only Python's standard library and can be rerun with python3 data/cruxeval/import.py.",
+  "scoring": "Both tasks are scored by running code. The authors' inference code takes the assertion the model writes in its answer. For output prediction it keeps the text after ==, and the scoring script runs the function and then asserts that the reference output equals that text. An answer that repeats the call f(input) is not run. For input prediction it keeps the call to f before ==, and the script asserts that the reference output equals the result of that call, so any working input passes. Each check runs with a 3-second limit. [Output answer extraction](https://github.com/facebookresearch/cruxeval/blob/190faf16d175b5847b0af05d937872b1fb395942/inference/tasks/output_prediction.py), [input answer extraction](https://github.com/facebookresearch/cruxeval/blob/190faf16d175b5847b0af05d937872b1fb395942/inference/tasks/input_prediction.py), and [scoring code](https://github.com/facebookresearch/cruxeval/blob/190faf16d175b5847b0af05d937872b1fb395942/evaluation/utils_general.py)\n\nThe scoring script takes several generations per sample and reports pass@1 and pass@5 for each task as percentages. The paper compares direct prompting with chain-of-thought prompting and reports results for each task separately. [Evaluation script](https://github.com/facebookresearch/cruxeval/blob/190faf16d175b5847b0af05d937872b1fb395942/evaluation/evaluate_generations.py) and [original paper](https://arxiv.org/abs/2401.03065)\n\nCompare results that use the same task, prompt template, number of generations, sampling settings, and answer extraction. Benchopedia stores the published functions and reference assertions. It does not run evaluations or publish model scores for this snapshot.",
+  "limitations": "The functions and inputs were written by Code Llama 34B from a fixed list of string, dictionary, and list methods, then filtered for short, simple computations. They are small manipulations of built-in values rather than realistic programs, and they share that model's coding style. [Dataset construction](https://github.com/facebookresearch/cruxeval/blob/190faf16d175b5847b0af05d937872b1fb395942/data/README.md)\n\nEach function comes with a single input, so a sample tests one execution path. Input prediction usually has many correct answers, so the stored input is an example rather than the only answer, and checking an answer requires running it. Output answers are checked with Python equality, so differently written literals with equal values also pass. The samples and answers have been public since the benchmark's release, so a score alone cannot establish that a model was tested on unseen material. [Scoring code](https://github.com/facebookresearch/cruxeval/blob/190faf16d175b5847b0af05d937872b1fb395942/evaluation/utils_general.py)",
+  "sources": [
+    {
+      "title": "CRUXEval · Original paper",
+      "url": "https://arxiv.org/abs/2401.03065"
+    },
+    {
+      "title": "CRUXEval · Project website",
+      "url": "https://crux-eval.github.io/"
+    },
+    {
+      "title": "CRUXEval · README at the imported revision",
+      "url": "https://github.com/facebookresearch/cruxeval/blob/190faf16d175b5847b0af05d937872b1fb395942/README.md"
+    },
+    {
+      "title": "CRUXEval · Dataset file at the imported revision",
+      "url": "https://github.com/facebookresearch/cruxeval/blob/190faf16d175b5847b0af05d937872b1fb395942/data/cruxeval.jsonl"
+    },
+    {
+      "title": "CRUXEval · Dataset construction",
+      "url": "https://github.com/facebookresearch/cruxeval/blob/190faf16d175b5847b0af05d937872b1fb395942/data/README.md"
+    },
+    {
+      "title": "CRUXEval · Prompt templates",
+      "url": "https://github.com/facebookresearch/cruxeval/blob/190faf16d175b5847b0af05d937872b1fb395942/prompts.py"
+    },
+    {
+      "title": "CRUXEval · Scoring code",
+      "url": "https://github.com/facebookresearch/cruxeval/blob/190faf16d175b5847b0af05d937872b1fb395942/evaluation/utils_general.py"
+    },
+    {
+      "title": "CRUXEval · Hugging Face copy",
+      "url": "https://huggingface.co/datasets/cruxeval-org/cruxeval/blob/b96af0450242eb4da433032b90998f25588a5d0f/README.md"
+    },
+    {
+      "title": "CRUXEval · MIT license",
+      "url": "https://github.com/facebookresearch/cruxeval/blob/190faf16d175b5847b0af05d937872b1fb395942/LICENSE"
+    }
+  ]
+}
