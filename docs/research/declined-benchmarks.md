@@ -192,6 +192,57 @@ and [original paper](https://arxiv.org/abs/2306.05685)
 Resume if ETS permits redistribution of the adapted topic, or the publishers
 replace question 157 in a new release.
 
+## QASPER
+
+Reviewed 2026-11-17 for the test split in the publishers'
+[`qasper-test-and-evaluator-v0.3.tgz`](https://qasper-dataset.s3.us-west-2.amazonaws.com/qasper-test-and-evaluator-v0.3.tgz),
+SHA-256 `72a52a41193e2838b8074f80ac074b94f956b84886c36a61c58a7df4171bdd72`. Its
+`qasper-test-v0.3.json` holds 1,451 questions about 416 research papers, and
+with them the papers themselves: 20,221 paragraphs, about 9.9 million
+characters of text. The questions are only answerable from those papers, so an
+import has to publish them.
+
+The dataset card declares
+[CC BY 4.0](https://huggingface.co/datasets/allenai/qasper/blob/fdc9d8214fbab5dd782958601db4d678e6934a54/README.md),
+and the Allen Institute's dataset page now redirects to that card. That
+declaration can cover only text the publishers could license. The paper says
+the full text comes from S2ORC and that the authors "have restricted ourselves
+to arXiv papers released under a CC-BY-* license, as identified via Unpaywall".
+Unpaywall reports the license of a paper's open-access published version, which
+for these computational linguistics papers is usually the ACL Anthology copy,
+while the text in this file was parsed from each paper's arXiv LaTeX source.
+Those two versions are not the same document and need not carry the same terms.
+[Original paper](https://arxiv.org/abs/2105.03011)
+
+The arXiv versions are mostly not openly licensed. For a random 60 of the 416
+test papers, the license arXiv records for the version it distributes was 54
+times the arXiv perpetual non-exclusive license, 4 times CC BY 4.0, once
+CC BY-SA 4.0, and once CC BY-NC-SA 4.0. The non-exclusive license is the
+submission default and reads in full: "I grant arXiv.org a perpetual,
+non-exclusive license to distribute this article." It grants that license to
+arXiv and conveys no redistribution right to anyone else, so for roughly nine
+in ten of these papers nothing in the chain permits Benchopedia to publish the
+text. The CC BY-NC-SA paper, arXiv 1912.10162, adds a non-commercial condition
+that neither the repository nor the website carries. S2ORC, the corpus the text
+was taken from, was released under a non-commercial license when QASPER was
+built and now asks users to "double-check whether their intended usage of S2ORC
+and its underlying contents is permissible".
+[arXiv license](https://arxiv.org/licenses/nonexclusive-distrib/1.0/),
+[arXiv metadata interface](https://export.arxiv.org/oai2?verb=GetRecord&identifier=oai:arXiv.org:1911.10742&metadataPrefix=arXiv),
+and [S2ORC README](https://github.com/allenai/s2orc/blob/master/README.md#license)
+
+Publishing the split would republish 416 papers whose own terms mostly do not
+allow it. Keeping only the papers that clear would publish a fraction of the
+split, and keeping the questions without the papers would publish tasks whose
+input is missing. The split's own README also asks readers to "make sure you
+access the test file only to evaluate your finalized model", which a catalog
+page does not do.
+
+Resume if the publishers record a redistributable license for each paper and
+those licenses permit publishing the papers' text in a public repository and on
+a crawlable website, or if they release a version drawn only from papers whose
+arXiv licenses allow it.
+
 ## WebArena
 
 Reviewed 2026-11-16 for all 812 tasks in
