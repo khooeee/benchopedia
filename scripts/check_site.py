@@ -3,7 +3,7 @@
 import json
 from html.parser import HTMLParser
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 from helpers.site_path import output_path
 
@@ -93,7 +93,7 @@ def main():
             url = urlsplit(href)
             if url.scheme or url.netloc or not href:
                 continue
-            target = OUT / output_path(url.path) if url.path.startswith("/") else path.parent / url.path
+            target = OUT / output_path(url.path) if url.path.startswith("/") else path.parent / unquote(url.path)
             if target.is_dir():
                 target = target / "index.html"
             if not target.exists():
