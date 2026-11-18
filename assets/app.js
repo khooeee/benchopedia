@@ -56,39 +56,32 @@
     filterBenchmarks();
   }
 
-  if (!$('#task-search')) return;
-  const fields = {q:$('#task-search'),benchmark:$('#filter-benchmark')};
+  const search = $('#task-search');
+  if (!search) return;
+  // Each benchmark has its own task page and search index.
+  const benchmark = encodeURIComponent($('.task-library').dataset.benchmarkId);
   let tasks = [], page = 1;
   const pageSize = 25;
   const initialParams = new URLSearchParams(location.search);
-  for (const [key, field] of Object.entries(fields)) {
-    const value = initialParams.get(key);
-    if (value !== null && (field.tagName !== 'SELECT' || [...field.options].some((o) => o.value === value))) field.value = value;
-  }
-  const benchmarkAutocomplete = createBenchmarkAutocomplete(fields.benchmark);
+  search.value = initialParams.get('q') || '';
   page = Math.max(1, Number.parseInt(initialParams.get('page'), 10) || 1);
 
   function updateURL() {
     const params = new URLSearchParams();
-    for (const [key, field] of Object.entries(fields)) {
-      if (field.value) params.set(key, field.value);
-    }
+    if (search.value) params.set('q', search.value);
     if (page > 1) params.set('page', page);
-    history.replaceState(null, '', siteURL('/tasks/') + (params.size ? '?' + params : ''));
+    history.replaceState(null, '', siteURL(`/benchmarks/${benchmark}/tasks/`) + (params.size ? '?' + params : ''));
   }
 
   function render() {
-    const terms = fields.q.value.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
-    const filtered = tasks.filter((q) => (
-      (!fields.benchmark.value || q.benchmark_id === fields.benchmark.value) &&
-      terms.every((term) => q.search.includes(term))
-    ));
+    const terms = search.value.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
+    const filtered = tasks.filter((q) => terms.every((term) => q.search.includes(term)));
     const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
     page = Math.min(page, pages);
     const visible = filtered.slice((page-1)*pageSize, page*pageSize);
     const rows = visible.map((q) => {
       const url = escape(q.url);
-      return `<li><div class="entry-links"><a href="${url}">${escape(q.key)}</a></div><div class="entry-title"><a href="${url}">${escape(q.title)}</a></div><div class="entry-meta">Benchmark: <a href="${escape(q.benchmark_url)}">${escape(q.benchmark_name)}</a></div></li>`;
+      return `<li><div class="entry-links"><a href="${url}">${escape(q.key)}</a></div><div class="entry-title"><a href="${url}">${escape(q.title)}</a></div></li>`;
     }).join('');
     $('#task-results').innerHTML = `<ol class="entry-list" start="${(page-1)*pageSize+1}">${rows}</ol>`;
     $('#task-results').hidden = !filtered.length;
@@ -103,8 +96,7 @@
   }
 
   function reset() {
-    for (const field of Object.values(fields)) field.value = '';
-    benchmarkAutocomplete.sync();
+    search.value = '';
     page = 1;
     render();
   }
@@ -112,30 +104,25 @@
     $('.library-summary').scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
   }
   let timer;
-  fields.q.addEventListener('input', () => {
+  search.addEventListener('input', () => {
     clearTimeout(timer);
     timer = setTimeout(() => { page = 1; render(); }, 120);
   });
-  for (const [key, field] of Object.entries(fields)) {
-    if (key !== 'q') field.addEventListener('change', () => { page = 1; render(); });
-  }
   $('[data-clear-tasks]').addEventListener('click', reset);
   $('#page-prev').addEventListener('click', () => { page--; render(); scrollToResults(); });
   $('#page-next').addEventListener('click', () => { page++; render(); scrollToResults(); });
   // Do not replace server-rendered tasks or react to controls until the index is ready.
-  Object.values(fields).forEach((field) => { field.disabled = true; });
-  benchmarkAutocomplete.input.disabled = true;
+  search.disabled = true;
   $('#page-next').disabled = true;
-  fetch(siteURL('/assets/tasks.json')).then((response) => {
+  fetch(siteURL(`/assets/tasks/${benchmark}.json`)).then((response) => {
     if (!response.ok) throw new Error('Task index could not be loaded');
     return response.json();
   }).then((data) => {
     tasks = data.map((q) => ({...q, search: [q.title,q.key,q.prompt].join(' ').toLocaleLowerCase()}));
-    Object.values(fields).forEach((field) => { field.disabled = false; });
-    benchmarkAutocomplete.input.disabled = false;
+    search.disabled = false;
     render();
   }).catch(() => {
-    $('#task-count').innerHTML = `Search is unavailable. <a href="${escape(siteURL('/tasks/all/'))}">Browse all tasks instead →</a>`;
+    $('#task-count').innerHTML = `Search is unavailable. <a href="${escape(siteURL(`/benchmarks/${benchmark}/all-tasks/`))}">Browse all tasks instead →</a>`;
     $('.pagination').hidden = true;
   });
 })();

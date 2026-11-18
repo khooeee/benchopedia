@@ -100,7 +100,10 @@ def main():
                 errors.append(f"{path}: missing {href}")
             elif url.fragment and target in pages and url.fragment not in pages[target].ids:
                 errors.append(f"{path}: missing anchor {href}")
-    tasks = json.loads((OUT / "assets/tasks.json").read_text())
+    # Each benchmark's search index is named after the benchmark it covers.
+    tasks = [q | {"benchmark_id": path.stem}
+             for path in (OUT / "assets/tasks").glob("*.json")
+             for q in json.loads(path.read_text())]
     originals = {}
     for path in (ROOT / "data").glob("*/tasks.jsonl"):
         # JSONL records are separated by LF, not Unicode separators that can

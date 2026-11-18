@@ -72,8 +72,8 @@ fixtures, without external test packages or a generated site. They do not depend
 on which benchmarks have been imported.
 
 The website build first rebuilds and validates SQLite, then reads it to generate
-`dist/`. It includes the benchmark index, article pages, a task library,
-individual task pages, and reference solutions when available. Generated files and the
+`dist/`. It includes the benchmark index, article pages, a searchable task list
+for each benchmark, individual task pages, and reference solutions when available. Generated files and the
 database are ignored by Git.
 
 The interface is a compact archive: benchmarks listed by release year, numbered
