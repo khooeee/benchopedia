@@ -243,6 +243,52 @@ those licenses permit publishing the papers' text in a public repository and on
 a crawlable website, or if they release a version drawn only from papers whose
 arXiv licenses allow it.
 
+## QuALITY
+
+Reviewed 2026-11-17 for the development split, the evaluation split whose
+answers are released, in
+[`QuALITY.v1.0.1.dev` at nyu-mll/quality `f84977c40dbfef70c9cab48037b7becfc8e45f73`](https://github.com/nyu-mll/quality/blob/f84977c40dbfef70c9cab48037b7becfc8e45f73/data/v1.0.1/QuALITY.v1.0.1.dev).
+It holds 2,086 multiple-choice questions written by readers of 115 articles
+averaging about 5,000 tokens, and the articles themselves, which the questions
+cannot be answered without.
+
+The leaderboard page the repository publishes says "QuALITY is distributed under
+a CC BY 4.0 License", and the paper says the authors used "only sources that are
+licensed under CC-BY (or more permissive licenses)". The records themselves
+contradict that for one of their sources. Each record names the article's
+license: 86 of the 115 development articles are Project Gutenberg texts in the
+United States public domain, 10 are published under CC BY 4.0 by The Long+Short,
+MIT Press, and Freesouls, and 19 are Slate magazine articles from 1996 to 2000
+whose license field is the end-user agreement of the Open American National
+Corpus. 351 of the 2,086 questions are about those 19 articles.
+[Leaderboard page](https://github.com/nyu-mll/quality/blob/f84977c40dbfef70c9cab48037b7becfc8e45f73/docs/index.html)
+and [original paper](https://arxiv.org/abs/2112.08608)
+
+That agreement is not CC BY or more permissive. It records that "the copyright
+to each segment comprising the O-ANC Texts is held by its author(s) or
+designee(s)", grants the end user a "non-exclusive, non-transferable" license,
+and allows redistribution of excerpted or reformatted text only as a
+"transparent modification" on conditions including that "the text of this
+Agreement must be displayed in human-readable form", that the modification be
+labelled with who made it and when, and that "the location of the original
+unmodified document must be identified". QuALITY shortened its articles to
+6,000 words, and the url field, which records where every other article came
+from, is empty for all 38 Slate question sets, so that last condition cannot be
+met from the data. The agreement also forbids distributing substantively
+modified versions without the copyright holders' written permission and asks
+licensees to delete the material when a project becomes inactive, which is not
+how a permanent public catalog works. Publishing these articles under CC BY 4.0
+would relicense Slate's journalism on terms the corpus cannot grant, and
+leaving the 19 articles out would publish an incomplete split.
+[OANC license](https://www.anc.org/OANC/license.txt)
+
+The Gutenberg and CC BY articles raise no such problem, and the questions and
+options are the authors' own work under their CC BY 4.0 declaration.
+
+Resume if the publishers replace the Slate articles with text they can license
+under CC BY, or if Slate or the corpus consortium permits publishing those
+articles in a public repository and on a crawlable website.
+
 ## WebArena
 
 Reviewed 2026-11-16 for all 812 tasks in
