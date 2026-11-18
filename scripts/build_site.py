@@ -12,7 +12,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 from helpers.build_sqlite import main as build_sqlite
-from helpers.site_path import BASE_PATH, site_url
+from helpers.site_path import BASE_PATH, output_path, site_url
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "dist"
@@ -223,7 +223,7 @@ def task_page(q, previous, following):
 <p class="task-id">{esc(q['key'])}</p><h1>{esc(q['title'])}</h1>
 <article class="prose">{environment_section}<section id="task-prompt"><h2>Task Prompt</h2><div class="prompt-content">{markdown(q['prompt'])}</div>{prompt_source}</section>{solution_section}</article>
 <nav class="task-adjacent" aria-label="Adjacent tasks">{prev_link}<a href="/tasks/?benchmark={quote(b['id'])}">Task index</a>{next_link}</nav>'''
-    relative = task_url(q).lstrip('/')
+    relative = output_path(site_url(task_url(q)))
     write(relative+'index.html',layout(q['title'],body,'tasks',description=q['title']))
 
 
