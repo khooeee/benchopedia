@@ -130,6 +130,21 @@ class RunChecks(unittest.TestCase):
         self.write_run("first", self.run | {"finished_at": None}, self.results[:1])
         self.assertEqual(self.build()[1], [])
 
+    def test_run_in_progress_skips_a_line_still_being_written(self):
+        run_dir = self.write_run("first", self.run | {"finished_at": None}, self.results)
+        with (run_dir / "results.jsonl").open("a") as f:
+            f.write('{"key": "task-3", "res')
+        db, errors = self.build()
+        self.assertEqual(errors, [])
+        self.assertEqual(db.execute("SELECT count(*) FROM run_task").fetchone()[0], 2)
+
+    def test_finished_run_cannot_end_in_a_partial_line(self):
+        run_dir = self.write_run("first", self.run, self.results)
+        with (run_dir / "results.jsonl").open("a") as f:
+            f.write('{"key": "task-3", "res')
+        with self.assertRaises(json.JSONDecodeError):
+            self.build()
+
     def test_later_run_only_tries_tasks_earlier_runs_left_open(self):
         later = self.run | {"after_runs": ["first"], "started_at": "2026-11-19T02:00:00Z",
                             "finished_at": "2026-11-19T03:00:00Z"}

@@ -131,6 +131,24 @@ def load_benchmark(db, benchmark_dir, excluded, errors):
         load_run(db, benchmark["id"], run_dir, errors)
 
 
+def read_results(run_dir):
+    """Return one record per task line in run_dir/results.jsonl.
+
+    The runner appends a line as each task finishes, so a run in progress may be
+    caught mid-write: its last line is skipped until it ends in a newline. A
+    finished run's file is complete, and a broken last line there is an error.
+    """
+    results_file = run_dir / "results.jsonl"
+    if not results_file.exists():
+        return []
+    run = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
+    with results_file.open(encoding="utf-8", newline="") as f:
+        lines = list(f)
+    if lines and not lines[-1].endswith("\n") and not run.get("finished_at"):
+        lines.pop()
+    return [json.loads(line) for line in lines]
+
+
 def load_models(db, errors):
     """Load models/<id>.json. Profiles stay in the file; each run records the settings it used."""
     for model_file in sorted(MODELS_DIR.glob("*.json")):
@@ -173,29 +191,25 @@ def load_run(db, benchmark_id, run_dir, errors):
                                       "content": path.read_text(encoding="utf-8")},
                path.relative_to(ROOT), errors)
     results_file = run_dir / "results.jsonl"
-    if not results_file.exists():
-        return
-    with results_file.open(encoding="utf-8", newline="") as f:
-        for line_number, line in enumerate(f, start=1):
-            origin = f"{results_file.relative_to(ROOT)}:{line_number}"
-            result = json.loads(line)
-            task = key | {"task_key": result.pop("key", None)}
-            attempts = result.pop("attempts", None)
-            insert(db, "run_task", task | result, origin, errors)
-            if not isinstance(attempts, list):
-                errors.append(f"{origin}: attempts must be a list")
+    for line_number, result in enumerate(read_results(run_dir), start=1):
+        origin = f"{results_file.relative_to(ROOT)}:{line_number}"
+        task = key | {"task_key": result.pop("key", None)}
+        attempts = result.pop("attempts", None)
+        insert(db, "run_task", task | result, origin, errors)
+        if not isinstance(attempts, list):
+            errors.append(f"{origin}: attempts must be a list")
+            continue
+        for attempt in attempts:
+            calls = attempt.pop("model_calls", None)
+            insert(db, "attempt", task | attempt, origin, errors)
+            if not isinstance(calls, list):
+                errors.append(f"{origin}: attempt {attempt.get('number')}: model_calls must be a list")
                 continue
-            for attempt in attempts:
-                calls = attempt.pop("model_calls", None)
-                insert(db, "attempt", task | attempt, origin, errors)
-                if not isinstance(calls, list):
-                    errors.append(f"{origin}: attempt {attempt.get('number')}: model_calls must be a list")
-                    continue
-                for call in calls:
-                    call = call | {"request": json.dumps(call.get("request"), ensure_ascii=False),
-                                   "response": json.dumps(call.get("response"), ensure_ascii=False)}
-                    insert(db, "model_call", task | {"attempt_number": attempt.get("number")} | call,
-                           origin, errors)
+            for call in calls:
+                call = call | {"request": json.dumps(call.get("request"), ensure_ascii=False),
+                               "response": json.dumps(call.get("response"), ensure_ascii=False)}
+                insert(db, "model_call", task | {"attempt_number": attempt.get("number")} | call,
+                       origin, errors)
 
 
 def run_checks(db, errors):

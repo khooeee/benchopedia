@@ -10,6 +10,8 @@ import importlib.util
 import json
 from pathlib import Path
 
+from helpers.build_sqlite import read_results
+
 ROOT = Path(__file__).resolve().parent.parent
 VERDICTS = {"pass", "fail", "unparseable"}
 
@@ -56,7 +58,7 @@ def check_run(run_dir, tasks, errors):
     by_key = {task["key"]: task for task in tasks}
     results_file = run_dir / "results.jsonl"
     attempts = 0
-    for record in read_jsonl(results_file) if results_file.exists() else []:
+    for record in read_results(run_dir):
         task = by_key.get(record["key"])
         if task is None:
             errors.append(f"{results_file.relative_to(ROOT)}: unknown task {record['key']}")

@@ -5,6 +5,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import quote, unquote, urlsplit
 
+from helpers.build_sqlite import read_results
 from helpers.site_path import output_path, site_url
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -182,9 +183,7 @@ def check_runs(pages, tasks):
     for run_dir in run_dirs:
         benchmark_id = run_dir.parent.parent.name
         run = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
-        results_file = run_dir / "results.jsonl"
-        with results_file.open(encoding="utf-8") as stream:
-            results = sorted((json.loads(line) for line in stream), key=lambda r: r["key"])
+        results = sorted(read_results(run_dir), key=lambda r: r["key"])
         run_url = f"/benchmarks/{quote(benchmark_id, safe='')}/runs/{quote(run_dir.name, safe='')}/"
         page = page_for(pages, run_url)
         for number, command in enumerate(run["commands"], start=1):
