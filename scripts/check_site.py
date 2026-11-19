@@ -1,11 +1,11 @@
-"""Check generated routes, anchors, data completeness, prompts and solutions."""
+"""Check generated routes, anchors, data completeness, prompts, solutions and runs."""
 
 import json
 from html.parser import HTMLParser
 from pathlib import Path
-from urllib.parse import unquote, urlsplit
+from urllib.parse import quote, unquote, urlsplit
 
-from helpers.site_path import output_path
+from helpers.site_path import output_path, site_url
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "dist"
@@ -29,6 +29,10 @@ class Page(HTMLParser):
         self.sections = []
         self.contents = []
         self.in_contents = False
+        # Text of elements marked data-text, such as run commands, code and outputs.
+        self.texts = {}
+        self.reading_text = None
+        self.results = []
         self.feed(text)
 
     def handle_starttag(self, tag, attrs):
@@ -46,6 +50,11 @@ class Page(HTMLParser):
                                 and attrs.get("value") == "1")
         if "id" in attrs:
             self.ids.add(attrs["id"])
+        if "data-result" in attrs:
+            self.results.append(attrs["data-result"])
+        if "data-text" in attrs:
+            self.reading_text = attrs["data-text"]
+            self.texts[self.reading_text] = ""
         if tag == "section":
             self.section = attrs.get("id")
             if self.section:
@@ -68,6 +77,8 @@ class Page(HTMLParser):
     def handle_data(self, data):
         if self.reading_solution:
             self.solution += data
+        if self.reading_text:
+            self.texts[self.reading_text] += data
         if self.section:
             self.section_text[self.section] = self.section_text.get(self.section, "") + data
 
@@ -76,6 +87,7 @@ class Page(HTMLParser):
             self.in_contents = False
         if tag == "code":
             self.reading_solution = False
+            self.reading_text = None
         if tag == "section":
             self.section = None
 
@@ -151,9 +163,56 @@ def main():
             assert guide and keys[0] in guide and "{{key}}" not in guide, f"How to run lacks its example task: {benchmark_id}"
         else:
             assert guide is None, f"How to run shown without tasks: {benchmark_id}"
+    runs = check_runs(pages, tasks)
     if errors:
         raise SystemExit("\n".join(errors))
-    print(f"OK: {len(pages)} pages, all internal links/anchors, {len(tasks)} task routes, original prompts/solutions, environment/solution-source links and how-to-run guides")
+    print(f"OK: {len(pages)} pages, all internal links/anchors, {len(tasks)} task routes, original prompts/solutions, environment/solution-source links and how-to-run guides, {runs} run(s)")
+
+
+def page_for(pages, url):
+    page = pages.get(OUT / output_path(site_url(url)) / "index.html")
+    assert page, f"Missing page: {url}"
+    return page
+
+
+def check_runs(pages, tasks):
+    """Each run's pages show its exact commands, code, results and graded outputs."""
+    expected_status = {}
+    run_dirs = sorted(p for p in (ROOT / "data").glob("*/runs/*") if p.is_dir())
+    for run_dir in run_dirs:
+        benchmark_id = run_dir.parent.parent.name
+        run = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
+        results_file = run_dir / "results.jsonl"
+        with results_file.open(encoding="utf-8") as stream:
+            results = sorted((json.loads(line) for line in stream), key=lambda r: r["key"])
+        run_url = f"/benchmarks/{quote(benchmark_id, safe='')}/runs/{quote(run_dir.name, safe='')}/"
+        page = page_for(pages, run_url)
+        for number, command in enumerate(run["commands"], start=1):
+            assert page.texts.get(f"command-{number}") == command["command"], f"Command {number} differs: {run_url}"
+        code_dir = run_dir / "code"
+        for path in (p for p in code_dir.rglob("*") if p.is_file()):
+            name = path.relative_to(code_dir).as_posix()
+            assert page.texts.get(f"file:{name}") == path.read_text(encoding="utf-8"), f"Code differs: {run_url} {name}"
+        assert page.results == [r["result"] for r in results], f"Task results differ: {run_url}"
+        for result in results:
+            task_page = page_for(pages, run_url + f"tasks/{quote(result['key'], safe='')}/")
+            assert task_page.results == [result["result"]], f"Result differs: {run_url} {result['key']}"
+            for attempt in result["attempts"]:
+                assert task_page.texts.get(f"output-{attempt['number']}") == attempt["output"], \
+                    f"Output differs: {run_url} {result['key']} attempt {attempt['number']}"
+            key = (benchmark_id, result["key"])
+            if result["result"] == "pass" or expected_status.get(key) != "solved":
+                expected_status[key] = "solved" if result["result"] == "pass" else "open"
+        benchmark_page = page_for(pages, f"/benchmarks/{quote(benchmark_id, safe='')}/")
+        assert "results" in benchmark_page.sections, f"Missing Results section: {benchmark_id}"
+    benchmarks_with_runs = {run_dir.parent.parent.name for run_dir in run_dirs}
+    for q in tasks:
+        key = (q["benchmark_id"], q["key"])
+        expected = expected_status.get(key, "untested") if q["benchmark_id"] in benchmarks_with_runs else None
+        assert q.get("status") == expected, f"Status differs: {key}"
+        if expected:
+            assert "results" in pages[OUT / output_path(q["url"]) / "index.html"].sections, f"Missing Results section: {key}"
+    return len(run_dirs)
 
 
 if __name__ == "__main__":

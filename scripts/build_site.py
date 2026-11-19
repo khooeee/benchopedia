@@ -105,6 +105,57 @@ def all_tasks_url(b):
     return benchmark_url(b) + 'all-tasks/'
 
 
+def run_url(r):
+    # Also a sibling of tasks/, so a run ID cannot collide with a task key.
+    return f'/benchmarks/{quote(r["benchmark_id"], safe="")}/runs/{quote(r["id"], safe="")}/'
+
+
+def run_task_url(r, key):
+    return run_url(r) + f'tasks/{quote(key, safe="")}/'
+
+
+REPOSITORY = 'https://github.com/khooeee/benchopedia'
+STATUS_TEXT = {
+    'solved': 'a run passed this task',
+    'open': 'every run that tried this task failed it',
+    'untested': 'no run has tried this task yet',
+}
+
+
+def label(value):
+    """A pass/fail result, attempt verdict or task status, spelled out for every reader."""
+    return f'<span class="status status-{esc(value)}">{esc(value)}</span>'
+
+
+def facts_list(facts):
+    return '<dl class="metadata">' + ''.join(f'<div><dt>{esc(k)}:</dt><dd>{v}</dd></div>' for k, v in facts) + '</dl>'
+
+
+def run_title(r):
+    return f"{r['model']['name']} ({r['profile']})"
+
+
+def runs_table(runs):
+    rows = []
+    for r in runs:
+        passed = sum(t['result'] == 'pass' for t in r['tasks'])
+        finished = esc(r['finished_at'][:10]) if r['finished_at'] else 'in progress'
+        rows.append(f'''<tr><td><a href="{run_url(r)}">{esc(r['id'])}</a></td><td>{esc(run_title(r))}</td>
+<td class="number">{r['attempts_per_task']}</td><td class="number">{len(r['tasks']):,}</td><td class="number">{passed:,}</td>
+<td class="number">{len(r['tasks']) - passed:,}</td><td>{finished}</td></tr>''')
+    return ('<div class="table-scroll"><table><thead><tr><th>Run</th><th>Model</th><th>Attempts per task</th><th>Tasks tried</th>'
+            '<th>Passed</th><th>Failed</th><th>Finished</th></tr></thead><tbody>' + ''.join(rows) + '</tbody></table></div>')
+
+
+def results_section(b, runs, statuses):
+    counts = {status: sum(s == status for s in statuses.values()) for status in STATUS_TEXT}
+    links = ', '.join(f'<a href="{tasks_url(b)}?status={status}">{counts[status]:,} {status}</a>' for status in STATUS_TEXT)
+    return f'''<p>Benchopedia runs models on these tasks with the code and commands shown on each run's page. A task
+passes a run only when every attempt passes; a task is solved once any run passes it, and open while every run that
+tried it failed it. Open tasks are candidates for tasks models have not yet saturated.</p>
+<p>Of {b['task_count']:,} tasks: {links}.</p>{runs_table(runs)}'''
+
+
 def write(path, content):
     target = OUT / path
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -137,7 +188,8 @@ def task_list(rows, start=1):
     entries = []
     for q in rows:
         url = task_url(q)
-        entries.append(f'''<li><div class="entry-links"><a href="{url}">{esc(q['key'])}</a></div>
+        status = ' ' + label(q['status']) if q.get('status') else ''
+        entries.append(f'''<li><div class="entry-links"><a href="{url}">{esc(q['key'])}</a>{status}</div>
 <div class="entry-title"><a href="{url}">{esc(q['title'])}</a></div></li>''')
     return f'<ol class="entry-list" start="{start}">' + ''.join(entries) + '</ol>'
 
@@ -168,7 +220,7 @@ def home():
     write('index.html',layout('Benchmarks',body))
 
 
-def benchmark_page(b, example=None):
+def benchmark_page(b, example=None, runs=(), statuses=None):
     # Excluded tasks link to the License section, which explains why.
     tasks = esc(task_count_label(b)) if b['task_count'] else '<a href="#license">not included</a>'
     facts = [('Released',esc(b['released_on'])),('Tasks',tasks)]
@@ -184,6 +236,8 @@ def benchmark_page(b, example=None):
         # The guide's code runs one task; an example task stands in for {{key}}.
         guide = markdown(b['how_to_run']).replace('{{key}}', esc(example['key']))
         sections.append(('how-to-run','How to run',f'''<p>These steps run and score task <a href="{task_url(example)}">{esc(example['key'])}</a>. Set <code>key</code> to another task's key to run that task instead.</p>{guide}'''))
+    if runs:
+        sections.append(('results','Results',results_section(b, runs, statuses)))
     sections += [('limitations','Limitations',markdown(b['limitations'])),
                  ('license','License',markdown(license_text)),
                  ('sources','Sources',f'''<ol>{source_list}</ol><details class="snapshot"><summary>Dataset revision</summary><p>Snapshot of <a href="{esc(b['dataset_url'])}">the upstream dataset</a> at revision <code>{esc(b['dataset_revision'])}</code>.</p></details>''')]
@@ -200,8 +254,13 @@ def benchmark_page(b, example=None):
 def library(b, rows):
     """One benchmark's searchable task list, its one-page fallback and search index."""
     crumbs = f'<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Benchmarks</a> &gt; <a href="{benchmark_url(b)}">{esc(b["name"])}</a> &gt; Tasks</nav>'
+    # Only benchmarks with runs have task statuses to filter by.
+    status_filter = ''
+    if any(q.get('status') for q in rows):
+        options = ''.join(f'<option value="{s}">{s.capitalize()}</option>' for s in STATUS_TEXT)
+        status_filter = f' <label for="task-status">Status:</label> <select id="task-status"><option value="">All</option>{options}</select>'
     body = f'''{crumbs}<h1>{esc(b['name'])} tasks</h1>
-<section class="task-library" aria-label="Browse tasks" data-benchmark-id="{esc(b['id'])}"><div class="search-form" role="search"><label for="task-search">Search:</label> <input type="search" id="task-search" placeholder="Task text or task ID"></div>
+<section class="task-library" aria-label="Browse tasks" data-benchmark-id="{esc(b['id'])}"><div class="search-form" role="search"><label for="task-search">Search:</label> <input type="search" id="task-search" placeholder="Task text or task ID">{status_filter}</div>
 <div class="library-summary"><p id="task-count" role="status" aria-live="polite">1–{min(25,len(rows))} of {len(rows):,} tasks</p></div>
 <nav class="pagination" aria-label="Task pages"><button type="button" id="page-prev" disabled>Previous</button> <span id="page-status">Page 1 of {max(1,(len(rows)+24)//25)}</span> <button type="button" id="page-next">Next</button></nav>
 <div id="task-results">{task_list(rows[:25])}</div><div id="task-empty" hidden><p>No tasks match your search.</p><button type="button" data-clear-tasks>Clear search</button></div>
@@ -209,11 +268,24 @@ def library(b, rows):
     write(output_path(site_url(tasks_url(b)))+'index.html',layout(f"{b['name']} tasks",body))
     all_body = f'{crumbs}<h1>All {esc(b["name"])} tasks</h1><p><a href="{tasks_url(b)}">Search tasks</a></p>'+task_list(rows)
     write(output_path(site_url(all_tasks_url(b)))+'index.html',layout(f"All {b['name']} tasks",all_body))
-    search_data = [{k:q[k] for k in ('key','title','prompt','prompt_source_url')} | {'url':site_url(task_url(q))} for q in rows]
+    search_data = [{k:q[k] for k in ('key','title','prompt','prompt_source_url')} | {'url':site_url(task_url(q))}
+                   | ({'status':q['status']} if q.get('status') else {}) for q in rows]
     write(f'assets/tasks/{b["id"]}.json',json.dumps(search_data,ensure_ascii=False,separators=(',',':')))
 
 
-def task_page(q, previous, following):
+def task_results_section(q, results):
+    rows = []
+    for r, t in results:
+        attempts = ', '.join(f'<a href="{run_task_url(r, q["key"])}#attempt-{a["number"]}">{esc(a["verdict"])}</a>'
+                             for a in t['attempts'])
+        rows.append(f'''<tr><td><a href="{run_url(r)}">{esc(r['id'])}</a></td><td>{esc(run_title(r))}</td>
+<td><a href="{run_task_url(r, q['key'])}">{label(t['result'])}</a></td><td>{attempts}</td></tr>''')
+    table = ('<div class="table-scroll"><table><thead><tr><th>Run</th><th>Model</th><th>Result</th><th>Attempts</th></tr></thead><tbody>'
+             + ''.join(rows) + '</tbody></table></div>') if rows else ''
+    return f'''<section id="results"><h2>Results</h2><p>Status: {label(q['status'])}: {STATUS_TEXT[q['status']]}.</p>{table}</section>'''
+
+
+def task_page(q, previous, following, results=()):
     b = next(b for b in BENCHMARKS if b['id']==q['benchmark_id'])
     prev_link = f'<a href="{task_url(previous)}">Previous task</a>' if previous else '<span></span>'
     next_link = f'<a href="{task_url(following)}">Next task</a>' if following else '<span></span>'
@@ -228,12 +300,101 @@ def task_page(q, previous, following):
     solution_section = ''
     if solution_source or solution_content:
         solution_section = f'<section id="solution"><h2>Solution</h2>{solution_content}{solution_source}</section>'
+    results_section = task_results_section(q, results) if q.get('status') else ''
     body = f'''<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Benchmarks</a> &gt; <a href="{benchmark_url(b)}">{esc(b['name'])}</a> &gt; <a href="{tasks_url(b)}">Tasks</a></nav>
 <p class="task-id">{esc(q['key'])}</p><h1>{esc(q['title'])}</h1>
-<article class="prose">{environment_section}<section id="task-prompt"><h2>Task Prompt</h2><div class="prompt-content">{markdown(q['prompt'])}</div>{prompt_source}</section>{solution_section}</article>
+<article class="prose">{environment_section}<section id="task-prompt"><h2>Task Prompt</h2><div class="prompt-content">{markdown(q['prompt'])}</div>{prompt_source}</section>{solution_section}{results_section}</article>
 <nav class="task-adjacent" aria-label="Adjacent tasks">{prev_link}<a href="{tasks_url(b)}">Task index</a>{next_link}</nav>'''
     relative = output_path(site_url(task_url(q)))
     write(relative+'index.html',layout(q['title'],body,description=q['title']))
+
+
+def run_page(b, r, tasks_by_key):
+    model = r['model']
+    passed = sum(t['result'] == 'pass' for t in r['tasks'])
+    after = json.loads(r['after_runs'])
+    selection = 'every task' if not after else 'tasks left open by ' + ', '.join(
+        f'<a href="{run_url({"benchmark_id": b["id"], "id": earlier})}">{esc(earlier)}</a>' for earlier in after)
+    progress = '' if r['finished_at'] else ' so far; the run is still in progress'
+    facts = [('Model', f'<a href="{esc(model["homepage_url"])}">{esc(model["name"])}</a>'),
+             ('Served as', f'<code>{esc(model["provider_model"])}</code> on {esc(model["provider"])}'),
+             ('Weights digest', f'<code>{esc(model["weights_digest"])}</code>'),
+             ('Profile', esc(r['profile'])),
+             ('Attempts per task', str(r['attempts_per_task'])),
+             ('Tasks selected', selection),
+             ('Results', f'{passed:,} passed, {len(r["tasks"]) - passed:,} failed{progress}'),
+             ('Started', esc(r['started_at'])),
+             ('Finished', esc(r['finished_at']) if r['finished_at'] else 'in progress'),
+             ('Commit', f'<a href="{REPOSITORY}/commit/{esc(r["commit_sha"])}"><code>{esc(r["commit_sha"])}</code></a>')]
+    steps = ''.join(f'<li><p>{esc(c["purpose"])}</p><pre><code data-text="command-{c["number"]}">{esc(c["command"])}</code></pre></li>'
+                    for c in r['commands'])
+    environment = facts_list([(k.replace('_', ' ').capitalize(), f'<code>{esc(v)}</code>')
+                              for k, v in json.loads(r['environment']).items()])
+    # The benchmark's own grader is what most readers come to check, so it starts open.
+    files = ''.join(f'''<details{' open' if f['path'].endswith('/eval.py') else ''}><summary><code>{esc(f['path'])}</code></summary>
+<pre><code data-text="file:{esc(f['path'])}">{esc(f['content'])}</code></pre></details>''' for f in r['files'])
+    entries = []
+    for t in r['tasks']:
+        verdicts = ', '.join(esc(a['verdict']) for a in t['attempts'])
+        url = run_task_url(r, t['task_key'])
+        entries.append(f'''<li data-result="{esc(t['result'])}"><div class="entry-links"><a href="{url}">{esc(t['task_key'])}</a> {label(t['result'])} <span class="verdicts">attempts: {verdicts}</span></div>
+<div class="entry-title"><a href="{url}">{esc(tasks_by_key[t['task_key']]['title'])}</a></div></li>''')
+    sections = [('steps', 'Steps', f'<p>These commands produced this run. Run them in order to reproduce it.</p><ol class="steps">{steps}</ol>'),
+                ('settings', 'Settings', f'<p>The options sent with every request, from the model\'s <code>{esc(r["profile"])}</code> profile.</p><pre><code>{esc(json.dumps(json.loads(r["settings"]), indent=2))}</code></pre>'),
+                ('environment', 'Environment', environment),
+                ('code', 'Code', f'<p>The files the runner read, copied when the run started.</p>{files}'),
+                ('tasks', 'Tasks', f'''<form class="search-form"><label for="result-filter">Result:</label> <select id="result-filter"><option value="">All</option><option value="pass">Pass</option><option value="fail">Fail</option></select>
+<span id="result-count" role="status" aria-live="polite">{len(r['tasks']):,} tasks</span></form><ol class="entry-list">{''.join(entries)}</ol>''')]
+    contents = ''.join(f'<li><a href="#{key}">{title}</a></li>' for key, title, _ in sections)
+    article = '\n'.join(f'<section id="{key}"><h2>{title}</h2>{html}</section>' for key, title, html in sections)
+    body = f'''<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Benchmarks</a> &gt; <a href="{benchmark_url(b)}">{esc(b['name'])}</a> &gt; <a href="{benchmark_url(b)}#results">Results</a></nav>
+<p class="task-id">Run</p><h1>{esc(r['id'])}</h1><p>{esc(run_title(r))} on {esc(b['name'])}.</p>{facts_list(facts)}
+<nav class="toc" aria-labelledby="toc-heading"><h2 id="toc-heading">Contents</h2><ol>{contents}</ol></nav>
+<article class="prose">{article}</article>'''
+    write(output_path(site_url(run_url(r))) + 'index.html', layout(f"{r['id']} · {b['name']}", body, description=f"{run_title(r)} on {b['name']}"))
+
+
+def model_call_view(attempt_number, call):
+    request, response = json.loads(call['request']), json.loads(call['response'])
+    sent = ''.join(f'''<div class="message"><p class="role">Sent: {esc(m.get('role', ''))} message</p><pre>{esc(m.get('content', ''))}</pre></div>'''
+                   for m in request.get('messages', []))
+    reply = response.get('message', {})
+    reasoning = ''
+    if reply.get('thinking'):
+        reasoning = f'''<details class="message"><summary>Reasoning ({len(reply['thinking']):,} characters)</summary><pre>{esc(reply['thinking'])}</pre></details>'''
+    answer = f'''<div class="message"><p class="role">Received: {esc(reply.get('role', ''))} message</p><pre>{esc(reply.get('content', ''))}</pre></div>'''
+    usage = facts_list([(k, esc(v)) for k, v in (('Latency', f"{call['latency_ms'] / 1000:,.1f} s"),
+                                                 ('Input tokens', response.get('prompt_eval_count')),
+                                                 ('Output tokens', response.get('eval_count')),
+                                                 ('Stop reason', response.get('done_reason'))) if v is not None])
+    raw = f'''<details><summary>Exact request and response JSON</summary><h4>Request</h4><pre class="wrap"><code>{esc(json.dumps(request, indent=2, ensure_ascii=False))}</code></pre>
+<h4>Response</h4><pre class="wrap"><code>{esc(json.dumps(response, indent=2, ensure_ascii=False))}</code></pre></details>'''
+    return f'<div class="model-call" id="attempt-{attempt_number}-call-{call["number"]}">{sent}{reasoning}{answer}{usage}{raw}</div>'
+
+
+def run_task_page(b, r, t, q, previous, following):
+    passed = sum(a['verdict'] == 'pass' for a in t['attempts'])
+    attempts = []
+    for a in t['attempts']:
+        answer = f'<code>{esc(a["answer"])}</code>' if a['answer'] is not None else 'none found'
+        calls = ''.join(model_call_view(a['number'], c) for c in a['calls'])
+        attempts.append(f'''<section id="attempt-{a['number']}"><h2>Attempt {a['number']}: {label(a['verdict'])}</h2>
+{facts_list([('Extracted answer', answer), ('Started', esc(a['started_at']))])}
+<details><summary>Graded output</summary><pre class="wrap"><code data-text="output-{a['number']}">{esc(a['output'])}</code></pre></details>
+<h3>Trajectory</h3>{calls}</section>''')
+    solution = ''
+    if q.get('solution') is not None:
+        solution = f'<details><summary>Reference solution</summary><pre class="wrap"><code>{esc(q["solution"])}</code></pre></details>'
+    prev_link = f'<a href="{run_task_url(r, previous)}">Previous task</a>' if previous else '<span></span>'
+    next_link = f'<a href="{run_task_url(r, following)}">Next task</a>' if following else '<span></span>'
+    body = f'''<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Benchmarks</a> &gt; <a href="{benchmark_url(b)}">{esc(b['name'])}</a> &gt; <a href="{benchmark_url(b)}#results">Results</a> &gt; <a href="{run_url(r)}">{esc(r['id'])}</a></nav>
+<p class="task-id">{esc(q['key'])}</p><h1>{esc(q['title'])}</h1>
+<p class="run-result" data-result="{esc(t['result'])}">Result: {label(t['result'])}: {passed} of {len(t['attempts'])} attempts passed.</p>
+{facts_list([('Run', f'<a href="{run_url(r)}">{esc(r["id"])}</a>'), ('Model', esc(run_title(r))), ('Task', f'<a href="{task_url(q)}">{esc(q["key"])}</a>')])}
+<article class="prose">{solution}{''.join(attempts)}</article>
+<nav class="task-adjacent" aria-label="Adjacent tasks">{prev_link}<a href="{run_url(r)}#tasks">Run's tasks</a>{next_link}</nav>'''
+    write(output_path(site_url(run_task_url(r, q['key']))) + 'index.html',
+          layout(f"{q['key']} · {r['id']}", body, description=f"{run_title(r)} on {q['key']}"))
 
 
 def about():
@@ -243,6 +404,30 @@ def about():
     write('404.html',layout('Page not found','<h1>Page not found</h1><p>This address does not match a benchmark or task.</p><p><a href="/">Return to the benchmark index</a></p>'))
 
 
+def load_runs(db):
+    """Every run with its model, commands, code, and each task's attempts and model calls."""
+    models = {m['id']: dict(m) for m in db.execute('SELECT * FROM model')}
+    runs = [dict(r) | {'model': models[r['model_id']], 'commands': [], 'files': [], 'tasks': []}
+            for r in db.execute('SELECT * FROM run ORDER BY benchmark_id, started_at, id')]
+    by_id = {(r['benchmark_id'], r['id']): r for r in runs}
+    for c in db.execute('SELECT * FROM run_command ORDER BY number'):
+        by_id[(c['benchmark_id'], c['run_id'])]['commands'].append(dict(c))
+    for f in db.execute('SELECT * FROM run_file ORDER BY path'):
+        by_id[(f['benchmark_id'], f['run_id'])]['files'].append(dict(f))
+    tasks = {}
+    for t in db.execute('SELECT * FROM run_task ORDER BY task_key'):
+        tasks[(t['benchmark_id'], t['run_id'], t['task_key'])] = dict(t) | {'attempts': []}
+        by_id[(t['benchmark_id'], t['run_id'])]['tasks'].append(tasks[(t['benchmark_id'], t['run_id'], t['task_key'])])
+    attempts = {}
+    for a in db.execute('SELECT * FROM attempt ORDER BY number'):
+        attempt = dict(a) | {'calls': []}
+        attempts[(a['benchmark_id'], a['run_id'], a['task_key'], a['number'])] = attempt
+        tasks[(a['benchmark_id'], a['run_id'], a['task_key'])]['attempts'].append(attempt)
+    for c in db.execute('SELECT * FROM model_call ORDER BY number'):
+        attempts[(c['benchmark_id'], c['run_id'], c['task_key'], c['attempt_number'])]['calls'].append(dict(c))
+    return runs
+
+
 def main():
     global BENCHMARKS, TASKS
     build_sqlite()
@@ -250,9 +435,20 @@ def main():
         db.row_factory = sqlite3.Row
         BENCHMARKS = [dict(r) for r in db.execute('SELECT * FROM benchmark ORDER BY name')]
         TASKS = [dict(r) for r in db.execute('SELECT * FROM task ORDER BY benchmark_id, key')]
+        runs = load_runs(db)
+        statuses = {(r['benchmark_id'], r['task_key']): r['status'] for r in db.execute('SELECT * FROM task_status')}
     tasks_by_benchmark = {b['id']:[] for b in BENCHMARKS}
+    runs_by_benchmark = {b['id']:[] for b in BENCHMARKS}
+    results_by_task = {}
+    for r in runs:
+        runs_by_benchmark[r['benchmark_id']].append(r)
+        for t in r['tasks']:
+            results_by_task.setdefault((r['benchmark_id'], t['task_key']), []).append((r, t))
     for q in TASKS:
         q['title'] = task_title(q['prompt'])
+        # Statuses only mean something once a benchmark has runs.
+        if runs_by_benchmark[q['benchmark_id']]:
+            q['status'] = statuses[(q['benchmark_id'], q['key'])]
         tasks_by_benchmark[q['benchmark_id']].append(q)
     OUT.mkdir(exist_ok=True)
     # Only this generator's output directory is cleared.
@@ -265,12 +461,21 @@ def main():
     home()
     for b in BENCHMARKS:
         rows = tasks_by_benchmark[b['id']]
-        benchmark_page(b, rows[0] if rows else None)
+        benchmark_runs = runs_by_benchmark[b['id']]
+        benchmark_page(b, rows[0] if rows else None, benchmark_runs, {q['key']: q.get('status') for q in rows})
         if b['task_count']:
             library(b, rows)
+        tasks_by_key = {q['key']: q for q in rows}
+        for r in benchmark_runs:
+            run_page(b, r, tasks_by_key)
+            keys = [t['task_key'] for t in r['tasks']]
+            for i, t in enumerate(r['tasks']):
+                run_task_page(b, r, t, tasks_by_key[t['task_key']],
+                              keys[i-1] if i else None, keys[i+1] if i+1 < len(keys) else None)
     for i,q in enumerate(TASKS):
         same = lambda other: other if other and other['benchmark_id']==q['benchmark_id'] else None
-        task_page(q,same(TASKS[i-1] if i else None),same(TASKS[i+1] if i+1<len(TASKS) else None))
+        task_page(q,same(TASKS[i-1] if i else None),same(TASKS[i+1] if i+1<len(TASKS) else None),
+                  results_by_task.get((q['benchmark_id'], q['key']), ()))
     about()
     print(f'Built {len(list(OUT.rglob("*.html"))):,} pages in dist/')
 

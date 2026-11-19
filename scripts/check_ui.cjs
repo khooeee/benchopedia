@@ -31,11 +31,12 @@ class Element {
   focus() {}
 }
 
-async function library(search = '', fail = false, records = data, basePath = '') {
+async function library(search = '', fail = false, records = data, basePath = '', withStatus = false) {
   records = records.map((q) => ({...q, url:basePath + q.url}));
   const elements = Object.fromEntries([
     '#task-search','#task-results','#task-empty','#task-count','#page-status','#page-prev',
     '#page-next','.pagination','[data-clear-tasks]','.library-summary','.task-library',
+    ...(withStatus ? ['#task-status'] : []),
   ].map((key) => [key, new Element()]));
   elements['meta[name="site-base-path"]'] = {content:basePath};
   elements['#task-search'].tagName = 'INPUT';
@@ -76,7 +77,34 @@ function catalog(search = '', basePath = '') {
   return {elements,rows,groups,context};
 }
 
+function runTasks(search = '') {
+  const elements = Object.fromEntries(['#result-filter', '#result-count'].map((key) => [key, new Element()]));
+  const items = ['pass', 'fail', 'fail'].map((result) => Object.assign(new Element(), {dataset:{result}}));
+  const context = {
+    URLSearchParams, location:{search, pathname:'/benchmarks/alpha/runs/first/', hash:''},
+    document:{querySelector:(key) => elements[key] || null, querySelectorAll:() => items, addEventListener(){}},
+    history:{replaceState(_a,_b,url){context.url = url;}},
+  };
+  vm.runInNewContext(source, context);
+  return {elements, items, context};
+}
+
 (async () => {
+  const run = runTasks('?result=fail');
+  assert.equal(run.elements['#result-filter'].value, 'fail');
+  assert.deepEqual(run.items.map((item) => item.hidden), [true, false, false]);
+  assert.equal(run.elements['#result-count'].textContent, '2 tasks');
+  assert.equal(run.context.url, '/benchmarks/alpha/runs/first/?result=fail');
+  run.elements['#result-filter'].value = 'pass';
+  run.elements['#result-filter'].emit('change');
+  assert.deepEqual(run.items.map((item) => item.hidden), [false, true, true]);
+  assert.equal(run.elements['#result-count'].textContent, '1 task');
+  run.elements['#result-filter'].value = '';
+  run.elements['#result-filter'].emit('change');
+  assert.ok(run.items.every((item) => !item.hidden));
+  assert.equal(run.context.url, '/benchmarks/alpha/runs/first/');
+  assert.equal(runTasks('?result=maybe').elements['#result-filter'].value, '');
+  console.log('OK: run task pass/fail filter, counts and URL state');
   const home = catalog('?q=alpha');
   assert.equal(home.elements['#benchmark-count'].textContent,'1 benchmark');
   assert.equal(home.rows[0].hidden,false);
@@ -219,6 +247,36 @@ function catalog(search = '', basePath = '') {
   assert.equal(projectHome.context.url, '/benchopedia/?q=alpha');
   projectHome.elements['#reset-benchmarks'].emit('click');
   assert.equal(projectHome.context.url, '/benchopedia/');
+  // Benchmarks with runs filter tasks by status; the others have no status control.
+  assert.ok(!e['#task-results'].innerHTML.includes('class="status'));
+  const statusData = data.map((q, i) => ({...q, status: i < 3 ? 'open' : i < 10 ? 'solved' : 'untested'}));
+  const statuses = await library('?status=open', false, statusData, '', true);
+  assert.equal(statuses.elements['#task-status'].value, 'open');
+  assert.equal(statuses.elements['#task-count'].textContent, '1–3 of 3 tasks');
+  assert.ok(statuses.elements['#task-results'].innerHTML.includes('<span class="status status-open">open</span>'));
+  assert.ok(!statuses.elements['#task-results'].innerHTML.includes('status-solved'));
+  assert.equal(statuses.context.url, '/benchmarks/alpha/tasks/?status=open');
+  statuses.elements['#task-status'].value = 'solved';
+  statuses.elements['#task-status'].emit('change');
+  assert.equal(statuses.elements['#task-count'].textContent, '1–7 of 7 tasks');
+  assert.equal(statuses.context.url, '/benchmarks/alpha/tasks/?status=solved');
+  statuses.elements['#task-search'].value = 'ALPHA-04';
+  statuses.elements['#task-search'].emit('input');
+  assert.equal(statuses.elements['#task-count'].textContent, '1–1 of 1 tasks');
+  assert.equal(statuses.context.url, '/benchmarks/alpha/tasks/?q=ALPHA-04&status=solved');
+  statuses.elements['#task-status'].value = 'open';
+  statuses.elements['#task-status'].emit('change');
+  assert.equal(statuses.elements['#task-count'].textContent, '0 tasks');
+  assert.equal(statuses.elements['#task-empty'].hidden, false);
+  statuses.elements['[data-clear-tasks]'].emit('click');
+  assert.equal(statuses.elements['#task-status'].value, '');
+  assert.equal(statuses.elements['#task-count'].textContent, `1–25 of ${data.length} tasks`);
+  assert.equal(statuses.context.url, '/benchmarks/alpha/tasks/');
+  const unknownStatus = await library('?status=bogus', false, statusData, '/benchopedia', true);
+  assert.equal(unknownStatus.elements['#task-status'].value, '');
+  assert.equal(unknownStatus.elements['#task-count'].textContent, `1–25 of ${data.length} tasks`);
+  assert.equal(unknownStatus.context.url, '/benchopedia/benchmarks/alpha/tasks/');
+  console.log('OK: task status filter, status labels, URL state and reset');
   console.log('OK: project-path asset fetch, task links, pagination, search URLs and fallback');
   console.log('OK: benchmark tasks/solutions checkboxes, combined search, URL state, counts and reset');
   console.log('OK: per-benchmark task search, numbered task lists, empty/reset states, pagination, deep links and fetch failure fallback');

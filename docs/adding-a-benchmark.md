@@ -70,12 +70,16 @@ data/example-benchmark/
     tasks.jsonl
     import.py
     how-to-run.md
+    eval.py
+    runs/<run-id>/
 ```
 
 `benchmark.json` contains the metadata and explanatory text.
 `redistribution-review.md` records the license terms and required notices.
 `tasks.jsonl` contains the imported task snapshot. `import.py` reproduces that snapshot from
-the upstream source. `how-to-run.md` explains how to run and score each task. Commit these files; `build/` and `dist/` are generated and
+the upstream source. `how-to-run.md` explains how to run and score each task. `eval.py`
+builds each task's model input and grades the output, and `runs/` holds the model runs
+that used it. Commit these files; `build/` and `dist/` are generated and
 ignored by Git. Do not edit the generated database to add data.
 
 ## 3. Write benchmark.json
@@ -304,7 +308,80 @@ every command, function, file name and field against the pinned upstream source.
 Where you can, run the code with the reference solution in place of the model
 and confirm that it scores as correct.
 
-## 8. Build and check
+## 8. Write eval.py
+
+`data/<id>/eval.py` lets [runner/run.py](../runner/run.py) run models on the
+benchmark: it builds what the model is sent and grades what comes back. See
+[GSM8K's](../data/gsm8k/eval.py) for an example. Use only Python's standard library.
+It defines three things:
+
+- `ATTEMPTS`: how many times each task is tried. A task passes a run only when
+  every attempt passes, so choose enough attempts that guessing cannot pass:
+  5 for two choices, 3 for three to five choices, 2 for free-form answers.
+- `messages(task)`: the chat messages for one task. Send the task prompt
+  verbatim, followed by the shortest instruction that makes the answer readable
+  by the official grader, such as GSM8K's `#### <answer>` line.
+- `grade(task, output)`: returns `(verdict, answer)`. The verdict is `"pass"`,
+  `"fail"`, or `"unparseable"` when no answer can be extracted; the answer is the
+  extracted text, or `None` when unparseable. Reuse the official scorer's
+  extraction and comparison. When it cannot be imported, copy the needed
+  functions unchanged, link their pinned source, and cover them in the
+  redistribution review.
+
+Then check the grader against every reference solution:
+
+```sh
+python3 scripts/check_evals.py
+```
+
+It fails unless `grade()` passes each task's own reference solution. A failure
+means the grader, or the reference, needs a closer look before any model runs.
+
+## 9. Run a model
+
+`models/<model>.json` pins a model: its provider, the provider's model name, and
+the digest of its weights, so re-pulled weights cannot silently change a model.
+Its `profiles` hold request settings, such as GSM8K's `thinking` profile for
+[Qwen3.6-35B-A3B](../models/qwen3.6-35b-a3b.json). The runner sends every option
+in the profile with each request, so the recorded requests are complete.
+
+Try the prompt on a few tasks first. Scratch runs go to `build/scratch-runs/`,
+allow uncommitted code, and are never published:
+
+```sh
+python3 runner/run.py example-benchmark --model qwen3.6-35b-a3b --profile thinking \
+    --run-id scratch --scratch --limit 20
+```
+
+Read the outputs, especially any `unparseable` ones, and adjust the instruction
+until the model's answers are read correctly. Then commit `eval.py` and start the
+published run, naming it by date, model, and profile:
+
+```sh
+python3 runner/run.py example-benchmark --model qwen3.6-35b-a3b --profile thinking \
+    --run-id 2026-11-19-qwen3.6-35b-a3b-thinking
+```
+
+The runner refuses uncommitted code and weights that differ from the model's
+pinned digest. It writes `data/<id>/runs/<run-id>/`:
+
+- `run.json`: the model, profile and settings, the attempts per task, the
+  commit, the software and hardware used, and the commands that reproduce the
+  run. `finished_at` stays `null` until every selected task is done.
+- `code/`: a copy of every file the runner read, shown on the run's page.
+- `results.jsonl`: one line per task with its `result`, `pass` or `fail`, and
+  each attempt's verdict, graded output, and the exact request and response of
+  every model call.
+
+Run the same command again to resume an interrupted run; the runner refuses if
+the code, model, or Ollama version has changed since the run started. To run a
+stronger model on only the tasks earlier runs left open, add
+`--after <earlier-run-id>` for each earlier run. Commit the run directory when the
+run finishes. `scripts/check_evals.py` then re-grades every recorded attempt
+with the run's own copy of `eval.py`, and the build checks that each result
+matches its attempts and that a finished run covers every task it selected.
+
+## 10. Build and check
 
 Run these commands from the repository root:
 
@@ -313,6 +390,8 @@ python3 scripts/build_site.py # Rebuild SQLite, validate the data, and generate 
 python3 scripts/check_site.py # Check generated routes, internal links, task text, solutions, and source links.
 node scripts/check_ui.cjs     # Check JavaScript search, filtering, and pagination with fictional fixtures.
 python3 scripts/check_exclusions.py # Check exclusion records and task-loading safeguards.
+python3 scripts/check_runs.py # Check the run rules with a fictional run.
+python3 scripts/check_evals.py # Grade reference solutions and re-grade recorded runs.
 ```
 
 The build enforces schema constraints and the shared SQL checks: the declared
@@ -331,7 +410,7 @@ require changing its assertions. Neither check verifies external URL availabilit
 or replaces checking imported content against the official source. The UI check
 does not check visual appearance.
 
-## 9. Preview and review locally
+## 11. Preview and review locally
 
 If a local server is already running, rebuild and refresh it. Otherwise start one:
 
@@ -348,8 +427,10 @@ Open <http://localhost:8765> and verify:
 - Its tasks page lists its tasks and searches their prompts or IDs.
 - Representative task pages show complete input, the correct reference solution,
   and the relevant source and environment links when available.
+- Its Results section lists each run, and a run's page shows its commands, code,
+  and each task's result, with the full trajectory one click away.
 - Existing benchmark pages and tasks still work.
 
 Review the diff for accidental changes to other benchmarks and generated files.
-Summarize the imported scope, revision, count, checks, and any remaining gaps.
+Summarize the imported scope, revision, count, checks, run results, and any remaining gaps.
 Keep development and previews local. Commit, push, or deploy only when requested.

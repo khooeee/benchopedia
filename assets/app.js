@@ -56,8 +56,29 @@
     filterBenchmarks();
   }
 
+  // A run's page lists every task it tried; filter them by pass or fail.
+  if ($('#result-filter')) {
+    const filter = $('#result-filter');
+    const items = [...document.querySelectorAll('[data-result]')];
+    const requested = new URLSearchParams(location.search).get('result');
+    filter.value = ['pass', 'fail'].includes(requested) ? requested : '';
+    function filterResults() {
+      let count = 0;
+      items.forEach((item) => {
+        item.hidden = !!filter.value && item.dataset.result !== filter.value;
+        if (!item.hidden) count++;
+      });
+      $('#result-count').textContent = `${count.toLocaleString()} task${count === 1 ? '' : 's'}`;
+      history.replaceState(null, '', location.pathname + (filter.value ? `?result=${filter.value}` : '') + location.hash);
+    }
+    filter.addEventListener('change', filterResults);
+    filterResults();
+  }
+
   const search = $('#task-search');
   if (!search) return;
+  // Only benchmarks with runs offer a status filter: solved, open or untested.
+  const status = $('#task-status');
   // Each benchmark has its own task page and search index.
   const benchmark = encodeURIComponent($('.task-library').dataset.benchmarkId);
   let tasks = [], page = 1;
@@ -65,23 +86,27 @@
   const initialParams = new URLSearchParams(location.search);
   search.value = initialParams.get('q') || '';
   page = Math.max(1, Number.parseInt(initialParams.get('page'), 10) || 1);
+  if (status) status.value = ['solved', 'open', 'untested'].includes(initialParams.get('status')) ? initialParams.get('status') : '';
 
   function updateURL() {
     const params = new URLSearchParams();
     if (search.value) params.set('q', search.value);
+    if (status && status.value) params.set('status', status.value);
     if (page > 1) params.set('page', page);
     history.replaceState(null, '', siteURL(`/benchmarks/${benchmark}/tasks/`) + (params.size ? '?' + params : ''));
   }
 
   function render() {
     const terms = search.value.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
-    const filtered = tasks.filter((q) => terms.every((term) => q.search.includes(term)));
+    const filtered = tasks.filter((q) => (!status || !status.value || q.status === status.value) &&
+      terms.every((term) => q.search.includes(term)));
     const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
     page = Math.min(page, pages);
     const visible = filtered.slice((page-1)*pageSize, page*pageSize);
     const rows = visible.map((q) => {
       const url = escape(q.url);
-      return `<li><div class="entry-links"><a href="${url}">${escape(q.key)}</a></div><div class="entry-title"><a href="${url}">${escape(q.title)}</a></div></li>`;
+      const label = q.status ? ` <span class="status status-${escape(q.status)}">${escape(q.status)}</span>` : '';
+      return `<li><div class="entry-links"><a href="${url}">${escape(q.key)}</a>${label}</div><div class="entry-title"><a href="${url}">${escape(q.title)}</a></div></li>`;
     }).join('');
     $('#task-results').innerHTML = `<ol class="entry-list" start="${(page-1)*pageSize+1}">${rows}</ol>`;
     $('#task-results').hidden = !filtered.length;
@@ -97,6 +122,7 @@
 
   function reset() {
     search.value = '';
+    if (status) status.value = '';
     page = 1;
     render();
   }
@@ -108,6 +134,7 @@
     clearTimeout(timer);
     timer = setTimeout(() => { page = 1; render(); }, 120);
   });
+  status?.addEventListener('change', () => { page = 1; render(); });
   $('[data-clear-tasks]').addEventListener('click', reset);
   $('#page-prev').addEventListener('click', () => { page--; render(); scrollToResults(); });
   $('#page-next').addEventListener('click', () => { page++; render(); scrollToResults(); });
