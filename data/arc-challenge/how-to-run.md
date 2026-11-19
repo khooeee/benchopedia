@@ -23,7 +23,7 @@ row = next(item for item in test if item["id"] == key)
 
 ### 3. Generate an answer
 
-This sends the question and its labelled choices as this page shows them. Some questions label their choices 1 to 4 rather than A to D, and the model should answer with the label. Add an instruction if your model needs one.
+This sends the question and its labelled choices as its task page shows them. Some questions label their choices 1 to 4 rather than A to D, and the model should answer with the label. Add an instruction if your model needs one.
 
 ```python
 def generate(prompt: str) -> str:

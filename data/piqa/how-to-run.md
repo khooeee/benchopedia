@@ -24,7 +24,7 @@ with open("valid-labels.lst", encoding="utf-8") as f:
 
 ### 3. Generate an answer
 
-The authors publish no prompt for language models; their baselines are fine-tuned classifiers. This sends the goal and the two solutions, numbered as this page shows them. Add an instruction if your model needs one.
+The authors publish no prompt for language models; their baselines are fine-tuned classifiers. This sends the goal and the two solutions, numbered as its task page shows them. Add an instruction if your model needs one.
 
 ```python
 def generate(prompt: str) -> str:

@@ -119,7 +119,7 @@ class ExclusionChecks(unittest.TestCase):
     def test_excluded_tasks_reject_a_how_to_run_guide(self):
         self.exclude()
         self.guide.write_text("Run {{key}}.\n")
-        self.assertTrue(any("no page would show it" in error for error in self.load()))
+        self.assertTrue(any("no task for it to run" in error for error in self.load()))
         self.assertEqual(self.task_count(), 0)
 
     def test_excluded_metadata_must_have_null_task_fields(self):

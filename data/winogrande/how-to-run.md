@@ -24,7 +24,7 @@ with open("winogrande_1.1/dev.jsonl", encoding="utf-8") as f:
 
 ### 3. Generate an answer
 
-With no official prompt, this sends the sentence, with its blank `_`, and the two options as this page shows them. Add an instruction if your model needs one.
+With no official prompt, this sends the sentence, with its blank `_`, and the two options as its task page shows them. Add an instruction if your model needs one.
 
 ```python
 def generate(prompt: str) -> str:

@@ -41,7 +41,7 @@ erDiagram
         TEXT scoring "article section"
         TEXT limitations "article section"
         TEXT redistribution_review "License section"
-        TEXT how_to_run "task-page guide, null if excluded"
+        TEXT how_to_run "How to run section, null if excluded"
         TEXT sources "JSON array"
     }
     task {
@@ -85,8 +85,8 @@ holds the page templates. `benchmark.json` also holds the benchmark's article:
 its overview, methodology, scoring and limitations sections and its primary
 sources. `redistribution-review.md` holds its license terms and required
 notices, published as the page's License section. `how-to-run.md` holds the steps and
-code for running and scoring a task, shown on each of its task pages with
-`{{key}}` replaced by that task's key. Article text supports
+code for running and scoring a task, published as the page's How to run section
+with `{{key}}` filled in by an example task's key. Article text supports
 paragraphs, headings, code blocks, inline code and HTTP(S) links. Source HTML
 is escaped.
 
