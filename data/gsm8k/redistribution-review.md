@@ -4,13 +4,15 @@
 
 The snapshot contains all 1,319 problems and reference solutions in the original, non-Socratic test split at revision `3101c7d5072418e28b9008a6636bde82a006892c`. Both the public repository and the website publish them. [Test data](https://github.com/openai/grade-school-math/blob/3101c7d5072418e28b9008a6636bde82a006892c/grade_school_math/data/test.jsonl)
 
+Model runs under `data/gsm8k/runs/` quote each question in the recorded model requests, and both the repository and the website publish them with the tasks. `data/gsm8k/eval.py` copies the authors' answer extraction from [dataset.py](https://github.com/openai/grade-school-math/blob/3101c7d5072418e28b9008a6636bde82a006892c/grade_school_math/dataset.py), which the same notice covers.
+
 ## Terms
 
 The upstream repository distributes the data under the MIT license, which permits copying and redistribution when the copyright and permission notice is retained. No separate restriction was found in the reviewed source. [Upstream license](https://github.com/openai/grade-school-math/blob/3101c7d5072418e28b9008a6636bde82a006892c/LICENSE) and [initial review](https://github.com/khooeee/benchopedia/blob/main/docs/benchmark-license-review.md#gsm8k)
 
 ## Changes
 
-Benchopedia assigns positional IDs and adds source links. Question and answer text is unchanged.
+Benchopedia assigns positional IDs and adds source links. Question and answer text is unchanged. Model requests append an instruction to end with the authors' `#### <answer>` format after each unchanged question.
 
 ## Notices
 

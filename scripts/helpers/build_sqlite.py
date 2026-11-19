@@ -1,4 +1,6 @@
-"""Build build/benchopedia.db from data/ and run every check against it.
+"""Build build/benchopedia.db from data/ and models/ and run every check against it.
+
+Runs written by runner/run.py under data/<benchmark>/runs/ load with their benchmark.
 
 Two layers of checking:
   1. db/schema.sql constraints, enforced as each row is inserted.
@@ -17,6 +19,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT / "data"
+MODELS_DIR = ROOT / "models"
+CHECKS_DIR = ROOT / "checks"
 DB_PATH = ROOT / "build" / "benchopedia.db"
 
 MAX_VIOLATIONS_SHOWN = 10
@@ -107,6 +111,11 @@ def load_benchmark(db, benchmark_dir, excluded, errors):
             errors.append(f"{tasks_file.relative_to(ROOT)}: tasks are excluded in "
                           f"{(benchmark_dir / 'exclusions.md').relative_to(ROOT)}; "
                           "delete them or clear the exclusion")
+        # Run trajectories quote task prompts, so they are excluded with the tasks.
+        runs_dir = benchmark_dir / "runs"
+        if runs_dir.exists():
+            errors.append(f"{runs_dir.relative_to(ROOT)}: tasks are excluded, and runs quote "
+                          "their prompts; delete the runs or clear the exclusion")
         return
     if not tasks_file.is_file():
         errors.append(f"{tasks_file.relative_to(ROOT)}: missing; record any exclusion in "
@@ -118,15 +127,84 @@ def load_benchmark(db, benchmark_dir, excluded, errors):
             task["benchmark_id"] = benchmark["id"]
             origin = f"{tasks_file.relative_to(ROOT)}:{line_number}"
             insert(db, "task", task, origin, errors)
+    for run_dir in sorted(p for p in (benchmark_dir / "runs").glob("*") if p.is_dir()):
+        load_run(db, benchmark["id"], run_dir, errors)
+
+
+def load_models(db, errors):
+    """Load models/<id>.json. Profiles stay in the file; each run records the settings it used."""
+    for model_file in sorted(MODELS_DIR.glob("*.json")):
+        origin = model_file.relative_to(ROOT)
+        model = json.loads(model_file.read_text(encoding="utf-8"))
+        if model.get("id") != model_file.stem:
+            errors.append(f"{origin}: id must match the file name")
+            continue
+        profiles = model.pop("profiles", None)
+        if not isinstance(profiles, dict) or not profiles:
+            errors.append(f"{origin}: profiles must name at least one set of request settings")
+            continue
+        insert(db, "model", model, origin, errors)
+
+
+def load_run(db, benchmark_id, run_dir, errors):
+    """Load one run: run.json, the code it copied, and results.jsonl, one task per line."""
+    key = {"benchmark_id": benchmark_id, "run_id": run_dir.name}
+    run_file = run_dir / "run.json"
+    if not run_file.is_file():
+        errors.append(f"{run_file.relative_to(ROOT)}: missing")
+        return
+    run = json.loads(run_file.read_text(encoding="utf-8"))
+    commands = run.pop("commands", None)
+    for field in ("settings", "after_runs", "environment"):
+        run[field] = json.dumps(run.get(field), ensure_ascii=False)
+    before = len(errors)
+    insert(db, "run", {"benchmark_id": benchmark_id, "id": run_dir.name} | run,
+           run_file.relative_to(ROOT), errors)
+    if len(errors) > before:
+        return
+    if not isinstance(commands, list) or not commands:
+        errors.append(f"{run_file.relative_to(ROOT)}: commands must list the steps that produced the run")
+    for number, command in enumerate(commands or [], start=1):
+        insert(db, "run_command", key | {"number": number} | command,
+               f"{run_file.relative_to(ROOT)} command {number}", errors)
+    code_dir = run_dir / "code"
+    for path in sorted(p for p in code_dir.rglob("*") if p.is_file()):
+        insert(db, "run_file", key | {"path": path.relative_to(code_dir).as_posix(),
+                                      "content": path.read_text(encoding="utf-8")},
+               path.relative_to(ROOT), errors)
+    results_file = run_dir / "results.jsonl"
+    if not results_file.exists():
+        return
+    with results_file.open(encoding="utf-8", newline="") as f:
+        for line_number, line in enumerate(f, start=1):
+            origin = f"{results_file.relative_to(ROOT)}:{line_number}"
+            result = json.loads(line)
+            task = key | {"task_key": result.pop("key", None)}
+            attempts = result.pop("attempts", None)
+            insert(db, "run_task", task | result, origin, errors)
+            if not isinstance(attempts, list):
+                errors.append(f"{origin}: attempts must be a list")
+                continue
+            for attempt in attempts:
+                calls = attempt.pop("model_calls", None)
+                insert(db, "attempt", task | attempt, origin, errors)
+                if not isinstance(calls, list):
+                    errors.append(f"{origin}: attempt {attempt.get('number')}: model_calls must be a list")
+                    continue
+                for call in calls:
+                    call = call | {"request": json.dumps(call.get("request"), ensure_ascii=False),
+                                   "response": json.dumps(call.get("response"), ensure_ascii=False)}
+                    insert(db, "model_call", task | {"attempt_number": attempt.get("number")} | call,
+                           origin, errors)
 
 
 def run_checks(db, errors):
-    check_files = sorted((ROOT / "checks").glob("*.sql"))
+    check_files = sorted(CHECKS_DIR.glob("*.sql"))
     for check_file in check_files:
         violations = db.execute(check_file.read_text(encoding="utf-8")).fetchall()
         if not violations:
             continue
-        errors.append(f"{check_file.relative_to(ROOT)}: {len(violations)} violation(s)")
+        errors.append(f"checks/{check_file.name}: {len(violations)} violation(s)")
         for violation in violations[:MAX_VIOLATIONS_SHOWN]:
             errors.append(f"    {dict(violation)}")
     return len(check_files)
@@ -142,6 +220,7 @@ def main():
 
     errors = []
     excluded = load_exclusions(errors)
+    load_models(db, errors)
     for benchmark_dir in sorted(p for p in DATA_DIR.iterdir() if p.is_dir()):
         load_benchmark(db, benchmark_dir, excluded, errors)
     db.commit()
@@ -149,12 +228,14 @@ def main():
 
     benchmarks = db.execute("SELECT count(*) FROM benchmark").fetchone()[0]
     tasks = db.execute("SELECT count(*) FROM task").fetchone()[0]
+    runs = db.execute("SELECT count(*) FROM run").fetchone()[0]
     db.close()
 
     if errors:
         print("\n".join(errors), file=sys.stderr)
         sys.exit(f"\nFAILED: {len(errors)} problem line(s) above")
-    print(f"OK: {benchmarks} benchmark(s), {tasks} task(s), {check_count} check(s) passed")
+    print(f"OK: {benchmarks} benchmark(s), {tasks} task(s), {runs} run(s), "
+          f"{check_count} check(s) passed")
     print(f"Built {DB_PATH.relative_to(ROOT)}")
 
 

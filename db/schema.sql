@@ -43,3 +43,120 @@ CREATE TABLE task (
     prompt_source_url   TEXT CHECK (prompt_source_url LIKE 'https://%'),
     PRIMARY KEY (benchmark_id, key)
 ) STRICT;
+
+-- Runs: models attempting a benchmark's tasks. models/<id>.json defines a model;
+-- data/<benchmark>/runs/<run>/ holds one run, written by runner/run.py.
+
+-- A model as served. Its weights are pinned by digest, so re-pulling a tag that
+-- has changed makes a new model rather than silently editing this one.
+CREATE TABLE model (
+    id             TEXT PRIMARY KEY CHECK (id <> '' AND id NOT GLOB '*[^a-z0-9.-]*'),
+    name           TEXT NOT NULL CHECK (trim(name) <> ''),
+    homepage_url   TEXT NOT NULL CHECK (homepage_url LIKE 'https://%'),
+    provider       TEXT NOT NULL CHECK (provider IN ('ollama')),
+    provider_model TEXT NOT NULL CHECK (trim(provider_model) <> ''),
+    weights_digest TEXT NOT NULL CHECK (weights_digest GLOB 'sha256:*')
+) STRICT;
+
+-- One pass of one model over one benchmark's tasks, with fixed settings and code.
+CREATE TABLE run (
+    benchmark_id      TEXT NOT NULL REFERENCES benchmark (id),
+    -- Its directory name under data/<benchmark>/runs/.
+    id                TEXT NOT NULL CHECK (id <> '' AND id NOT GLOB '*[^a-z0-9.-]*'),
+    model_id          TEXT NOT NULL REFERENCES model (id),
+    -- The model profile the run used and the options it sent with every request.
+    profile           TEXT NOT NULL CHECK (trim(profile) <> ''),
+    settings          TEXT NOT NULL CHECK (json_valid(settings) AND json_type(settings) = 'object'),
+    attempts_per_task INTEGER NOT NULL CHECK (attempts_per_task > 0),
+    -- [] runs every task; otherwise only the tasks none of these earlier runs passed.
+    after_runs        TEXT NOT NULL CHECK (json_valid(after_runs) AND json_type(after_runs) = 'array'),
+    -- The Benchopedia commit the run's code and model definition came from.
+    commit_sha        TEXT NOT NULL CHECK (length(commit_sha) = 40 AND commit_sha NOT GLOB '*[^0-9a-f]*'),
+    -- Software and hardware versions, including the weights digest the provider reported.
+    environment       TEXT NOT NULL CHECK (json_valid(environment) AND json_type(environment) = 'object'),
+    started_at        TEXT NOT NULL CHECK (started_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T*Z'),
+    -- NULL while the run is in progress.
+    finished_at       TEXT CHECK (finished_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T*Z'
+                                  AND finished_at >= started_at),
+    PRIMARY KEY (benchmark_id, id)
+) STRICT;
+
+-- The exact commands that produced the run, in order.
+CREATE TABLE run_command (
+    benchmark_id TEXT NOT NULL,
+    run_id       TEXT NOT NULL,
+    number       INTEGER NOT NULL CHECK (number > 0),
+    command      TEXT NOT NULL CHECK (trim(command) <> ''),
+    purpose      TEXT NOT NULL CHECK (trim(purpose) <> ''),
+    PRIMARY KEY (benchmark_id, run_id, number),
+    FOREIGN KEY (benchmark_id, run_id) REFERENCES run (benchmark_id, id)
+) STRICT;
+
+-- A copy of every file the runner read: its own code, the benchmark's eval.py
+-- and the model definition, as they were when the run started.
+CREATE TABLE run_file (
+    benchmark_id TEXT NOT NULL,
+    run_id       TEXT NOT NULL,
+    path         TEXT NOT NULL CHECK (path <> '' AND path NOT LIKE '/%' AND path NOT LIKE '%..%'),
+    content      TEXT NOT NULL,
+    PRIMARY KEY (benchmark_id, run_id, path),
+    FOREIGN KEY (benchmark_id, run_id) REFERENCES run (benchmark_id, id)
+) STRICT;
+
+-- One task in one run. A task passes only when every attempt passed, so a lucky
+-- guess cannot pass it; checks/run_task_result.sql holds the two to each other.
+CREATE TABLE run_task (
+    benchmark_id TEXT NOT NULL,
+    run_id       TEXT NOT NULL,
+    task_key     TEXT NOT NULL,
+    result       TEXT NOT NULL CHECK (result IN ('pass', 'fail')),
+    PRIMARY KEY (benchmark_id, run_id, task_key),
+    FOREIGN KEY (benchmark_id, run_id) REFERENCES run (benchmark_id, id),
+    FOREIGN KEY (benchmark_id, task_key) REFERENCES task (benchmark_id, key)
+) STRICT;
+
+-- One try at a task. An unparseable answer fails the task like a wrong one, but
+-- stays distinguishable so format failures are not mistaken for difficulty.
+CREATE TABLE attempt (
+    benchmark_id TEXT NOT NULL,
+    run_id       TEXT NOT NULL,
+    task_key     TEXT NOT NULL,
+    number       INTEGER NOT NULL CHECK (number > 0),
+    verdict      TEXT NOT NULL CHECK (verdict IN ('pass', 'fail', 'unparseable')),
+    -- The model's final text, which the grader read.
+    output       TEXT NOT NULL,
+    -- What the grader extracted from the output; NULL when it found nothing.
+    answer       TEXT CHECK ((answer IS NULL) = (verdict = 'unparseable')),
+    started_at   TEXT NOT NULL CHECK (started_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T*Z'),
+    PRIMARY KEY (benchmark_id, run_id, task_key, number),
+    FOREIGN KEY (benchmark_id, run_id, task_key) REFERENCES run_task (benchmark_id, run_id, task_key)
+) STRICT;
+
+-- The trajectory: every request an attempt sent to the model and the response it
+-- got back, exactly as exchanged, reasoning and token counts included.
+CREATE TABLE model_call (
+    benchmark_id   TEXT NOT NULL,
+    run_id         TEXT NOT NULL,
+    task_key       TEXT NOT NULL,
+    attempt_number INTEGER NOT NULL,
+    number         INTEGER NOT NULL CHECK (number > 0),
+    request        TEXT NOT NULL CHECK (json_valid(request) AND json_type(request) = 'object'),
+    response       TEXT NOT NULL CHECK (json_valid(response) AND json_type(response) = 'object'),
+    latency_ms     INTEGER NOT NULL CHECK (latency_ms >= 0),
+    PRIMARY KEY (benchmark_id, run_id, task_key, attempt_number, number),
+    FOREIGN KEY (benchmark_id, run_id, task_key, attempt_number)
+        REFERENCES attempt (benchmark_id, run_id, task_key, number)
+) STRICT;
+
+-- Where each task stands: solved once any run passes it, open while every run
+-- that tried it failed, untested before any run tries it. Open tasks are the
+-- candidates for unsaturated ones.
+CREATE VIEW task_status AS
+SELECT t.benchmark_id, t.key AS task_key,
+       CASE WHEN max(rt.result = 'pass') THEN 'solved'
+            WHEN count(rt.run_id) > 0 THEN 'open'
+            ELSE 'untested' END AS status,
+       count(rt.run_id) AS runs
+FROM task t
+LEFT JOIN run_task rt ON rt.benchmark_id = t.benchmark_id AND rt.task_key = t.key
+GROUP BY t.benchmark_id, t.key;
