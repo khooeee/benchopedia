@@ -79,12 +79,14 @@ def main():
     catalog = pages[OUT / "index.html"]
     expected_flags = {}
     expected_tasks = {}
+    guides = {}
     for metadata in (ROOT / "data").glob("*/benchmark.json"):
         benchmark = json.loads(metadata.read_text(encoding="utf-8"))
         expected_flags[benchmark["id"]] = str(bool(benchmark["has_solutions"])).lower()
         expected_tasks[benchmark["id"]] = str(bool(benchmark["task_count"])).lower()
         page = pages.get(OUT / "benchmarks" / benchmark["id"] / "index.html")
         assert page and "license" in page.sections, f"Missing License section: {benchmark['id']}"
+        guides[benchmark["id"]] = page.section_text.get("how-to-run")
     assert catalog.benchmarks == expected_flags, "Catalog solution flags differ from metadata"
     assert catalog.solution_filter, "Missing benchmark solutions checkbox"
     assert catalog.benchmark_tasks == expected_tasks, "Catalog task flags differ from metadata"
@@ -133,8 +135,13 @@ def main():
             assert page.sections.index("environment") < page.sections.index("task-prompt"), f"Environment must precede Task Prompt: {key}"
         if originals[key].get("solution_source_url"):
             assert originals[key]["solution_source_url"] in page.section_links.get("solution", []), f"Missing solution source: {key}"
-        guide = page.section_text.get("how-to-run", "")
-        assert q["key"] in guide and "{{key}}" not in guide, f"How to run does not name its task: {key}"
+    for benchmark_id, guide in guides.items():
+        # The guide runs the benchmark's first task as its example.
+        keys = sorted(task_key for owner, task_key in originals if owner == benchmark_id)
+        if keys:
+            assert guide and keys[0] in guide and "{{key}}" not in guide, f"How to run lacks its example task: {benchmark_id}"
+        else:
+            assert guide is None, f"How to run shown without tasks: {benchmark_id}"
     if errors:
         raise SystemExit("\n".join(errors))
     print(f"OK: {len(pages)} pages, all internal links/anchors, {len(tasks)} task routes, original prompts/solutions, environment/solution-source links and how-to-run guides")

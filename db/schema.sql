@@ -23,8 +23,8 @@ CREATE TABLE benchmark (
     limitations      TEXT NOT NULL CHECK (trim(limitations) <> ''),
     -- data/<id>/redistribution-review.md, published as the page's License section.
     redistribution_review TEXT NOT NULL CHECK (trim(redistribution_review) <> ''),
-    -- data/<id>/how-to-run.md, the How to run section of every task page, where
-    -- {{key}} stands for the page's task key. NULL exactly when the tasks are excluded.
+    -- data/<id>/how-to-run.md, the benchmark page's How to run section, where
+    -- {{key}} stands for an example task's key. NULL exactly when the tasks are excluded.
     how_to_run       TEXT CHECK (instr(how_to_run, '{{key}}') > 0),
     sources          TEXT NOT NULL CHECK (json_valid(sources) AND json_type(sources) = 'array'
                                          AND json_array_length(sources) > 0)

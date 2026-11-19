@@ -23,7 +23,7 @@ row = next(item for item in validation if item["id"] == key)
 
 ### 3. Generate an answer
 
-This sends the question and choices A to E as this page shows them. Add an instruction if your model needs one.
+This sends the question and choices A to E as its task page shows them. Add an instruction if your model needs one.
 
 ```python
 def generate(prompt: str) -> str:

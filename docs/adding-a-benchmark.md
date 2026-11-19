@@ -274,10 +274,11 @@ should be an intentional edit, not an automatic consequence of running a build.
 
 ## 7. Write how-to-run.md
 
-Every task page ends with a How to run section: steps and code that run that
-task through the benchmark's own evaluation and score the result. Write it once
-in `data/<id>/how-to-run.md`. Each task page replaces `{{key}}` with its task key,
-and the build requires the placeholder. See
+The benchmark page has a How to run section: steps and code that run one task
+through the benchmark's own evaluation and score the result. Write it in
+`data/<id>/how-to-run.md`, using `{{key}}` for the task key; the build requires
+the placeholder. The page fills it in with the benchmark's first task key as an
+example and tells readers to change `key` to run another task. See
 [HumanEval's guide](../data/humaneval/how-to-run.md) for an example.
 
 - Open with a short paragraph naming the official harness, scorer or metric
@@ -288,7 +289,7 @@ and the build requires the placeholder. See
   "Score the full benchmark" step that runs every task the official way and
   explains how per-task scores combine.
 - Load the task from the upstream source and revision of the snapshot, selected
-  by `{{key}}`. When keys differ from upstream identifiers, derive the
+  by a `key` variable set to `"{{key}}"`. When keys differ from upstream identifiers, derive the
   identifier in code using the scheme the methodology documents. Quote `{{key}}`
   in code: keys may contain `#`, `&`, `+` and `.`.
 - Represent the model as a `generate` function that raises
@@ -343,10 +344,10 @@ Open <http://localhost:8765> and verify:
 - The benchmark appears in the index with the right name, date, and count.
 - Its explanatory sections and source links are accurate, and its License section
   shows the required notices.
+- Its How to run section links its example task, and its code selects that task.
 - Its tasks page lists its tasks and searches their prompts or IDs.
 - Representative task pages show complete input, the correct reference solution,
   and the relevant source and environment links when available.
-- Their How to run section names the task and its code selects that task.
 - Existing benchmark pages and tasks still work.
 
 Review the diff for accidental changes to other benchmarks and generated files.

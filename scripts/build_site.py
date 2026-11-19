@@ -168,8 +168,13 @@ def home():
     write('index.html',layout('Benchmarks',body))
 
 
-def benchmark_page(b):
+def benchmark_page(b, example=None):
     facts = [('Released',b['released_on']),('Tasks',task_count_label(b))]
+    how_to_run = ''
+    if example:
+        # The guide's code runs one task; an example task stands in for {{key}}.
+        guide = markdown(b['how_to_run']).replace('{{key}}', esc(example['key']))
+        how_to_run = f'''<section id="how-to-run"><h2>How to run</h2><p>These steps run and score task <a href="{task_url(example)}">{esc(example['key'])}</a>. Set <code>key</code> to another task's key to run that task instead.</p>{guide}</section>'''
     if b['task_count']:
         task_link = f'<a href="{tasks_url(b)}">browse {b["task_count"]:,} tasks</a> · '
         dataset = f'''<p>{b['task_count']:,} tasks in this snapshot. <a href="{tasks_url(b)}">Browse tasks</a> or visit <a href="{esc(b['dataset_url'])}">the upstream dataset</a>.</p>'''
@@ -185,7 +190,7 @@ def benchmark_page(b):
 <p>{esc(b['summary'])}</p><dl class="metadata">{''.join(f'<div><dt>{esc(k)}:</dt><dd>{esc(v)}</dd></div>' for k,v in facts)}</dl>
 <article class="prose"><section id="overview"><h2>Overview</h2>{markdown(b['overview'])}</section>
 <section id="methodology"><h2>Methodology</h2>{markdown(b['methodology'])}</section>
-<section id="scoring"><h2>Scoring</h2>{markdown(b['scoring'])}</section>
+<section id="scoring"><h2>Scoring</h2>{markdown(b['scoring'])}</section>{how_to_run}
 <section id="dataset"><h2>Dataset</h2>{dataset}</section>
 <section id="limitations"><h2>Limitations</h2>{markdown(b['limitations'])}</section>
 <section id="license"><h2>License</h2>{markdown(license_text)}</section>
@@ -224,10 +229,9 @@ def task_page(q, previous, following):
     solution_section = ''
     if solution_source or solution_content:
         solution_section = f'<section id="solution"><h2>Solution</h2>{solution_content}{solution_source}</section>'
-    how_to_run = b['how_to_run_html'].replace('{{key}}', esc(q['key']))
     body = f'''<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Benchmarks</a> &gt; <a href="{benchmark_url(b)}">{esc(b['name'])}</a> &gt; <a href="{tasks_url(b)}">Tasks</a></nav>
 <p class="task-id">{esc(q['key'])}</p><h1>{esc(q['title'])}</h1>
-<article class="prose">{environment_section}<section id="task-prompt"><h2>Task Prompt</h2><div class="prompt-content">{markdown(q['prompt'])}</div>{prompt_source}</section>{solution_section}<section id="how-to-run"><h2>How to run</h2>{how_to_run}</section></article>
+<article class="prose">{environment_section}<section id="task-prompt"><h2>Task Prompt</h2><div class="prompt-content">{markdown(q['prompt'])}</div>{prompt_source}</section>{solution_section}</article>
 <nav class="task-adjacent" aria-label="Adjacent tasks">{prev_link}<a href="{tasks_url(b)}">Task index</a>{next_link}</nav>'''
     relative = output_path(site_url(task_url(q)))
     write(relative+'index.html',layout(q['title'],body,description=q['title']))
@@ -248,9 +252,6 @@ def main():
         BENCHMARKS = [dict(r) for r in db.execute('SELECT * FROM benchmark ORDER BY name')]
         TASKS = [dict(r) for r in db.execute('SELECT * FROM task ORDER BY benchmark_id, key')]
     tasks_by_benchmark = {b['id']:[] for b in BENCHMARKS}
-    for b in BENCHMARKS:
-        # Rendered once per benchmark; each task page fills in its own {{key}}.
-        b['how_to_run_html'] = markdown(b['how_to_run'] or '')
     for q in TASKS:
         q['title'] = task_title(q['prompt'])
         tasks_by_benchmark[q['benchmark_id']].append(q)
@@ -264,9 +265,10 @@ def main():
     shutil.copytree(ROOT/'assets',OUT/'assets')
     home()
     for b in BENCHMARKS:
-        benchmark_page(b)
+        rows = tasks_by_benchmark[b['id']]
+        benchmark_page(b, rows[0] if rows else None)
         if b['task_count']:
-            library(b, tasks_by_benchmark[b['id']])
+            library(b, rows)
     for i,q in enumerate(TASKS):
         same = lambda other: other if other and other['benchmark_id']==q['benchmark_id'] else None
         task_page(q,same(TASKS[i-1] if i else None),same(TASKS[i+1] if i+1<len(TASKS) else None))
