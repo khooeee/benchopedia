@@ -6,7 +6,7 @@ The encyclopedia of AI benchmarks: one readable page per benchmark, with an at-a
 
 For the full import and verification process, see [Adding a benchmark](docs/adding-a-benchmark.md).
 
-`data/` is the source of truth: one directory per benchmark, holding `benchmark.json` and `tasks.jsonl`.
+`data/` is the source of truth: one directory per benchmark, holding `benchmark.json`, `tasks.jsonl` and `how-to-run.md`.
 
 ```sh
 python3 scripts/helpers/build_sqlite.py
@@ -41,6 +41,7 @@ erDiagram
         TEXT scoring "article section"
         TEXT limitations "article section"
         TEXT redistribution_review "License section"
+        TEXT how_to_run "task-page guide, null if excluded"
         TEXT sources "JSON array"
     }
     task {
@@ -83,7 +84,9 @@ task lists, and single-column reference pages. All fonts and assets are local.
 holds the page templates. `benchmark.json` also holds the benchmark's article:
 its overview, methodology, scoring and limitations sections and its primary
 sources. `redistribution-review.md` holds its license terms and required
-notices, published as the page's License section. Article text supports
+notices, published as the page's License section. `how-to-run.md` holds the steps and
+code for running and scoring a task, shown on each of its task pages with
+`{{key}}` replaced by that task's key. Article text supports
 paragraphs, headings, code blocks, inline code and HTTP(S) links. Source HTML
 is escaped.
 

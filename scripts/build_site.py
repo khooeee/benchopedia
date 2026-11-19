@@ -224,9 +224,10 @@ def task_page(q, previous, following):
     solution_section = ''
     if solution_source or solution_content:
         solution_section = f'<section id="solution"><h2>Solution</h2>{solution_content}{solution_source}</section>'
+    how_to_run = b['how_to_run_html'].replace('{{key}}', esc(q['key']))
     body = f'''<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Benchmarks</a> &gt; <a href="{benchmark_url(b)}">{esc(b['name'])}</a> &gt; <a href="{tasks_url(b)}">Tasks</a></nav>
 <p class="task-id">{esc(q['key'])}</p><h1>{esc(q['title'])}</h1>
-<article class="prose">{environment_section}<section id="task-prompt"><h2>Task Prompt</h2><div class="prompt-content">{markdown(q['prompt'])}</div>{prompt_source}</section>{solution_section}</article>
+<article class="prose">{environment_section}<section id="task-prompt"><h2>Task Prompt</h2><div class="prompt-content">{markdown(q['prompt'])}</div>{prompt_source}</section>{solution_section}<section id="how-to-run"><h2>How to run</h2>{how_to_run}</section></article>
 <nav class="task-adjacent" aria-label="Adjacent tasks">{prev_link}<a href="{tasks_url(b)}">Task index</a>{next_link}</nav>'''
     relative = output_path(site_url(task_url(q)))
     write(relative+'index.html',layout(q['title'],body,description=q['title']))
@@ -247,6 +248,9 @@ def main():
         BENCHMARKS = [dict(r) for r in db.execute('SELECT * FROM benchmark ORDER BY name')]
         TASKS = [dict(r) for r in db.execute('SELECT * FROM task ORDER BY benchmark_id, key')]
     tasks_by_benchmark = {b['id']:[] for b in BENCHMARKS}
+    for b in BENCHMARKS:
+        # Rendered once per benchmark; each task page fills in its own {{key}}.
+        b['how_to_run_html'] = markdown(b['how_to_run'] or '')
     for q in TASKS:
         q['title'] = task_title(q['prompt'])
         tasks_by_benchmark[q['benchmark_id']].append(q)

@@ -25,6 +25,7 @@ class Page(HTMLParser):
         self.reading_solution = False
         self.section = None
         self.section_links = {}
+        self.section_text = {}
         self.sections = []
         self.feed(text)
 
@@ -61,6 +62,8 @@ class Page(HTMLParser):
     def handle_data(self, data):
         if self.reading_solution:
             self.solution += data
+        if self.section:
+            self.section_text[self.section] = self.section_text.get(self.section, "") + data
 
     def handle_endtag(self, tag):
         if tag == "code":
@@ -130,9 +133,11 @@ def main():
             assert page.sections.index("environment") < page.sections.index("task-prompt"), f"Environment must precede Task Prompt: {key}"
         if originals[key].get("solution_source_url"):
             assert originals[key]["solution_source_url"] in page.section_links.get("solution", []), f"Missing solution source: {key}"
+        guide = page.section_text.get("how-to-run", "")
+        assert q["key"] in guide and "{{key}}" not in guide, f"How to run does not name its task: {key}"
     if errors:
         raise SystemExit("\n".join(errors))
-    print(f"OK: {len(pages)} pages, all internal links/anchors, {len(tasks)} task routes, original prompts/solutions and environment/solution-source links")
+    print(f"OK: {len(pages)} pages, all internal links/anchors, {len(tasks)} task routes, original prompts/solutions, environment/solution-source links and how-to-run guides")
 
 
 if __name__ == "__main__":

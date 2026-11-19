@@ -37,7 +37,9 @@ class ExclusionChecks(unittest.TestCase):
         self.benchmark_dir.mkdir(parents=True)
         self.record = self.benchmark_dir / "exclusions.md"
         self.tasks = self.benchmark_dir / "tasks.jsonl"
+        self.guide = self.benchmark_dir / "how-to-run.md"
         (self.benchmark_dir / "redistribution-review.md").write_text("Fixture review.\n")
+        self.guide.write_text("Run {{key}}.\n")
         self.write_metadata()
         self.write_task()
         settings = patch.multiple(build_sqlite, ROOT=self.root, DATA_DIR=self.data)
@@ -70,6 +72,7 @@ class ExclusionChecks(unittest.TestCase):
         self.record.write_text(RECORD)
         self.write_metadata(excluded=True)
         self.tasks.unlink()
+        self.guide.unlink()
 
     def load(self):
         errors = []
@@ -104,6 +107,21 @@ class ExclusionChecks(unittest.TestCase):
         self.assertTrue(any("missing; record any exclusion" in error for error in errors))
         self.assertTrue(any("data/fixture/exclusions.md" in error for error in errors))
 
+    def test_included_tasks_need_a_how_to_run_guide(self):
+        self.guide.unlink()
+        self.assertTrue(any("how-to-run.md: missing" in error for error in self.load()))
+        self.assertEqual(self.task_count(), 0)
+
+    def test_how_to_run_guide_must_name_the_task(self):
+        self.guide.write_text("Run the task.\n")
+        self.assertTrue(any("CHECK constraint failed" in error for error in self.load()))
+
+    def test_excluded_tasks_reject_a_how_to_run_guide(self):
+        self.exclude()
+        self.guide.write_text("Run {{key}}.\n")
+        self.assertTrue(any("no page would show it" in error for error in self.load()))
+        self.assertEqual(self.task_count(), 0)
+
     def test_excluded_metadata_must_have_null_task_fields(self):
         self.record.write_text(RECORD)
         self.assertTrue(any("must be null" in error for error in self.load()))
@@ -119,6 +137,7 @@ class ExclusionChecks(unittest.TestCase):
         self.record.unlink()
         self.write_metadata()
         self.write_task()
+        self.guide.write_text("Run {{key}}.\n")
         self.assertEqual(self.load(), [])
         self.assertEqual(self.task_count(), 1)
 

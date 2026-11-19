@@ -86,6 +86,17 @@ def load_benchmark(db, benchmark_dir, excluded, errors):
         errors.append(f"{review_file.relative_to(ROOT)}: missing; see docs/adding-a-benchmark.md")
         return
     benchmark["redistribution_review"] = review_file.read_text(encoding="utf-8")
+    # The guide appears only on task pages, so it exists exactly when the tasks do.
+    guide_file = benchmark_dir / "how-to-run.md"
+    if benchmark["id"] in excluded:
+        if guide_file.exists():
+            errors.append(f"{guide_file.relative_to(ROOT)}: tasks are excluded, so no page "
+                          "would show it; delete it or clear the exclusion")
+    elif not guide_file.is_file():
+        errors.append(f"{guide_file.relative_to(ROOT)}: missing; see docs/adding-a-benchmark.md")
+        return
+    else:
+        benchmark["how_to_run"] = guide_file.read_text(encoding="utf-8")
     benchmark["sources"] = json.dumps(benchmark.get("sources"), ensure_ascii=False)
     insert(db, "benchmark", benchmark, benchmark_file.relative_to(ROOT), errors)
 
