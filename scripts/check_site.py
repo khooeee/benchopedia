@@ -27,6 +27,8 @@ class Page(HTMLParser):
         self.section_links = {}
         self.section_text = {}
         self.sections = []
+        self.contents = []
+        self.in_contents = False
         self.feed(text)
 
     def handle_starttag(self, tag, attrs):
@@ -49,6 +51,10 @@ class Page(HTMLParser):
             if self.section:
                 self.sections.append(self.section)
                 self.section_links[self.section] = []
+        if tag == "nav" and "toc" in attrs.get("class", "").split():
+            self.in_contents = True
+        if tag == "a" and self.in_contents:
+            self.contents.append(attrs.get("href", ""))
         if tag == "a" and self.section:
             self.section_links[self.section].append(attrs.get("href", ""))
         if tag in ("a", "link", "script"):
@@ -66,6 +72,8 @@ class Page(HTMLParser):
             self.section_text[self.section] = self.section_text.get(self.section, "") + data
 
     def handle_endtag(self, tag):
+        if tag == "nav":
+            self.in_contents = False
         if tag == "code":
             self.reading_solution = False
         if tag == "section":
@@ -86,6 +94,7 @@ def main():
         expected_tasks[benchmark["id"]] = str(bool(benchmark["task_count"])).lower()
         page = pages.get(OUT / "benchmarks" / benchmark["id"] / "index.html")
         assert page and "license" in page.sections, f"Missing License section: {benchmark['id']}"
+        assert page.contents == [f"#{section}" for section in page.sections], f"Contents differ from sections: {benchmark['id']}"
         guides[benchmark["id"]] = page.section_text.get("how-to-run")
     assert catalog.benchmarks == expected_flags, "Catalog solution flags differ from metadata"
     assert catalog.solution_filter, "Missing benchmark solutions checkbox"

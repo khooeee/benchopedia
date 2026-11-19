@@ -56,6 +56,10 @@ footer { border-top: 1px solid #ccc; padding: 14px 36px 20px; font-size: .8rem; 
 .metadata dt { min-width: 145px; }
 .metadata dd { margin: 0; overflow-wrap: anywhere; }
 .prose { max-width: 980px; overflow-wrap: anywhere; }
+.toc { display: inline-block; min-width: 220px; border: 1px solid #ccc; background: #f8f8f8; padding: 8px 18px 10px; margin: 6px 0 4px; font-size: .9rem; }
+.toc h2 { font-size: 1rem; margin: 0 0 6px; }
+.toc ol { margin: 0; padding-left: 22px; }
+.toc li { margin: 2px 0; }
 .prose section { margin: 24px 0; scroll-margin-top: 16px; }
 .prose p { margin: 12px 0; }
 code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85em; }
