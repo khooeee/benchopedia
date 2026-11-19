@@ -309,7 +309,7 @@ Open <http://localhost:8765> and verify:
 - The benchmark appears in the index with the right name, date, and count.
 - Its explanatory sections and source links are accurate, and its License section
   shows the required notices.
-- The task library can filter to it and search its prompts or IDs.
+- Its tasks page lists its tasks and searches their prompts or IDs.
 - Representative task pages show complete input, the correct reference solution,
   and the relevant source and environment links when available.
 - Existing benchmark pages and tasks still work.
