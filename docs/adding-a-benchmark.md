@@ -69,12 +69,13 @@ data/example-benchmark/
     redistribution-review.md
     tasks.jsonl
     import.py
+    how-to-run.md
 ```
 
 `benchmark.json` contains the metadata and explanatory text.
 `redistribution-review.md` records the license terms and required notices.
 `tasks.jsonl` contains the imported task snapshot. `import.py` reproduces that snapshot from
-the upstream source. Commit these files; `build/` and `dist/` are generated and
+the upstream source. `how-to-run.md` explains how to run and score each task. Commit these files; `build/` and `dist/` are generated and
 ignored by Git. Do not edit the generated database to add data.
 
 ## 3. Write benchmark.json
@@ -165,7 +166,8 @@ Keep any separate upstream license or attribution file, such as `LICENSE` or
 ### Excluding tasks
 
 When the tasks cannot be published, keep the benchmark's article but leave its
-tasks out of both the repository and the website. Delete its `tasks.jsonl`, set
+tasks out of both the repository and the website. Delete its `tasks.jsonl` and
+`how-to-run.md`, set
 `task_count` and `has_solutions` to `null`, and create
 `data/<id>/exclusions.md` beside its metadata. Each affected benchmark owns its
 record; there is no shared exclusion registry. The directory supplies the
@@ -194,10 +196,11 @@ with a `YYYY-MM-DD` date under `## Since`. A malformed record fails the build
 and still prevents task loading.
 
 Explain the exclusion in the benchmark's redistribution review as well. The
-build rejects a `tasks.jsonl` for an excluded benchmark and requires one for
-every other benchmark, so tasks cannot return or disappear by accident. Include
-the tasks again only after the review clears them: delete `exclusions.md`,
-restore `task_count` and `has_solutions`, and rerun the importer. Deleting a file
+build rejects a `tasks.jsonl` or `how-to-run.md` for an excluded benchmark and
+requires both for every other benchmark, so tasks cannot return or disappear by
+accident. Include the tasks again only after the review clears them: delete
+`exclusions.md`, restore `task_count`, `has_solutions` and `how-to-run.md`, and
+rerun the importer. Deleting a file
 does not remove it from Git history.
 
 ## 5. Map upstream records to tasks.jsonl
@@ -269,7 +272,38 @@ multiline solutions, and different task formats. When refreshing an existing
 benchmark, review changes to IDs, counts, and text. Updating an upstream revision
 should be an intentional edit, not an automatic consequence of running a build.
 
-## 7. Build and check
+## 7. Write how-to-run.md
+
+Every task page ends with a How to run section: steps and code that run that
+task through the benchmark's own evaluation and score the result. Write it once
+in `data/<id>/how-to-run.md`. Each task page replaces `{{key}}` with its task key,
+and the build requires the placeholder. See
+[HumanEval's guide](../data/humaneval/how-to-run.md) for an example.
+
+- Open with a short paragraph naming the official harness, scorer or metric
+  definition, with a commit-pinned link. When the authors publish no scorer,
+  implement the scoring rule their paper defines and say so.
+- Use `###` headings for the steps: install or fetch what is needed, load this
+  task, generate the model's output, and score it. Finish with a
+  "Score the full benchmark" step that runs every task the official way and
+  explains how per-task scores combine.
+- Load the task from the upstream source and revision of the snapshot, selected
+  by `{{key}}`. When keys differ from upstream identifiers, derive the
+  identifier in code using the scheme the methodology documents. Quote `{{key}}`
+  in code: keys may contain `#`, `&`, `+` and `.`.
+- Represent the model as a `generate` function that raises
+  `NotImplementedError` for the reader to replace. Give it the input in the
+  benchmark's own prompt format, and parse its output as the official evaluation does.
+- Warn when scoring executes model-generated code, and show the sandbox the
+  authors recommend.
+
+Write in the same Markdown subset as the article sections; code blocks may name
+their language. Keep license and access terms in the redistribution review. Check
+every command, function, file name and field against the pinned upstream source.
+Where you can, run the code with the reference solution in place of the model
+and confirm that it scores as correct.
+
+## 8. Build and check
 
 Run these commands from the repository root:
 
@@ -283,7 +317,7 @@ python3 scripts/check_exclusions.py # Check exclusion records and task-loading s
 The build enforces schema constraints and the shared SQL checks: the declared
 task count must match the imported count, task keys must be unique within a
 benchmark, every benchmark needs a redistribution review, and only excluded
-benchmarks may omit `tasks.jsonl`. Identical prompts are allowed because
+benchmarks may omit `tasks.jsonl` and `how-to-run.md`. Identical prompts are allowed because
 published datasets such as MMLU contain repeated items. Investigate repeated prompts against upstream; do
 not silently drop records or alter wording. Preserve distinct upstream records
 under their own stable keys and document any duplicates. Read JSONL by iterating
@@ -296,7 +330,7 @@ require changing its assertions. Neither check verifies external URL availabilit
 or replaces checking imported content against the official source. The UI check
 does not check visual appearance.
 
-## 8. Preview and review locally
+## 9. Preview and review locally
 
 If a local server is already running, rebuild and refresh it. Otherwise start one:
 
@@ -312,6 +346,7 @@ Open <http://localhost:8765> and verify:
 - Its tasks page lists its tasks and searches their prompts or IDs.
 - Representative task pages show complete input, the correct reference solution,
   and the relevant source and environment links when available.
+- Their How to run section names the task and its code selects that task.
 - Existing benchmark pages and tasks still work.
 
 Review the diff for accidental changes to other benchmarks and generated files.
