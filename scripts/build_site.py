@@ -169,13 +169,10 @@ def home():
 
 
 def benchmark_page(b, example=None):
-    facts = [('Released',b['released_on']),('Tasks',task_count_label(b))]
-    if b['task_count']:
-        task_link = f'<a href="{tasks_url(b)}">browse {b["task_count"]:,} tasks</a> · '
-        dataset = f'''<p>{b['task_count']:,} tasks in this snapshot. <a href="{tasks_url(b)}">Browse tasks</a> or visit <a href="{esc(b['dataset_url'])}">the upstream dataset</a>.</p>'''
-    else:
-        task_link = ''
-        dataset = f'''<p>Benchopedia does not include this benchmark's tasks; the <a href="#license">License</a> section explains why. Visit <a href="{esc(b['dataset_url'])}">the upstream dataset</a> for the tasks.</p>'''
+    # Excluded tasks link to the License section, which explains why.
+    tasks = esc(task_count_label(b)) if b['task_count'] else '<a href="#license">not included</a>'
+    facts = [('Released',esc(b['released_on'])),('Tasks',tasks)]
+    task_link = f'<a href="{tasks_url(b)}">browse {b["task_count"]:,} tasks</a> · ' if b['task_count'] else ''
     sources = json.loads(b['sources'])
     source_list = ''.join(f'<li><a href="{esc(s["url"])}">{esc(s["title"])}</a></li>' for s in sources)
     # The review's own title would duplicate the section heading.
@@ -187,15 +184,14 @@ def benchmark_page(b, example=None):
         # The guide's code runs one task; an example task stands in for {{key}}.
         guide = markdown(b['how_to_run']).replace('{{key}}', esc(example['key']))
         sections.append(('how-to-run','How to run',f'''<p>These steps run and score task <a href="{task_url(example)}">{esc(example['key'])}</a>. Set <code>key</code> to another task's key to run that task instead.</p>{guide}'''))
-    sections += [('dataset','Dataset',dataset),
-                 ('limitations','Limitations',markdown(b['limitations'])),
+    sections += [('limitations','Limitations',markdown(b['limitations'])),
                  ('license','License',markdown(license_text)),
                  ('sources','Sources',f'''<ol>{source_list}</ol><details class="snapshot"><summary>Dataset revision</summary><p>Snapshot of <a href="{esc(b['dataset_url'])}">the upstream dataset</a> at revision <code>{esc(b['dataset_revision'])}</code>.</p></details>''')]
     contents = ''.join(f'<li><a href="#{key}">{title}</a></li>' for key,title,_ in sections)
     article = '\n'.join(f'<section id="{key}"><h2>{title}</h2>{html}</section>' for key,title,html in sections)
     body = f'''<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Benchmarks</a> &gt; {esc(b['name'])}</nav>
 <h1>{esc(b['name'])}</h1><p class="resource-links">[{task_link}<a href="{esc(b['homepage_url'])}">official website</a> · <a href="{esc(b['dataset_url'])}">dataset</a>]</p>
-<p>{esc(b['summary'])}</p><dl class="metadata">{''.join(f'<div><dt>{esc(k)}:</dt><dd>{esc(v)}</dd></div>' for k,v in facts)}</dl>
+<p>{esc(b['summary'])}</p><dl class="metadata">{''.join(f'<div><dt>{esc(k)}:</dt><dd>{v}</dd></div>' for k,v in facts)}</dl>
 <nav class="toc" aria-labelledby="toc-heading"><h2 id="toc-heading">Contents</h2><ol>{contents}</ol></nav>
 <article class="prose">{article}</article>'''
     write(f'benchmarks/{b["id"]}/index.html',layout(b['name'],body,description=b['summary']))
