@@ -75,9 +75,15 @@ CREATE TABLE run (
     -- Software and hardware versions, including the weights digest the provider reported.
     environment       TEXT NOT NULL CHECK (json_valid(environment) AND json_type(environment) = 'object'),
     started_at        TEXT NOT NULL CHECK (started_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T*Z'),
-    -- NULL while the run is in progress.
+    -- Set once every selected task has a result; NULL while running or if the run was stopped.
     finished_at       TEXT CHECK (finished_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T*Z'
                                   AND finished_at >= started_at),
+    -- Set when the run was ended early, with why; its results cover only the tasks it reached.
+    stopped_at        TEXT CHECK (stopped_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T*Z'
+                                  AND stopped_at >= started_at),
+    stop_reason       TEXT CHECK (trim(stop_reason) <> ''),
+    CHECK ((stopped_at IS NULL) = (stop_reason IS NULL)),
+    CHECK (finished_at IS NULL OR stopped_at IS NULL),
     PRIMARY KEY (benchmark_id, id)
 ) STRICT;
 

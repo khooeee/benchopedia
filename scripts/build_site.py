@@ -139,12 +139,17 @@ def runs_table(runs):
     rows = []
     for r in runs:
         passed = sum(t['result'] == 'pass' for t in r['tasks'])
-        finished = esc(r['finished_at'][:10]) if r['finished_at'] else 'in progress'
+        if r['finished_at']:
+            status = f"finished {esc(r['finished_at'][:10])}"
+        elif r['stopped_at']:
+            status = f"stopped {esc(r['stopped_at'][:10])}"
+        else:
+            status = 'in progress'
         rows.append(f'''<tr><td><a href="{run_url(r)}">{esc(r['id'])}</a></td><td>{esc(run_title(r))}</td>
 <td class="number">{r['attempts_per_task']}</td><td class="number">{len(r['tasks']):,}</td><td class="number">{passed:,}</td>
-<td class="number">{len(r['tasks']) - passed:,}</td><td>{finished}</td></tr>''')
+<td class="number">{len(r['tasks']) - passed:,}</td><td>{status}</td></tr>''')
     return ('<div class="table-scroll"><table><thead><tr><th>Run</th><th>Model</th><th>Attempts per task</th><th>Tasks tried</th>'
-            '<th>Passed</th><th>Failed</th><th>Finished</th></tr></thead><tbody>' + ''.join(rows) + '</tbody></table></div>')
+            '<th>Passed</th><th>Failed</th><th>Status</th></tr></thead><tbody>' + ''.join(rows) + '</tbody></table></div>')
 
 
 def results_section(b, runs, statuses):
@@ -315,7 +320,14 @@ def run_page(b, r, tasks_by_key):
     after = json.loads(r['after_runs'])
     selection = 'every task' if not after else 'tasks left open by ' + ', '.join(
         f'<a href="{run_url({"benchmark_id": b["id"], "id": earlier})}">{esc(earlier)}</a>' for earlier in after)
-    progress = '' if r['finished_at'] else ' so far; the run is still in progress'
+    if r['finished_at']:
+        progress, ended = '', [('Finished', esc(r['finished_at']))]
+    elif r['stopped_at']:
+        progress = ' before the run was stopped'
+        ended = [('Stopped', esc(r['stopped_at'])),
+                 ('Why it stopped', f'<span data-text="stop-reason">{esc(r["stop_reason"])}</span>')]
+    else:
+        progress, ended = ' so far; the run is still in progress', [('Finished', 'in progress')]
     facts = [('Model', f'<a href="{esc(model["homepage_url"])}">{esc(model["name"])}</a>'),
              ('Served as', f'<code>{esc(model["provider_model"])}</code> on {esc(model["provider"])}'),
              ('Weights digest', f'<code>{esc(model["weights_digest"])}</code>'),
@@ -324,7 +336,7 @@ def run_page(b, r, tasks_by_key):
              ('Tasks selected', selection),
              ('Results', f'{passed:,} passed, {len(r["tasks"]) - passed:,} failed{progress}'),
              ('Started', esc(r['started_at'])),
-             ('Finished', esc(r['finished_at']) if r['finished_at'] else 'in progress'),
+             *ended,
              ('Commit', f'<a href="{REPOSITORY}/commit/{esc(r["commit_sha"])}"><code>{esc(r["commit_sha"])}</code></a>')]
     steps = ''.join(f'<li><p>{esc(c["purpose"])}</p><pre><code data-text="command-{c["number"]}">{esc(c["command"])}</code></pre></li>'
                     for c in r['commands'])
@@ -333,13 +345,15 @@ def run_page(b, r, tasks_by_key):
     # The benchmark's own grader is what most readers come to check, so it starts open.
     files = ''.join(f'''<details{' open' if f['path'].endswith('/eval.py') else ''}><summary><code>{esc(f['path'])}</code></summary>
 <pre><code data-text="file:{esc(f['path'])}">{esc(f['content'])}</code></pre></details>''' for f in r['files'])
+    stopped_steps = (' The run was stopped before the runner reached every task, so the runner command will try more tasks than this run did.'
+                     if r['stopped_at'] else '')
     entries = []
     for t in r['tasks']:
         verdicts = ', '.join(esc(a['verdict']) for a in t['attempts'])
         url = run_task_url(r, t['task_key'])
         entries.append(f'''<li data-result="{esc(t['result'])}"><div class="entry-links"><a href="{url}">{esc(t['task_key'])}</a> {label(t['result'])} <span class="verdicts">attempts: {verdicts}</span></div>
 <div class="entry-title"><a href="{url}">{esc(tasks_by_key[t['task_key']]['title'])}</a></div></li>''')
-    sections = [('steps', 'Steps', f'<p>These commands produced this run. Run them in order to reproduce it.</p><ol class="steps">{steps}</ol>'),
+    sections = [('steps', 'Steps', f'<p>These commands produced this run. Run them in order to reproduce it.{stopped_steps}</p><ol class="steps">{steps}</ol>'),
                 ('settings', 'Settings', f'<p>The options sent with every request, from the model\'s <code>{esc(r["profile"])}</code> profile.</p><pre><code>{esc(json.dumps(json.loads(r["settings"]), indent=2))}</code></pre>'),
                 ('environment', 'Environment', environment),
                 ('code', 'Code', f'<p>The files the runner read, copied when the run started.</p>{files}'),

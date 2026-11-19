@@ -1,5 +1,6 @@
 -- A run has results only for the tasks it selected: every task of its benchmark
--- that none of its after_runs passed. A finished run has a result for all of them.
+-- that none of its after_runs passed. A finished run has a result for all of them;
+-- a stopped run, like one in progress, has results only for the tasks it reached.
 WITH selected AS (
     SELECT r.benchmark_id, r.id AS run_id, t.key AS task_key, r.finished_at
     FROM run r

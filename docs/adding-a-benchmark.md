@@ -367,17 +367,27 @@ pinned digest. It writes `data/<id>/runs/<run-id>/`:
 
 - `run.json`: the model, profile and settings, the attempts per task, the
   commit, the software and hardware used, and the commands that reproduce the
-  run. `finished_at` stays `null` until every selected task is done.
+  run. `finished_at` stays `null` until every selected task is done;
+  `stopped_at` and `stop_reason` are set instead if the run is stopped early.
 - `code/`: a copy of every file the runner read, shown on the run's page.
 - `results.jsonl`: one line per task with its `result`, `pass` or `fail`, and
   each attempt's verdict, graded output, and the exact request and response of
   every model call.
 
 Run the same command again to resume an interrupted run; the runner refuses if
-the code, model, or Ollama version has changed since the run started. To run a
+the code, model, or Ollama version has changed since the run started. To end a
+run early instead, stop the runner (Ctrl-C, or kill its process), then record when and why so its
+page explains the missing tasks:
+
+```sh
+python3 runner/stop.py example-benchmark 2026-11-19-qwen3.6-35b-a3b-thinking \
+    --reason "Why the run was stopped, in a sentence or two readers will understand."
+```
+
+The tasks it reached keep their results. To run a
 stronger model on only the tasks earlier runs left open, add
-`--after <earlier-run-id>` for each earlier run. Commit the run directory when the
-run finishes. `scripts/check_evals.py` then re-grades every recorded attempt
+`--after <earlier-run-id>` for each earlier run, finished or stopped. Commit the
+run directory when the run finishes or is stopped. `scripts/check_evals.py` then re-grades every recorded attempt
 with the run's own copy of `eval.py`, and the build checks that each result
 matches its attempts and that a finished run covers every task it selected.
 

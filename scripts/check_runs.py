@@ -1,16 +1,23 @@
 """Exercise run loading and the run checks with a fictional benchmark, model and run."""
 
 import copy
+import io
 import json
 import sqlite3
+import sys
 import tempfile
 import unittest
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
 from helpers import build_sqlite
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "runner"))
+import stop  # noqa: E402
+
+STOPPED = {"finished_at": None, "stopped_at": "2026-11-19T00:30:00Z", "stop_reason": "Too slow."}
 DIGEST = "sha256:" + "0" * 64
 MODEL = {
     "id": "fixture-model", "name": "Fixture Model", "homepage_url": "https://example.org/model",
@@ -144,6 +151,48 @@ class RunChecks(unittest.TestCase):
             f.write('{"key": "task-3", "res')
         with self.assertRaises(json.JSONDecodeError):
             self.build()
+
+    def test_stopped_run_may_be_partial(self):
+        self.write_run("first", self.run | STOPPED, self.results[:1])
+        db, errors = self.build()
+        self.assertEqual(errors, [])
+        self.assertEqual(db.execute("SELECT stop_reason FROM run").fetchone()[0], "Too slow.")
+
+    def test_stopped_run_says_why(self):
+        self.write_run("first", self.run | STOPPED | {"stop_reason": None}, self.results[:1])
+        self.assertFails("CHECK constraint failed")
+
+    def test_run_cannot_both_finish_and_stop(self):
+        self.write_run("first", self.run | STOPPED | {"finished_at": "2026-11-19T01:00:00Z"}, self.results)
+        self.assertFails("CHECK constraint failed")
+
+    def test_stopped_run_cannot_end_in_a_partial_line(self):
+        run_dir = self.write_run("first", self.run | STOPPED, self.results)
+        with (run_dir / "results.jsonl").open("a") as f:
+            f.write('{"key": "task-3", "res')
+        with self.assertRaises(json.JSONDecodeError):
+            self.build()
+
+    def test_stop_keeps_finished_tasks_and_records_why(self):
+        run_dir = self.write_run("first", self.run | {"finished_at": None}, self.results[::-1])
+        with (run_dir / "results.jsonl").open("a") as f:
+            f.write('{"key": "task-3", "res')
+        argv = ["stop.py", "fixture", "first", "--reason", "Too slow."]
+        with patch.object(stop, "ROOT", self.root), patch.object(sys, "argv", argv), \
+                redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+            stop.main()
+        run = json.loads((run_dir / "run.json").read_text())
+        self.assertEqual((run["finished_at"], run["stop_reason"]), (None, "Too slow."))
+        keys = [json.loads(line)["key"] for line in (run_dir / "results.jsonl").read_text().splitlines()]
+        self.assertEqual(keys, ["task-1", "task-2"])
+        self.assertEqual(self.build()[1], [])
+
+    def test_later_run_may_follow_a_stopped_run(self):
+        self.write_run("first", self.run | STOPPED, self.results[:1])
+        later = self.run | {"after_runs": ["first"], "started_at": "2026-11-19T02:00:00Z",
+                            "finished_at": "2026-11-19T03:00:00Z"}
+        self.write_run("second", later, self.results[1:])
+        self.assertEqual(self.build()[1], [])
 
     def test_later_run_only_tries_tasks_earlier_runs_left_open(self):
         later = self.run | {"after_runs": ["first"], "started_at": "2026-11-19T02:00:00Z",

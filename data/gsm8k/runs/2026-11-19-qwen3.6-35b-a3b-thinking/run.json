@@ -1,0 +1,53 @@
+{
+  "model_id": "qwen3.6-35b-a3b",
+  "profile": "thinking",
+  "settings": {
+    "think": true,
+    "options": {
+      "num_predict": 81920,
+      "num_ctx": 98304,
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "top_k": 20,
+      "min_p": 0.0,
+      "presence_penalty": 1.5,
+      "repeat_penalty": 1.0
+    }
+  },
+  "attempts_per_task": 2,
+  "after_runs": [],
+  "commit_sha": "ad3a86e58b789d511bec0ce9623ccaf967a94847",
+  "environment": {
+    "ollama_version": "0.40.16",
+    "weights_digest": "sha256:4a5e082f2bd34ad799f0924d3ab5af135cf2445a17a42f34b1dfa706aa81f1cb",
+    "system": "macOS 27.2.1",
+    "machine": "Apple M5, 32 GB",
+    "python": "3.9.6"
+  },
+  "commands": [
+    {
+      "command": "git clone https://github.com/khooeee/benchopedia.git benchopedia && cd benchopedia && git checkout ad3a86e58b789d511bec0ce9623ccaf967a94847",
+      "purpose": "Get the exact code and model definition this run used."
+    },
+    {
+      "command": "ollama pull qwen3.6:35b-mlx",
+      "purpose": "Download the model. ollama list must show ID 4a5e082f2bd3, the start of the pinned digest sha256:4a5e082f2bd34ad799f0924d3ab5af135cf2445a17a42f34b1dfa706aa81f1cb; a different ID means different weights."
+    },
+    {
+      "command": "ollama serve",
+      "purpose": "Start Ollama, unless its app is already running. The run's environment lists the version used."
+    },
+    {
+      "command": "python3 runner/run.py gsm8k --model qwen3.6-35b-a3b --profile thinking --run-id 2026-11-19-qwen3.6-35b-a3b-thinking",
+      "purpose": "Send every selected task to the model 2 times and grade each answer. Running the same command again resumes an interrupted run."
+    },
+    {
+      "command": "python3 scripts/build_site.py",
+      "purpose": "Load the results into SQLite, check them, and generate the website."
+    }
+  ],
+  "started_at": "2026-11-19T07:30:22Z",
+  "finished_at": null,
+  "stopped_at": "2026-11-19T17:10:54Z",
+  "stop_reason": "At 135 of 1,319 tasks after 9.5 hours, this run was on pace to take about 4 days on one laptop. Half that time went to 19 of its 270 attempts, which each produced 10,000 to 81,920 tokens, against a median of 1,729. It was stopped so the same model could run through OpenRouter instead, where many tasks can run at once."
+}

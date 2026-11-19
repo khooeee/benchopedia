@@ -136,7 +136,7 @@ def read_results(run_dir):
 
     The runner appends a line as each task finishes, so a run in progress may be
     caught mid-write: its last line is skipped until it ends in a newline. A
-    finished run's file is complete, and a broken last line there is an error.
+    finished or stopped run's file is complete, and a broken last line there is an error.
     """
     results_file = run_dir / "results.jsonl"
     if not results_file.exists():
@@ -144,7 +144,7 @@ def read_results(run_dir):
     run = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
     with results_file.open(encoding="utf-8", newline="") as f:
         lines = list(f)
-    if lines and not lines[-1].endswith("\n") and not run.get("finished_at"):
+    if lines and not lines[-1].endswith("\n") and not run.get("finished_at") and not run.get("stopped_at"):
         lines.pop()
     return [json.loads(line) for line in lines]
 

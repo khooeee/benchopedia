@@ -33,6 +33,7 @@ class Page(HTMLParser):
         # Text of elements marked data-text, such as run commands, code and outputs.
         self.texts = {}
         self.reading_text = None
+        self.text_tag = None
         self.results = []
         self.feed(text)
 
@@ -55,6 +56,7 @@ class Page(HTMLParser):
             self.results.append(attrs["data-result"])
         if "data-text" in attrs:
             self.reading_text = attrs["data-text"]
+            self.text_tag = tag
             self.texts[self.reading_text] = ""
         if tag == "section":
             self.section = attrs.get("id")
@@ -88,7 +90,9 @@ class Page(HTMLParser):
             self.in_contents = False
         if tag == "code":
             self.reading_solution = False
+        if tag == self.text_tag:
             self.reading_text = None
+            self.text_tag = None
         if tag == "section":
             self.section = None
 
@@ -193,6 +197,7 @@ def check_runs(pages, tasks):
             name = path.relative_to(code_dir).as_posix()
             assert page.texts.get(f"file:{name}") == path.read_text(encoding="utf-8"), f"Code differs: {run_url} {name}"
         assert page.results == [r["result"] for r in results], f"Task results differ: {run_url}"
+        assert page.texts.get("stop-reason") == run.get("stop_reason"), f"Stop reason differs: {run_url}"
         for result in results:
             task_page = page_for(pages, run_url + f"tasks/{quote(result['key'], safe='')}/")
             assert task_page.results == [result["result"]], f"Result differs: {run_url} {result['key']}"

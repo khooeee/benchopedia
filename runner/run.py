@@ -11,7 +11,8 @@ Writes data/<benchmark>/runs/<run-id>/:
 
 The runner refuses uncommitted code, so a run's commit and code copy say exactly
 what ran. Run the same command again to resume an interrupted run; the runner
-refuses if the code, model or Ollama version changed in between. --scratch writes to
+refuses if the code, model or Ollama version changed in between. To end a run
+early instead, stop the runner and record why with runner/stop.py. --scratch writes to
 build/scratch-runs/ instead, allows uncommitted code and --limit, and is never published.
 Only Python's standard library is required.
 """
@@ -105,8 +106,8 @@ def select_tasks(runs_dir, tasks, after_runs):
     for run_id in after_runs:
         earlier = runs_dir / run_id
         run = json.loads((earlier / "run.json").read_text(encoding="utf-8"))
-        if not run.get("finished_at"):
-            raise SystemExit(f"{earlier}: has not finished, so its open tasks are not known yet")
+        if not run.get("finished_at") and not run.get("stopped_at"):
+            raise SystemExit(f"{earlier}: is still running, so its open tasks are not known yet")
         passed |= {line["key"] for line in read_jsonl(earlier / "results.jsonl") if line["result"] == "pass"}
     return [task for task in tasks if task["key"] not in passed]
 
@@ -122,6 +123,17 @@ def completed_keys(results_file):
         print(f"Dropping an incomplete last line from {results_file}", file=sys.stderr)
         results_file.write_text("".join(line + "\n" for line in complete), encoding="utf-8")
     return {json.loads(line)["key"] for line in complete}
+
+
+def sort_results(results_file):
+    """Sort results.jsonl by task key, so the file is stable however the tasks interleaved."""
+    records = sorted(read_jsonl(results_file) if results_file.exists() else [], key=lambda r: r["key"])
+    temporary = results_file.with_suffix(".jsonl.tmp")
+    with temporary.open("w", encoding="utf-8", newline="\n") as f:
+        for record in records:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+    temporary.replace(results_file)
+    return records
 
 
 def attempt_task(task, evaluation, model, profile):
@@ -187,6 +199,9 @@ def main():
         run = json.loads(run_file.read_text(encoding="utf-8"))
         if run["finished_at"]:
             raise SystemExit(f"{run_dir} has already finished")
+        if run.get("stopped_at"):
+            raise SystemExit(f"{run_dir} was stopped: {run['stop_reason']}\n"
+                             f"To try the tasks it did not pass, start a new run with --after {args.run_id}")
         changed = [k for k, v in settings.items() if run[k] != v]
         changed += [p for p, f in zip(paths, files)
                     if (run_dir / "code" / p).read_bytes() != f.read_bytes()]
@@ -201,7 +216,7 @@ def main():
             target.write_bytes(source.read_bytes())
         run = settings | {"commit_sha": commit, "environment": env,
                           "commands": commands(model, commit, sys.argv[1:], evaluation.ATTEMPTS),
-                          "started_at": now(), "finished_at": None}
+                          "started_at": now(), "finished_at": None, "stopped_at": None, "stop_reason": None}
         run_file.write_text(json.dumps(run, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
     tasks = select_tasks(runs_dir, read_jsonl(benchmark_dir / "tasks.jsonl"), args.after)
@@ -237,13 +252,7 @@ def main():
         # On failure, let tasks already sent to the model finish, but start no more.
         pool.shutdown(wait=True, cancel_futures=True)
 
-    # Sort the finished results so the file is stable however the tasks interleaved.
-    records = sorted(read_jsonl(results_file) if results_file.exists() else [], key=lambda r: r["key"])
-    temporary = results_file.with_suffix(".jsonl.tmp")
-    with temporary.open("w", encoding="utf-8", newline="\n") as f:
-        for record in records:
-            f.write(json.dumps(record, ensure_ascii=False) + "\n")
-    temporary.replace(results_file)
+    records = sort_results(results_file)
     run["finished_at"] = now()
     run_file.write_text(json.dumps(run, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     passed = sum(r["result"] == "pass" for r in records)

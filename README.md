@@ -89,7 +89,8 @@ erDiagram
         TEXT after_runs "JSON array; only tasks these left open"
         TEXT commit_sha "the code's commit"
         TEXT environment "JSON software and hardware"
-        TEXT finished_at "null while running"
+        TEXT finished_at "null while running or if stopped"
+        TEXT stop_reason "why a run was ended early"
     }
     run_task {
         TEXT run_id PK, FK
