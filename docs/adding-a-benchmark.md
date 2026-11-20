@@ -359,6 +359,10 @@ Python's standard library.
   functions unchanged, link their pinned source, and cover them in the
   redistribution review.
 
+If a grader needs immutable support files, name them in a tuple
+`CAPTURE_FILES`. Put the files next to `eval.py`. The runner captures them beside
+the grader for recorded-run checks and compares them on resume.
+
 If the upstream scorer omits some imported tasks, define `is_eligible(task)`.
 Return `True` for tasks that can be scored and `False` for tasks to skip. The
 sweep and grader checks use this hook. The catalog retains the complete
