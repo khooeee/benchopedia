@@ -12,8 +12,8 @@ REVISION = "e4f113090ad82d64f8ce064d2f55b613a9b6bded"
 FENCE = re.compile(r"```(?:lean|lean3)?[ \t]*\n(.*?)\n```", re.DOTALL | re.IGNORECASE)
 NO_PROOF = re.compile(r"\b(?:sorry|sorryAx|admit)\b", re.IGNORECASE)
 PREAMBLES = {
-    "test": "import minif2f_import\nopen_locale big_operators nat real rat",
-    "valid": "import minif2f_import\nopen_locale big_operators real nat topological_space",
+    "test": "import minif2f_import\nopen_locale big_operators\nopen_locale nat\nopen_locale real\nopen_locale rat",
+    "valid": "import minif2f_import\nopen_locale big_operators\nopen_locale real\nopen_locale nat\nopen_locale topological_space",
 }
 
 
