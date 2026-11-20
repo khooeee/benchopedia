@@ -5,14 +5,18 @@ import hashlib
 from pathlib import Path
 import subprocess
 from urllib.request import urlopen
+from uuid import uuid4
+from zipfile import ZipFile
 
-from eval import BOSTON_SHA256, IMAGE, INPUTS_SHA256, boston_path, inputs_path
+from eval import (BOSTON_SHA256, IMAGE, INPUTS_SHA256, NLTK_FIXTURES, boston_path,
+                  inputs_path, matches_checksum, nltk_path)
 
 
 URL = ("https://huggingface.co/datasets/bigcode/bigcodebench/resolve/"
        "b74c0d0bf70d2c0bc459be537895cca163007f1a/data/v0.1.4-00000-of-00001.parquet")
 ARCHIVE_SHA256 = "d9a4965821c9507ebdfb551c288656b2d5fe553234f5183044333ca8a4018267"
 BOSTON_URL = "https://lib.stat.cmu.edu/datasets/boston"
+NLTK_URL = "https://raw.githubusercontent.com/nltk/nltk_data/56512418f6793e31825003ca5b5c5e1ceed0547b/packages/"
 EXTRACT = """
 import io, json, sys
 import pyarrow.parquet as parquet
@@ -24,21 +28,34 @@ print(json.dumps(records, sort_keys=True, ensure_ascii=False, separators=(",",":
 """
 
 
+def install_fixture(target, url, digest):
+    if matches_checksum(target, digest):
+        return
+    with urlopen(url, timeout=45) as response:
+        payload = response.read()
+    if hashlib.sha256(payload).hexdigest() != digest:
+        raise SystemExit(f"{target.name}: checksum differs from the pinned fixture")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temporary = target.with_suffix(f".{uuid4().hex}.tmp")
+    try:
+        temporary.write_bytes(payload)
+        temporary.replace(target)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--archive", type=Path)
     args = parser.parse_args()
     subprocess.run(["docker", "pull", "--platform", "linux/amd64", IMAGE], check=True)
-    fixture = boston_path()
-    if not fixture.is_file() or hashlib.sha256(fixture.read_bytes()).hexdigest() != BOSTON_SHA256:
-        with urlopen(BOSTON_URL, timeout=30) as response:
-            boston = response.read()
-        if hashlib.sha256(boston).hexdigest() != BOSTON_SHA256:
-            raise SystemExit("Boston housing checksum differs from the grader fixture")
-        fixture.parent.mkdir(exist_ok=True)
-        temporary = fixture.with_suffix(".tmp")
-        temporary.write_bytes(boston)
-        temporary.replace(fixture)
+    install_fixture(boston_path(), BOSTON_URL, BOSTON_SHA256)
+    for name, digest in NLTK_FIXTURES.items():
+        archive = nltk_path() / name
+        install_fixture(archive, NLTK_URL + name, digest)
+        if name != "sentiment/vader_lexicon.zip":
+            with ZipFile(archive) as package:
+                package.extractall(archive.parent)
     target = inputs_path()
     if target.is_file() and hashlib.sha256(target.read_bytes()).hexdigest() == INPUTS_SHA256:
         return

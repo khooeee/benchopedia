@@ -13,11 +13,22 @@ IMAGE = "bigcodebench/bigcodebench-evaluate@sha256:1327bddf60be9bc241648c59e6060
 INPUTS_SHA256 = "81c918f4462d251f23d4f90a76dc3386b7cf3254a11bf2c05b2b81ae00b772d0"
 BOSTON_SHA256 = "1df1f5ccfcd1cb9e8f9eaa2c871bb3355eafdde755267bcd593f817b21b92a7b"
 BOSTON_TASK = "bigcodebench-0101"
+NLTK_FIXTURES = {
+    "corpora/stopwords.zip": "4491a6e09fee59f5f674edac3444305c9bfd2eb62b6873c835ce8f3805d95150",
+    "corpora/words.zip": "54ed02917d6771dcc3e8141218960d020947f7f2ccfd9ac9b320979349746015",
+    "sentiment/vader_lexicon.zip": "8adba4294eef3964d820bf655e37e61bdc3a341994356af59b74fb3b4a36ce5c",
+    "taggers/averaged_perceptron_tagger.zip": "e1f13cf2532daadfd6f3bc481a49859f0b8ea6432ccdcd83e6a49a5f19008de9",
+    "tokenizers/punkt.zip": "51c3078994aeaf650bfc8e028be4fb42b4a0d177d41c012b6a983979653660ec",
+}
 PREFIX = "Please provide a self-contained Python script that solves the following problem in a markdown code block:"
 WORKER = """
 import http.server
 import json
+import os
 from pathlib import Path
+import socketserver
+import ssl
+import subprocess
 import sys
 from threading import Thread
 from bigcodebench.evaluate import check_correctness
@@ -41,6 +52,21 @@ if fixture.is_file():
 
 request = json.load(sys.stdin)
 record = request["problem"]
+if record["task_id"] == "BigCodeBench/314":
+    # The test mocks the HTTP client, but the preparatory TLS socket is real.
+    key = "/tmp/example-key.pem"
+    cert = "/tmp/example-cert.pem"
+    subprocess.run(["openssl", "req", "-x509", "-newkey", "ec", "-pkeyopt", "ec_paramgen_curve:P-256",
+                    "-nodes", "-keyout", key, "-out", cert, "-days", "1",
+                    "-subj", "/CN=www.example.com", "-addext", "subjectAltName=DNS:www.example.com"],
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True, timeout=5)
+    os.environ["SSL_CERT_FILE"] = cert
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.load_cert_chain(cert, key)
+    tls = socketserver.TCPServer(("127.0.0.1", 443), socketserver.BaseRequestHandler)
+    tls.socket = context.wrap_socket(tls.socket, server_side=True)
+    Thread(target=tls.serve_forever, daemon=True).start()
+
 code = sanitize(request["output"], entrypoint=record["entry_point"])
 if not code.strip():
     verdict = "unparseable"
@@ -63,14 +89,24 @@ def boston_path():
     return inputs_path().with_name("bigcodebench-boston")
 
 
+def nltk_path():
+    return inputs_path().with_name("bigcodebench-nltk")
+
+
+def matches_checksum(path, digest):
+    return path.is_file() and hashlib.sha256(path.read_bytes()).hexdigest() == digest
+
+
 @lru_cache(maxsize=1)
 def check_setup():
-    path = inputs_path()
-    if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != INPUTS_SHA256:
+    if not matches_checksum(inputs_path(), INPUTS_SHA256):
         return "Run python3 data/bigcodebench/setup_eval.py to install the pinned scoring inputs"
-    fixture = boston_path()
-    if not fixture.is_file() or hashlib.sha256(fixture.read_bytes()).hexdigest() != BOSTON_SHA256:
+    if not matches_checksum(boston_path(), BOSTON_SHA256):
         return "Run python3 data/bigcodebench/setup_eval.py to install the pinned Boston housing data"
+    nltk_root = nltk_path()
+    if not (nltk_root / "tokenizers/punkt/PY3/english.pickle").is_file() or not all(
+            matches_checksum(nltk_root / name, digest) for name, digest in NLTK_FIXTURES.items()):
+        return "Run python3 data/bigcodebench/setup_eval.py to install the pinned NLTK data"
     try:
         state = subprocess.run(["docker", "image", "inspect", IMAGE], capture_output=True, timeout=10)
         if state.returncode == 0:
@@ -115,10 +151,15 @@ def grade(task, output):
         "entry_point": "task_func",
     }
     name = f"benchopedia-bigcode-{uuid4().hex}"
-    fixture = []
+    fixture = ["--mount", f"type=bind,src={nltk_path()},dst=/opt/nltk_data,readonly",
+               "-e", "NLTK_DATA=/opt/nltk_data"]
     if task["key"] == BOSTON_TASK:
-        fixture = ["--add-host", "lib.stat.cmu.edu:127.0.0.1", "--mount",
-                   f"type=bind,src={boston_path()},dst=/opt/boston,readonly"]
+        fixture.extend(["--add-host", "lib.stat.cmu.edu:127.0.0.1", "--mount",
+                        f"type=bind,src={boston_path()},dst=/opt/boston,readonly"])
+    if task["key"] == "bigcodebench-0176":
+        fixture.extend(["--add-host", "dns.google:8.8.8.8", "--add-host", "dns.google:8.8.4.4"])
+    if task["key"] == "bigcodebench-0314":
+        fixture.extend(["--add-host", "www.example.com:127.0.0.1"])
     try:
         result = subprocess.run(
             ["docker", "run", "--rm", "--init", "--platform", "linux/amd64", "--name", name,
