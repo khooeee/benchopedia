@@ -1,0 +1,49 @@
+{
+  "id": "popqa",
+  "name": "PopQA",
+  "summary": "14,267 template questions about Wikidata facts, from famous to obscure entities, for measuring how a model's factual recall falls off for less popular subjects.",
+  "homepage_url": "https://github.com/AlexTMallen/adaptive-retrieval/blob/8172ab04794a1651488207c230286b0b3786d736/README.md",
+  "dataset_url": "https://github.com/AlexTMallen/adaptive-retrieval/blob/8172ab04794a1651488207c230286b0b3786d736/data/popQA.tsv",
+  "dataset_revision": "8172ab04794a1651488207c230286b0b3786d736",
+  "released_on": "2022-12-20",
+  "task_count": 14267,
+  "has_solutions": true,
+  "overview": "PopQA tests whether language models remember facts about entities across the whole range of popularity, from the famous to the obscure. Each question asks for one fact about one entity, such as \"What is George Rankin's occupation?\" or \"What is Boston the capital of?\", and is tagged with how popular its subject is, measured by monthly Wikipedia page views. Alex Mallen, Akari Asai, Victor Zhong, Rajarshi Das, Daniel Khashabi, and Hannaneh Hajishirzi of the University of Washington, Johns Hopkins University, and the Allen Institute for AI released it in December 2022 and presented it at ACL 2023. [Paper](https://aclanthology.org/2023.acl-long.546/) and [repository README](https://github.com/AlexTMallen/adaptive-retrieval/blob/8172ab04794a1651488207c230286b0b3786d736/README.md)\n\nThe authors built it because questions in datasets such as Natural Questions mostly concern popular entities, which hides how models do on the long tail. They found that accuracy rises with the subject's popularity and depends on the kind of fact asked. Scaling up models mainly improved answers about popular entities: on the 4,000 least popular questions, GPT-J 6B scored 16% and GPT-3 davinci-003 19%. Adding retrieved Wikipedia passages helped most on the long tail, and could hurt large models on popular entities. Their Adaptive Retrieval method therefore retrieves only for questions whose subject falls below a popularity threshold set for each kind of fact. [Paper](https://aclanthology.org/2023.acl-long.546/)\n\nWithout retrieval, GPT-3 answered about 35% of the questions correctly with no examples in the prompt, and GPT-Neo 20B about 25%. The best result in the paper, 46.5%, came from davinci-003 with Adaptive Retrieval, using a passage the model wrote itself for questions about popular subjects and one found by the Contriever retriever for the rest; that was 5.3 points above the best method that does not adapt. [Paper](https://aclanthology.org/2023.acl-long.546/)",
+  "methodology": "This snapshot contains all 14,267 questions in `data/popQA.tsv` at commit `8172ab0` of the authors' adaptive-retrieval repository. The file has not changed since the repository's first commit on 2022-12-20, and the importer checks its SHA-256 digest. PopQA is published as a single file with no splits, and the authors' evaluation script runs every question in it. The paper's appendix reports running 14,282 questions through GPT-3; the published file has 14,267. [Data file](https://github.com/AlexTMallen/adaptive-retrieval/blob/8172ab04794a1651488207c230286b0b3786d736/data/popQA.tsv) and [evaluation script](https://github.com/AlexTMallen/adaptive-retrieval/blob/8172ab04794a1651488207c230286b0b3786d736/run_model.py)\n\nThe authors sampled knowledge triples, a subject, a relationship and an object, from Wikidata for 16 relationship types, and turned each into a question with a template they wrote for that type, such as \"What is [subj] the capital of?\". Sampling favoured subjects mentioned more often in a sample of the C4 web corpus, so that the set would not be dominated by the tail, and stopped at 2,000 triples per type. The questions cover director (1,999), screenwriter (1,999), genre (1,619), producer (1,520), author (1,514), composer (978), country (838), capital (645), place of birth (584), father (570), sport (547), occupation (532), capital of (363), religion (338), mother (187), and color (34). The subjects' monthly page views range from 2 to 15,101,521, with a median of 975. The set of accepted answers for a question is every object the knowledge graph links to its subject by that relationship, with each object's aliases. [Paper](https://aclanthology.org/2023.acl-long.546/) and [the first author's note on how the triples were drawn](https://github.com/AlexTMallen/adaptive-retrieval/issues/8)\n\nEach Task Prompt is the question exactly as published. Each Solution is the question's `possible_answers` list, one accepted answer per line in the published order, which starts with the triple's own object for 13,452 questions. Some lists repeat an alias, as in \"singer-songwriter\"; each is kept once. Questions accept 1 to 190 answers, 3.8 on average, and 4,083 accept exactly one. The other columns, including the subject and object, their Wikidata links, and the popularity counts, are not stored.\n\nKeys are the file's `id` column, and tasks are ordered by it. GitHub cannot display a file this large, so source links point at the file rather than a line. The importer uses only Python's standard library. It checks the file's digest, columns, and row count, that the ids are unique, that every question matches its relationship type's template from the authors' script, and that every answer list is non-empty and contains the triple's object. It can be rerun with `python3 data/popqa/import.py`.",
+  "scoring": "The paper reports accuracy, the share of questions answered correctly. The authors' script prompts a model with `Q: <question> A:`, generates at most 15 tokens greedily, and keeps the first line. The prediction is correct when any accepted answer, as written, lowercased, or with its first letter capitalized, appears anywhere in it. GPT-3 was prompted zero-shot, and the smaller GPT-Neo and OPT models with 15 examples, one question and answer from each other relationship type. [Paper](https://aclanthology.org/2023.acl-long.546/) and [scoring code](https://github.com/AlexTMallen/adaptive-retrieval/blob/8172ab04794a1651488207c230286b0b3786d736/run_model.py#L271-L276)\n\nThe paper breaks results down by relationship type and by popularity, and argues that both predict whether a model knows a fact. Compare scores that use the same prompt, number of examples, and retrieval setup.\n\nBenchopedia's runner sends each question with an instruction to end the reply with a line `Answer: <answer>`, and applies the authors' test to that line. Each task is tried twice and passes a run only when both attempts pass.",
+  "limitations": "Many questions cannot be answered without guessing which entity is meant. 585 question texts are shared by different entities with the same name, covering 1,385 questions; \"Who was the screenwriter for Pilot?\" appears 40 times, about 37 different episodes, each with its own answers. Responding to a report of such questions, the first author said some ambiguity is inevitable, that adding detail would undermine the comparison between popular and obscure entities, and that the released dataset can no longer change. A further 296 texts repeat for a single entity, one copy per triple, covering 695 questions with identical answer lists, so a score counts those facts more than once. [Issue 4](https://github.com/AlexTMallen/adaptive-retrieval/issues/4)\n\nThe scoring test is lenient. It looks for each accepted answer anywhere in the prediction, ignoring word boundaries, and 1,215 questions accept an answer of one or two characters. They include 835 of the 838 country questions, whose answers list codes such as \"US\" and \"in\" and flag emoji. A wrong answer can therefore pass: \"Russia\" contains \"us\", the lowercased form of the accepted answer \"US\", so it passes questions whose answer is the United States. In the other direction, a correct answer worded differently from every listed alias fails.\n\nThe answers are the Wikidata facts the authors collected in 2022 and keep any errors or omissions in Wikidata at the time. The questions and answers have been public since December 2022, and carry no canary string, so a high score does not show that a model answered from facts it was not trained on.",
+  "sources": [
+    {
+      "title": "When Not to Trust Language Models: Investigating Effectiveness of Parametric and Non-Parametric Memories",
+      "url": "https://aclanthology.org/2023.acl-long.546/"
+    },
+    {
+      "title": "PopQA · arXiv listing",
+      "url": "https://arxiv.org/abs/2212.10511"
+    },
+    {
+      "title": "PopQA · Repository README",
+      "url": "https://github.com/AlexTMallen/adaptive-retrieval/blob/8172ab04794a1651488207c230286b0b3786d736/README.md"
+    },
+    {
+      "title": "PopQA · Data file",
+      "url": "https://github.com/AlexTMallen/adaptive-retrieval/blob/8172ab04794a1651488207c230286b0b3786d736/data/popQA.tsv"
+    },
+    {
+      "title": "PopQA · Evaluation script",
+      "url": "https://github.com/AlexTMallen/adaptive-retrieval/blob/8172ab04794a1651488207c230286b0b3786d736/run_model.py"
+    },
+    {
+      "title": "PopQA · Issue 4: ambiguous questions",
+      "url": "https://github.com/AlexTMallen/adaptive-retrieval/issues/4"
+    },
+    {
+      "title": "PopQA · Issue 8: entity source and sampling",
+      "url": "https://github.com/AlexTMallen/adaptive-retrieval/issues/8"
+    },
+    {
+      "title": "PopQA · Hugging Face copy",
+      "url": "https://huggingface.co/datasets/akariasai/PopQA"
+    }
+  ]
+}
