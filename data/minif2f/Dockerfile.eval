@@ -29,4 +29,4 @@ COPY --from=builder /opt/minif2f/_target/deps/mathlib/src /opt/mathlib
 COPY --from=builder /opt/minif2f/lean/src/minif2f_import.olean /opt/benchmark/minif2f_import.olean
 ENV LEAN_PATH="/opt/lean/lib/lean/library:/opt/mathlib:/opt/benchmark"
 LABEL org.benchopedia.minif2f="e4f113090ad82d64f8ce064d2f55b613a9b6bded"
-ENTRYPOINT ["/bin/sh", "-c", "cat > /tmp/attempt.lean && exec /opt/lean/bin/lean /tmp/attempt.lean"]
+ENTRYPOINT ["/bin/sh", "-c", "cat > /tmp/attempt.lean && exec /opt/lean/bin/lean -j1 /tmp/attempt.lean"]
