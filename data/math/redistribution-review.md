@@ -12,7 +12,7 @@ The problems are not in the authors' git repository. The README at `357963a7f550
 
 ## Changes
 
-Benchopedia assigns subject-and-row IDs and adds source links. Problem and solution text is unchanged. Difficulty labels are checked and then left out of the task record.
+Benchopedia assigns subject-and-row IDs and adds source links. Problem and solution text is unchanged. Difficulty labels are checked and then left out of the task record. The Benchopedia evaluator includes the authors' boxed-answer extraction and equivalence helpers from their MIT-licensed repository at the pinned code revision. The functions retain the upstream logic. [Box extraction](https://github.com/hendrycks/math/blob/985bdc1696e88e8643f081a0ff4719da39f2ae2a/modeling/dataset/util.py), [box removal](https://github.com/hendrycks/math/blob/985bdc1696e88e8643f081a0ff4719da39f2ae2a/modeling/eval_math_gpt.py), and [equivalence](https://github.com/hendrycks/math/blob/985bdc1696e88e8643f081a0ff4719da39f2ae2a/modeling/math_equivalence.py)
 
 ## Notices
 
