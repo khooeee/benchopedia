@@ -281,16 +281,22 @@ def main(argv=None):
         model_file.relative_to(ROOT): model_file,
     }
     for name in getattr(evaluation, "CAPTURE_FILES", ()):
-        if not isinstance(name, str) or not RUN_ID.fullmatch(name) or name == default_eval.name:
-            parser.error("CAPTURE_FILES must name support files beside eval.py")
-        source = eval_file.with_name(name)
-        if source.is_symlink() or not source.is_file():
-            parser.error(f"evaluator support file missing or not a regular file: {source.relative_to(ROOT)}")
+        if not isinstance(name, str):
+            parser.error("CAPTURE_FILES must contain file paths")
+        path = Path(name)
+        if name != path.as_posix() or not all(RUN_ID.fullmatch(part) for part in path.parts):
+            parser.error(f"invalid evaluator support file: {name}")
+        source = eval_file.parent / path if len(path.parts) == 1 else ROOT / path
+        if not source.resolve().is_relative_to(ROOT) or source.is_symlink() or not source.is_file():
+            parser.error(f"evaluator support file missing or not a regular file: {name}")
+        capture = (benchmark_dir / path).relative_to(ROOT) if len(path.parts) == 1 else path
+        if capture in sources:
+            parser.error(f"evaluator support file is already captured: {name}")
         try:
             source.read_text(encoding="utf-8")
         except UnicodeDecodeError:
-            parser.error(f"evaluator support files must be UTF-8 text: {source.relative_to(ROOT)}")
-        sources[(benchmark_dir / name).relative_to(ROOT)] = source
+            parser.error(f"evaluator support files must be UTF-8 text: {name}")
+        sources[capture] = source
     commit = git("rev-parse", "HEAD").strip()
     env = environment()
 
