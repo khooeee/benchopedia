@@ -361,6 +361,10 @@ means the grader, or the reference, needs a closer look before any model runs.
 For a benchmark that needs a new evaluation path, extend the checks to verify
 results against its scoring rules.
 
+If the stored solution lists alternatives or uses display formatting, an evaluator
+can define `reference_output(task)` to render one valid model reply for the
+reference check.
+
 ## 9. Verify the grader in a sweep
 
 When adding or changing a grader, run a two-task scratch check. The sweep

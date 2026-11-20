@@ -44,7 +44,9 @@ def check_eval(evaluation, tasks, origin, errors):
         if task.get("solution") is None:
             continue
         graded += 1
-        verdict, answer = evaluation.grade(task, task["solution"])
+        reference_output = getattr(evaluation, "reference_output", None)
+        output = reference_output(task) if reference_output is not None else task["solution"]
+        verdict, answer = evaluation.grade(task, output)
         if verdict != "pass":
             errors.append(f"{origin}: grade() gives {verdict} ({answer!r}) for the reference "
                           f"solution of {task['key']}")
