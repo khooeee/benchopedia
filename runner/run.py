@@ -57,7 +57,7 @@ def load_eval(path):
     return module
 
 
-def environment(model):
+def environment(model, backend):
     def sysctl(name):
         return subprocess.run(["sysctl", "-n", name], capture_output=True, text=True).stdout.strip()
 
@@ -67,13 +67,17 @@ def environment(model):
         system = f"macOS {platform.mac_ver()[0]}"
     else:
         system = platform.platform()
-    return {
-        "ollama_version": ollama_api.version(),
-        "weights_digest": ollama_api.digest(model["provider_model"]),
+    host = {
         "system": system,
         "machine": machine,
         "python": platform.python_version(),
     }
+    if backend is ollama_api:
+        return host | {
+            "ollama_version": ollama_api.version(),
+            "weights_digest": ollama_api.digest(model["provider_model"]),
+        }
+    return host | {"provider": model["provider"], "endpoint": backend.CHAT_URL}
 
 
 def repository_url():
@@ -83,21 +87,31 @@ def repository_url():
 
 
 def commands(model, commit, argv, attempts):
-    digest = model["weights_digest"]
-    return [
+    steps = [
         {"command": f"git clone {repository_url()} benchopedia && cd benchopedia && git checkout {commit}",
          "purpose": "Get the exact code and model definition this run used."},
-        {"command": f"ollama pull {model['provider_model']}",
-         "purpose": f"Download the model. ollama list must show ID {digest[7:19]}, "
-                    f"the start of the pinned digest {digest}; a different ID means different weights."},
-        {"command": "ollama serve",
-         "purpose": "Start Ollama, unless its app is already running. The run's environment lists the version used."},
+    ]
+    if model["provider"] == "ollama":
+        digest = model["weights_digest"]
+        steps.extend([
+            {"command": f"ollama pull {model['provider_model']}",
+             "purpose": f"Download the model. ollama list must show ID {digest[7:19]}, "
+                        f"the start of the pinned digest {digest}; a different ID means different weights."},
+            {"command": "ollama serve",
+             "purpose": "Start Ollama, unless its app is already running. The run's environment lists the version used."},
+        ])
+    else:
+        steps.append({"command": 'test -n "$OPENROUTER_API_KEY" || test -f .env',
+                      "purpose": "Configure an OpenRouter key outside the recorded run data."})
+    steps.append(
         {"command": "python3 runner/run.py " + shlex.join(argv),
          "purpose": f"Send every selected task to the model {attempts} times and grade each answer. "
-                    "Running the same command again resumes an interrupted run."},
-        {"command": "python3 scripts/build_site.py",
-         "purpose": "Load the results into SQLite, check them, and generate the website."},
-    ]
+                    "Running the same command again resumes an interrupted run."}
+    )
+    if model["provider"] == "ollama":
+        steps.append({"command": "python3 scripts/build_site.py",
+                      "purpose": "Load the results into SQLite, check them, and generate the website."})
+    return steps
 
 
 def select_tasks(runs_dir, tasks, after_runs):
@@ -136,11 +150,11 @@ def sort_results(results_file):
     return records
 
 
-def attempt_task(task, evaluation, model, profile):
+def attempt_task(task, evaluation, model, profile, backend):
     attempts = []
     for number in range(1, evaluation.ATTEMPTS + 1):
         started_at = now()
-        request, response, latency_ms, output = ollama_api.chat(
+        request, response, latency_ms, output = backend.chat(
             model["provider_model"], evaluation.messages(task), profile, seed=number)
         verdict, answer = evaluation.grade(task, output)
         attempts.append({
@@ -155,46 +169,81 @@ def attempt_task(task, evaluation, model, profile):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("benchmark")
-    parser.add_argument("--model", required=True, help="a model id from models/")
+    model_choices = parser.add_mutually_exclusive_group(required=True)
+    model_choices.add_argument("--model", help="a model id from models/")
+    model_choices.add_argument("--scratch-model", type=Path, metavar="PATH",
+                               help="use a local model configuration; needs --scratch")
     parser.add_argument("--profile", required=True, help="one of the model's profiles")
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--after", action="append", default=[], metavar="RUN_ID",
                         help="only run tasks this earlier run did not pass; repeatable")
     parser.add_argument("--parallel", type=int, default=1, help="tasks to run at once")
     parser.add_argument("--scratch", action="store_true", help="write to build/scratch-runs/ instead")
+    parser.add_argument("--scratch-eval", type=Path, metavar="PATH",
+                        help="use a local evaluator from within the repository; needs --scratch")
     parser.add_argument("--limit", type=int, help="only the first N selected tasks; needs --scratch")
     args = parser.parse_args()
     if args.limit is not None and not args.scratch:
         parser.error("--limit needs --scratch: a published run covers every task it selects")
+    if args.scratch_eval is not None and not args.scratch:
+        parser.error("--scratch-eval needs --scratch")
+    if args.scratch_model is not None and not args.scratch:
+        parser.error("--scratch-model needs --scratch")
     if not RUN_ID.fullmatch(args.run_id):
         parser.error("--run-id must use lowercase letters, digits, dots and hyphens")
 
     benchmark_dir = ROOT / "data" / args.benchmark
-    model_file = ROOT / "models" / f"{args.model}.json"
+    model_file = (args.scratch_model.resolve() if args.scratch_model is not None
+                  else ROOT / "models" / f"{args.model}.json")
+    if not model_file.is_relative_to(ROOT) or not model_file.is_file():
+        parser.error("the model configuration must be a file within this repository")
     model = json.loads(model_file.read_text(encoding="utf-8"))
+    backend = ollama_api
+    if model["provider"] == "openrouter" and args.scratch:
+        import openrouter_api
+        backend = openrouter_api
+        backend.api_key()
+    elif model["provider"] != "ollama":
+        parser.error("OpenRouter is available for scratch runs")
     profile = model["profiles"].get(args.profile)
     if profile is None:
         parser.error(f"{model_file.relative_to(ROOT)} has no profile {args.profile!r}")
-    eval_file = benchmark_dir / "eval.py"
+    default_eval = benchmark_dir / "eval.py"
+    eval_file = default_eval
+    if args.scratch_eval is not None:
+        eval_file = args.scratch_eval.resolve()
+        if not eval_file.is_relative_to(ROOT) or not eval_file.is_file():
+            parser.error("--scratch-eval must name a file within this repository")
     evaluation = load_eval(eval_file)
-    files = [Path(__file__).resolve(), Path(ollama_api.__file__).resolve(), eval_file, model_file]
-    paths = [str(f.relative_to(ROOT)) for f in files]
+    sources = {
+        Path(__file__).resolve().relative_to(ROOT): Path(__file__).resolve(),
+        Path("runner/ollama_api.py"): Path(ollama_api.__file__).resolve(),
+        default_eval.relative_to(ROOT): eval_file,
+        model_file.relative_to(ROOT): model_file,
+    }
+    if backend is not ollama_api:
+        sources[Path("runner/openrouter_api.py")] = Path(backend.__file__).resolve()
+    paths = [str(path) for path in sources]
 
     if not args.scratch:
         untracked = set(paths) - set(git("ls-files", "--", *paths).splitlines())
         if untracked or git("status", "--porcelain", "--", *paths).strip():
             raise SystemExit("Commit these files before a published run, or use --scratch: " + ", ".join(paths))
     commit = git("rev-parse", "HEAD").strip()
-    env = environment(model)
-    if env["weights_digest"] != model["weights_digest"]:
+    env = environment(model, backend)
+    if backend is ollama_api and env["weights_digest"] != model["weights_digest"]:
         raise SystemExit(f"Ollama's {model['provider_model']} has digest {env['weights_digest']}, "
                          f"but {model_file.relative_to(ROOT)} pins {model['weights_digest']}")
 
     runs_dir = ROOT / "build" / "scratch-runs" / args.benchmark if args.scratch else benchmark_dir / "runs"
     run_dir = runs_dir / args.run_id
     run_file = run_dir / "run.json"
-    settings = {"model_id": args.model, "profile": args.profile, "settings": profile,
+    settings = {"model_id": args.model or model["id"], "profile": args.profile, "settings": profile,
                 "attempts_per_task": evaluation.ATTEMPTS, "after_runs": args.after}
+    if args.scratch_model is not None:
+        settings["scratch_model"] = str(model_file.relative_to(ROOT))
+    if args.scratch_eval is not None:
+        settings["scratch_eval"] = str(eval_file.relative_to(ROOT))
     if run_file.exists():
         run = json.loads(run_file.read_text(encoding="utf-8"))
         if run["finished_at"]:
@@ -203,14 +252,15 @@ def main():
             raise SystemExit(f"{run_dir} was stopped: {run['stop_reason']}\n"
                              f"To try the tasks it did not pass, start a new run with --after {args.run_id}")
         changed = [k for k, v in settings.items() if run[k] != v]
-        changed += [p for p, f in zip(paths, files)
-                    if (run_dir / "code" / p).read_bytes() != f.read_bytes()]
-        changed += [k for k in ("ollama_version", "weights_digest") if run["environment"][k] != env[k]]
+        changed += [str(path) for path, source in sources.items()
+                    if (run_dir / "code" / path).read_bytes() != source.read_bytes()]
+        env_keys = ("ollama_version", "weights_digest") if backend is ollama_api else ("provider", "endpoint")
+        changed += [k for k in env_keys if run["environment"].get(k) != env[k]]
         if changed:
             raise SystemExit(f"Cannot resume {run_dir}: changed since it started: {', '.join(changed)}")
         print(f"Resuming {run_dir}")
     else:
-        for path, source in zip(paths, files):
+        for path, source in sources.items():
             target = run_dir / "code" / path
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(source.read_bytes())
@@ -231,10 +281,10 @@ def main():
     counts = {"pass": 0, "fail": 0}
 
     def run_one(task):
-        record = attempt_task(task, evaluation, model, profile)
+        record = attempt_task(task, evaluation, model, profile, backend)
         with lock:
             # Ollama must not change mid-run: an update restarts it with another version.
-            if ollama_api.version() != env["ollama_version"]:
+            if backend is ollama_api and ollama_api.version() != env["ollama_version"]:
                 raise SystemExit("Ollama's version changed during the run; the last task was not saved")
             with results_file.open("a", encoding="utf-8", newline="\n") as f:
                 f.write(json.dumps(record, ensure_ascii=False) + "\n")

@@ -31,6 +31,24 @@ python3 runner/run.py gsm8k --model qwen3.6-35b-a3b --profile thinking \
     --run-id 2026-11-19-qwen3.6-35b-a3b-thinking
 ```
 
+For a local scratch run with hosted inference, copy the environment template
+from the repository root:
+
+```sh
+cp -n .env.template .env
+```
+
+Open the Git-ignored `.env` file and fill in `OPENROUTER_API_KEY`. You can also
+set the key in the process environment. The runner saves the request body and
+response locally, and grading runs on this machine.
+
+`make openrouter-quota` prints the number of free model requests remaining today.
+
+```sh
+python3 runner/run.py gsm8k --scratch --limit 2 --run-id nemotron-free-smoke \
+    --scratch-model runner/models/nemotron-3-ultra-550b-a55b-free.json --profile scratch
+```
+
 ## Schema
 
 `db/schema.sql` is authoritative, including the `CHECK` constraints not shown here.
