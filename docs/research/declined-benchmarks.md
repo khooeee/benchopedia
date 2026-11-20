@@ -32,6 +32,51 @@ Resume if the lyrics' rights holders permit redistribution, the song is shown to
 be in the public domain in this version, or the publishers replace the exercise
 in a new release.
 
+## CaseHOLD
+
+Reviewed 2026-11-19 for the 5,314-question test split of the `all`
+configuration in the authors'
+[`casehold/casehold` at `acc4532a67e0966e9ed7ec4ca543e8532f983b0c`](https://huggingface.co/datasets/casehold/casehold/tree/acc4532a67e0966e9ed7ec4ca543e8532f983b0c),
+and for the 3,600-question test split that LexGLUE redistributes in
+[`coastalcph/lex_glue` at `c23fdff1a6bf74e0e1a71cb86f1e781d37da888c`](https://huggingface.co/datasets/coastalcph/lex_glue/tree/c23fdff1a6bf74e0e1a71cb86f1e781d37da888c).
+Sizes were read from the Hugging Face dataset viewer's metadata; no task content
+was downloaded.
+
+The authors state no terms for the dataset. Their Hugging Face repository has
+no dataset card, and its loading script sets `_LICENSE = ""`. The project page
+and the paper say nothing about licensing or redistribution. The
+[authors' GitHub repository](https://github.com/reglab/casehold/tree/daea97cca16a4d203380f2cebed1a10ed8d42b87)
+carries the Apache License 2.0, but it holds the code and case IDs, not the
+questions: its README sends readers to Hugging Face and a Google Drive folder to
+download the dataset. [Loading script](https://huggingface.co/datasets/casehold/casehold/blob/acc4532a67e0966e9ed7ec4ca543e8532f983b0c/casehold.py),
+[project page](https://reglab.stanford.edu/data/casehold-benchmark/), and
+[original paper](https://arxiv.org/abs/2104.08671)
+
+LexGLUE's copy does not settle it. Its card's metadata says `cc-by-4.0`, but the
+same card's Licensing Information section says "More Information Needed", and
+the
+[LexGLUE GitHub repository](https://github.com/coastalcph/lex-glue/tree/419a49d0fe82ecb69eb8e9343a9eb3382f1040fd)
+has no license file. LexGLUE gathers seven datasets from different publishers,
+so a tag on the collection cannot grant rights in CaseHOLD that its own authors
+have not stated.
+[LexGLUE card](https://huggingface.co/datasets/coastalcph/lex_glue/blob/c23fdff1a6bf74e0e1a71cb86f1e781d37da888c/README.md)
+
+The underlying text is probably free to publish. The paper builds each question
+from a US court decision in the Harvard Law case corpus: the citing passage is
+the prompt, the parenthetical beginning "holding" is the answer, and the four
+wrong answers are other holdings chosen by TF-IDF similarity. US court opinions
+are not protected by copyright, and the Caselaw Access Project's limits on its
+bulk data expired in March 2024, after which it says the data "can now be fully
+released without restriction on access or use". What remains unstated is any
+grant for the dataset the authors assembled from that text, and the review
+cannot replace that with Benchopedia's own view that the assembly carries no
+rights.
+[Caselaw Access Project announcement](https://lil.law.harvard.edu/blog/2024/03/26/transitions-for-the-caselaw-access-project)
+
+Resume if the authors state terms for the CaseHOLD dataset that permit
+redistribution, such as a license on their Hugging Face card, or confirm that it
+may be republished in a public repository and on a crawlable website.
+
 ## CodeContests
 
 Reviewed 2026-11-17 for the 165-problem test split of
