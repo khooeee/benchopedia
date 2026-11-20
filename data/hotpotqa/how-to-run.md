@@ -55,3 +55,11 @@ Write one prediction file whose `answer` and `sp` objects cover all 7,405 questi
 ```sh
 python hotpot_evaluate_v1.py predictions.json hotpot_dev_distractor_v1.json
 ```
+
+### Verify with the Benchopedia sweep
+
+The evaluator numbers each source paragraph's sentences using offsets generated
+by the importer from the pinned split. It asks for a JSON answer and supporting
+fact pairs and reports all twelve per-question metrics from the official scorer.
+It keeps the upstream annotation for the one question whose gold fact names a
+sentence outside its paragraph.
