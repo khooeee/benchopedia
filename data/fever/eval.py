@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 import re
 import sqlite3
+import unicodedata
 
 
 ATTEMPTS = 1
@@ -36,6 +37,7 @@ def check_setup():
     try:
         with closing(open_index()) as conn:
             revision = conn.execute("SELECT wiki_sha256 FROM metadata").fetchone()
+            conn.execute("SELECT term FROM title_terms LIMIT 1").fetchone()
         if revision == (WIKI_SHA256,):
             return None
     except sqlite3.Error:
@@ -51,8 +53,17 @@ def passage_candidates(claim):
     terms = tuple(dict.fromkeys(keywords(claim)))[:8]
     if not terms:
         return []
-    query = " OR ".join(f'"{term}"' for term in terms)
+    indexed_terms = tuple(dict.fromkeys(
+        "".join(ch for ch in unicodedata.normalize("NFKD", term) if not unicodedata.combining(ch))
+        for term in terms
+    ))
+    placeholders = ", ".join("?" for _ in indexed_terms)
     with closing(open_index()) as conn:
+        rare = conn.execute(
+            f"SELECT term FROM title_terms WHERE term IN ({placeholders}) ORDER BY doc, term LIMIT 3",
+            indexed_terms,
+        ).fetchall()
+        query = " OR ".join(f'"{term}"' for term in ([row[0] for row in rare] or terms[:2]))
         pages = conn.execute("""
             SELECT pages.id, pages.lines FROM (
                 SELECT rowid FROM titles WHERE titles MATCH ? ORDER BY rank LIMIT 8

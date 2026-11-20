@@ -65,7 +65,7 @@ The FEVER score is the fraction of claims that are strictly correct, and label a
 
 Run `python3 data/fever/setup_eval.py` to build a local index of the pinned
 Wikipedia archive, then run `python3 runner/sweep.py fever --verify-grader`.
-The sweep uses a title-search retrieval baseline. It passes the claim and
+The sweep uses a title-search retrieval baseline that favors rare claim terms. It passes the claim and
 the top retrieved sentences to the model. The grader checks the original
 page and sentence IDs, keeps the five-evidence limit, and records strict
 FEVER score, label accuracy, and evidence precision and recall.

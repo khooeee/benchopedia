@@ -71,6 +71,7 @@ def main():
                 PRAGMA synchronous=OFF;
                 CREATE TABLE pages (id TEXT NOT NULL, lines TEXT NOT NULL);
                 CREATE VIRTUAL TABLE titles USING fts5(title);
+                CREATE VIRTUAL TABLE title_terms USING fts5vocab(titles, 'row');
                 CREATE TABLE metadata (wiki_sha256 TEXT PRIMARY KEY);
             """)
             feed(archive, conn)
