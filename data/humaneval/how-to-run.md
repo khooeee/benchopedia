@@ -43,6 +43,15 @@ result = check_correctness(problem, completion, timeout=3.0)
 print(result["result"])  # "passed", "failed: ...", or "timed out"
 ```
 
+### Verify with the Benchopedia sweep
+
+Start Docker and run `python3 data/humaneval/setup_eval.py` to pull the pinned
+Python image, then run `python3 runner/sweep.py humaneval --verify-grader`. The
+grader runs each completion in a new container with no network or host mounts,
+a read-only filesystem, and a three-second execution deadline. It records the
+unit-test result for each sample. Each task in a sweep receives one sample, so
+the fraction of tasks that pass is equivalent to pass@1 on that sample set.
+
 ### Score the full benchmark
 
 Write one JSON line per sample, `{"task_id": ..., "completion": ...}`, covering all 164 tasks, then run the authors' scorer. It reports pass@k, averaged over tasks, for each k no larger than the number of samples per task.
