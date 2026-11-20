@@ -1,0 +1,41 @@
+{
+  "id": "tabfact",
+  "name": "TabFact",
+  "summary": "12,779 crowdworker statements about 1,695 Wikipedia tables, each to be judged entailed or refuted by its table, testing fact checking that needs both language understanding and counting, comparison, and other table operations.",
+  "homepage_url": "https://tabfact.github.io/",
+  "dataset_url": "https://github.com/wenhuchen/Table-Fact-Checking/tree/2ab782ba42b5808076ac91fec846473aa5315a79",
+  "dataset_revision": "2ab782ba42b5808076ac91fec846473aa5315a79",
+  "released_on": "2019-09-12",
+  "task_count": 12779,
+  "has_solutions": true,
+  "overview": "TabFact tests fact verification against tables. Each task gives a table from Wikipedia and a statement about it, such as \"tony lema do not win in the us open\", and asks whether the table entails or refutes it. Many statements can only be checked by counting rows, comparing values, finding a maximum, or combining several rows, so a model has to read the table's structure as well as the wording. Wenhu Chen and colleagues at the University of California, Santa Barbara and Tencent AI Lab presented it at ICLR 2020. [Paper](https://arxiv.org/abs/1909.02164) and [OpenReview](https://openreview.net/forum?id=rkeJRhNYDH)\n\nEarlier fact-verification datasets used sentences and documents as evidence. TabFact was built to study verification against semi-structured evidence, where cells hold numbers, dates, names, and short phrases rather than prose. The authors proposed two models: Table-BERT, which turns the table into text for a BERT classifier, and the Latent Program Algorithm, which parses each statement into a program and runs it against the table. Both scored about 65% on the test set, against 92.1% for people on a 2,000-statement sample. [Paper](https://arxiv.org/abs/1909.02164)\n\nModels pretrained on tables later did much better: on the same test set, TAPAS reached 81.0% and TAPEX 84.2%, and the README lists 87.1% for the 20-billion-parameter UL2. [Repository README](https://github.com/wenhuchen/Table-Fact-Checking/blob/2ab782ba42b5808076ac91fec846473aa5315a79/README.md)",
+  "methodology": "This snapshot contains the complete test split, the 12,779 statements in `tokenized_data/test_examples.json` at commit `2ab782b` of the authors' Table-Fact-Checking repository, which the README publishes as the test set, and the 1,695 tables they refer to from `data/all_csv`. The statements file has not changed since it was added on 2019-09-12. The training and validation splits, the raw crowdsourced files, the CodaLab challenge's blind test, and the authors' preprocessed and linked versions are not imported. [Repository README](https://github.com/wenhuchen/Table-Fact-Checking/blob/2ab782ba42b5808076ac91fec846473aa5315a79/README.md)\n\nThe authors took tables with captions from the WikiTables collection of Wikipedia tables, keeping those with fewer than 50 rows and 10 columns. Amazon Mechanical Turk workers wrote statements in two channels: a simple channel for facts about a single row, and a better-paid complex channel for statements involving several rows and operations such as counting, superlatives, comparison, and averages. Refuted statements were written by rewriting entailed ones while keeping their style and length, and plain negations such as adding \"not\" were disallowed, so that the wording alone would not reveal the label. A second round of workers filtered out ambiguous or erroneous statements. When five workers relabelled a sample of 1,000 statements, their agreement was a Fleiss kappa of 0.75. The test set has 6,425 entailed and 6,354 refuted statements; 4,171 come from the simple channel and 8,608 from the complex one. [Paper](https://arxiv.org/abs/1909.02164)\n\nIn this file the statements are lowercased and lemmatized, as the README notes, so they read \"tony lema be in the top 5\" rather than \"Tony Lema was in the top 5\". The tables are lowercased too, with tokenized cell text such as \"top - 5\", and `#` separates the cells of each row.\n\nEach Task Prompt is the table's caption after the label `Table caption:`, the table file inside a fenced block, the statement after the label `Statement:`, and a question Benchopedia adds that notes the `#` separator and asks whether the statement is entailed or refuted. The caption is the title of the Wikipedia page the table came from. 87 tables have the caption \"none\" and no recorded page, and their prompts omit the caption line. The table and statement text is unchanged except that the table files' Windows line breaks become plain line breaks. Each Solution is `Entailed` or `Refuted`.\n\nKeys join the table's file name without `.html.csv` and the statement's zero-based position in that table's list, as in `2-1570274-4-3`. Prompt and solution source links point at the statements file, and environment links point at the table file at the pinned commit. The importer uses only Python's standard library. It checks that the statements file covers exactly the tables in `data/test_id.json`, that statements and labels pair up, that every table is a rectangular grid, and that keys are unique, and it writes `ATTRIBUTION.md`, which lists each table's Wikipedia page. It can be rerun with `python3 data/tabfact/import.py`.",
+  "scoring": "TabFact is scored by accuracy, the share of statements labelled correctly. The paper reports it on the whole test set, on its simple and complex parts, and on a small test set of 1,998 statements from 298 tables on which five crowdworkers per statement, voting, reached 92.1%. Statements are labelled entailed or refuted only; a neutral label was dropped because workers confused it with refuted. The repository's evaluation code belongs to the authors' own models, and the README lists published results for comparison. [Paper](https://arxiv.org/abs/1909.02164) and [repository README](https://github.com/wenhuchen/Table-Fact-Checking/blob/2ab782ba42b5808076ac91fec846473aa5315a79/README.md)\n\nBenchopedia's runner sends each prompt with an instruction to end the reply with a line `Answer: Entailed` or `Answer: Refuted`, and compares that label with the solution. Each task is tried five times and passes a run only when all five attempts pass, so guessing passes one time in 32.",
+  "limitations": "The text is lowercased and lemmatized, so statements read as ungrammatical English and lose distinctions such as tense and number that can matter for the label, as in \"win\" for both \"wins\" and \"won\". The repository's raw crowdsourced files keep the original word forms, but they are not the published test set.\n\nSome labels contradict each other. 35 statements appear twice for the same table; 18 pairs share a label, and 17 pairs have opposite labels, such as \"marianarray and smeaton array have a breadth of 6 m\" for table `1-28132970-5`, so one copy of each of those can never be scored correct. Beyond these, the labels are crowdworker judgments, and the paper's agreement study suggests some are wrong.\n\nThe tables are copies taken from Wikipedia for the WikiTables collection and may differ from the current pages. The test set and its labels have been public since 2019 with no canary string, and table models such as TAPAS and TAPEX were fine-tuned on its training split, so a high score does not show that a model has not seen these statements.",
+  "sources": [
+    {
+      "title": "TabFact: A Large-scale Dataset for Table-based Fact Verification",
+      "url": "https://arxiv.org/abs/1909.02164"
+    },
+    {
+      "title": "TabFact · OpenReview",
+      "url": "https://openreview.net/forum?id=rkeJRhNYDH"
+    },
+    {
+      "title": "TabFact · Project website",
+      "url": "https://tabfact.github.io/"
+    },
+    {
+      "title": "TabFact · Repository README",
+      "url": "https://github.com/wenhuchen/Table-Fact-Checking/blob/2ab782ba42b5808076ac91fec846473aa5315a79/README.md"
+    },
+    {
+      "title": "TabFact · Test statements",
+      "url": "https://github.com/wenhuchen/Table-Fact-Checking/blob/2ab782ba42b5808076ac91fec846473aa5315a79/tokenized_data/test_examples.json"
+    },
+    {
+      "title": "TabFact · Table-to-page mapping",
+      "url": "https://github.com/wenhuchen/Table-Fact-Checking/blob/2ab782ba42b5808076ac91fec846473aa5315a79/data/table_to_page.json"
+    }
+  ]
+}
