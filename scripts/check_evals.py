@@ -45,6 +45,7 @@ def check_eval(evaluation, tasks, origin, errors):
                 or not all(isinstance(m, dict) and isinstance(m.get("role"), str)
                            and isinstance(m.get("content"), str) for m in messages)):
             errors.append(f"{origin}: messages() returned an invalid conversation for {task['key']}")
+        reference_output = getattr(evaluation, "reference_output", None)
         if scores_only:
             if task.get("solution") is not None:
                 graded += 1
@@ -56,14 +57,14 @@ def check_eval(evaluation, tasks, origin, errors):
                         continue
                     result = grade_responses(task, evaluation, outputs)
                 else:
-                    result = grade_output(task, evaluation, task["solution"], enforce_output_limit=False)
+                    output = reference_output(task) if reference_output is not None else task["solution"]
+                    result = grade_output(task, evaluation, output, enforce_output_limit=False)
                 if result["verdict"] != "scored":
                     errors.append(f"{origin}: score() did not score the reference of {task['key']}")
             continue
         if task.get("solution") is None:
             continue
         graded += 1
-        reference_output = getattr(evaluation, "reference_output", None)
         output = reference_output(task) if reference_output is not None else task["solution"]
         verdict, answer = evaluation.grade(task, output)
         if verdict != "pass":
