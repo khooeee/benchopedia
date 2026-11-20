@@ -240,6 +240,41 @@ def grade(task, output):
         for call in [*hosted.call_args_list, *local.call_args_list]:
             self.assertEqual(call.args[1][0]["content"], "task-2")
 
+    def test_grader_check_includes_solved_tasks_and_uses_quota_handoff(self):
+        self.prepare_runner_fixture(("task-3",))
+        self.write_run("first", self.run | {"selected_tasks": ["task-1", "task-2"]}, self.results)
+
+        def openrouter_chat(model, messages, profile, seed):
+            if messages[0]["content"] == "task-2" and seed == 2:
+                body = b'{"error":{"metadata":{"limit_source":"openrouter_free_tier_daily"}}}'
+                error = HTTPError("https://example.org", 429, "quota", {}, io.BytesIO(body))
+                raise sweep.openrouter_api.RateLimited(error)
+            return self.reply(model, messages, profile, seed, "#### 5")
+
+        with patch.object(sweep.openrouter_api, "free_requests_remaining", return_value=1):
+            with patch.object(sweep.openrouter_api, "chat", side_effect=openrouter_chat) as hosted:
+                with patch.object(run.ollama_api, "chat", side_effect=self.reply) as local:
+                    with redirect_stdout(io.StringIO()):
+                        sweep.main(["fixture", "--verify-grader", "--ollama-model", MODEL["id"],
+                                    "--ollama-profile", "default"])
+        self.assertEqual([call.args[1][0]["content"] for call in hosted.call_args_list],
+                         ["task-1", "task-1", "task-2", "task-2"])
+        self.assertEqual([call.args[1][0]["content"] for call in local.call_args_list],
+                         ["task-2", "task-2"])
+
+        db = sqlite3.connect(":memory:")
+        self.addCleanup(db.close)
+        build_sqlite.build_database(db, include_local=True)
+        results = db.execute("""
+            SELECT m.provider, rt.task_key, rt.result FROM run_task rt
+            JOIN run r ON r.benchmark_id = rt.benchmark_id AND r.id = rt.run_id
+            JOIN model m ON m.id = r.model_id
+            WHERE r.local = 1
+        """)
+        self.assertEqual({tuple(row) for row in results},
+                         {("openrouter", "task-1", "fail"), ("openrouter", "task-2", "pending"),
+                          ("ollama", "task-2", "pass")})
+
     def test_valid_run_loads_and_reports_task_status(self):
         db, errors = self.build()
         self.assertEqual(errors, [])

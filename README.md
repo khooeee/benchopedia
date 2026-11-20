@@ -19,44 +19,23 @@ loads everything into `build/benchopedia.db` (SQLite) and fails if any constrain
 `data/<benchmark>/import.py` re-snapshots a benchmark's tasks from its upstream dataset.
 
 `data/<benchmark>/eval.py` builds each task's model input and grades the output.
-`runner/run.py` runs a model from `models/` on a benchmark and records the run in
-`data/<benchmark>/runs/<run>/`: the commands that reproduce it, a copy of the code it
-ran, and for every task a `pass` or `fail` result backed by each attempt's verdict and
-the exact request and response of every model call. A task passes a run only when every
-attempt passes. Unparseable replies count as failed attempts. A task with
-a completed failed evaluation and zero verified solves appears on the
-**Open tasks** page.
-
-```sh
-python3 runner/run.py gsm8k --model qwen3.6-35b-a3b --profile thinking \
-    --run-id 2026-11-19-qwen3.6-35b-a3b-thinking
-```
+Sweeps save run records in `build/scratch-runs/`, including the grading code,
+the verdict for each attempt, and the exact model requests and responses. A task
+passes a run only when every attempt passes. Unparseable replies count as failed
+attempts. The local **Open tasks** preview shows tasks with a completed failure
+and zero verified solves.
 
 ## Evaluate tasks by priority
 
-The sweep runner selects untested tasks first, then completed failures. It uses
-OpenRouter's free Nemotron endpoint while daily quota remains and continues
-on Ollama when it runs out. Copy the environment template from the repository root.
-
-```sh
-cp -n .env.template .env
-```
-
-Open the Git-ignored `.env` file and fill in `OPENROUTER_API_KEY`. You can also
-set the key in the process environment. The runner saves the request body and
-response locally, and grading runs on this machine.
-
-`make openrouter-quota` prints the number of free model requests remaining today.
-Preview the selection and then run a bounded sweep.
+Follow [Running benchmarks](docs/running-benchmarks.md) to configure the model
+providers. Preview the selection and then run a bounded sweep.
 
 ```sh
 python3 runner/sweep.py gsm8k --dry-run --limit 10
 python3 runner/sweep.py gsm8k --limit 10
 ```
 
-See [Running benchmarks](docs/running-benchmarks.md) for exact task selections,
-resume behavior, and the local Open tasks preview. See
-[Future goals](docs/future-goals.md) for planned work.
+See [Future goals](docs/future-goals.md) for planned work.
 
 ## Schema
 

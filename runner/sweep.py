@@ -2,6 +2,7 @@
 
 import argparse
 from contextlib import closing
+from functools import partial
 from itertools import takewhile
 import json
 import sqlite3
@@ -18,6 +19,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from helpers.build_sqlite import build_database, load_run, read_results
 
 OPENROUTER_MODEL = ROOT / "runner/models/nemotron-3-ultra-550b-a55b-free.json"
+OPENROUTER_PROFILE = "scratch"
 BATCH_SIZE = 100
 
 
@@ -27,17 +29,18 @@ def imported_benchmarks():
             and not (path.parent / "exclusions.md").exists()}
 
 
-def work(db, model, profile, limit):
+def work(db, model, profile, limit, *, verify_grader=False):
     return db.execute("""
         SELECT s.benchmark_id, s.task_key, s.status
         FROM task_status s
-        WHERE s.status <> 'solved'
+        WHERE (:verify_grader OR s.status <> 'solved')
           AND NOT EXISTS (
             SELECT 1 FROM sweep_done d WHERE d.benchmark_id = s.benchmark_id
-              AND d.task_key = s.task_key AND d.provider = :provider
+              AND d.task_key = s.task_key AND (:verify_grader OR d.provider = :provider)
           )
-        ORDER BY CASE s.status WHEN 'untested' THEN 0 WHEN 'pending' THEN 1 ELSE 2 END,
-                 CASE WHEN s.status = 'open' AND EXISTS (
+        ORDER BY CASE WHEN :verify_grader OR s.status = 'untested' THEN 0
+                      WHEN s.status = 'pending' THEN 1 ELSE 2 END,
+                 CASE WHEN NOT :verify_grader AND s.status = 'open' AND EXISTS (
                     SELECT 1 FROM run_task rt
                     JOIN run r ON r.benchmark_id = rt.benchmark_id AND r.id = rt.run_id
                     JOIN model m ON m.id = r.model_id
@@ -50,7 +53,8 @@ def work(db, model, profile, limit):
                  s.benchmark_id, s.task_key
         LIMIT :limit
     """, {"provider": model["provider"], "model": model["provider_model"],
-           "digest": model.get("weights_digest"), "profile": profile, "limit": limit})
+           "digest": model.get("weights_digest"), "profile": profile, "limit": limit,
+           "verify_grader": verify_grader})
 
 
 def run_openrouter(arguments):
@@ -66,15 +70,16 @@ def run_openrouter(arguments):
             time.sleep(error.retry_after if error.retry_after is not None else openrouter_api.FREE_INTERVAL)
 
 
-def evaluate(db, hosted, local, local_profile, limit):
+def evaluate(db, hosted, local, local_profile, limit, *, verify_grader=False):
+    select_work = partial(work, db, verify_grader=verify_grader)
     on_openrouter = True
     completed = 0
     while limit is None or completed < limit:
-        model, profile = (hosted, "scratch") if on_openrouter else (local, local_profile)
+        model, profile = (hosted, OPENROUTER_PROFILE) if on_openrouter else (local, local_profile)
         size = BATCH_SIZE if limit is None else min(BATCH_SIZE, limit - completed)
-        selected = iter(work(db, model, profile, size))
+        selected = iter(select_work(model, profile, size))
         first = next(selected, None)
-        if (on_openrouter and (first is not None or work(db, local, local_profile, 1).fetchone() is not None)
+        if (on_openrouter and (first is not None or select_work(local, local_profile, 1).fetchone() is not None)
                 and openrouter_api.free_requests_remaining() == 0):
             print("OpenRouter daily quota exhausted. Continuing on Ollama.", flush=True)
             on_openrouter = False
@@ -116,6 +121,8 @@ def main(argv=None):
     parser.add_argument("benchmarks", nargs="*", help="benchmark IDs to include")
     parser.add_argument("--all", action="store_true", help="include all benchmarks with a grader")
     parser.add_argument("--limit", type=int, help="maximum number of task evaluations")
+    parser.add_argument("--verify-grader", action="store_true",
+                        help="try tasks from one benchmark, including solved tasks (default: two)")
     parser.add_argument("--dry-run", action="store_true", help="show the priority order without model calls")
     parser.add_argument("--ollama-model", default="qwen3.6-35b-a3b")
     parser.add_argument("--ollama-profile", default="scratch")
@@ -124,6 +131,9 @@ def main(argv=None):
         parser.error("choose benchmark IDs or --all")
     if args.limit is not None and args.limit < 1:
         parser.error("--limit must be positive")
+    if args.verify_grader and len(args.benchmarks) != 1:
+        parser.error("--verify-grader needs exactly one benchmark")
+    limit = args.limit or (2 if args.verify_grader else None)
     imported = imported_benchmarks()
     ready = {name for name in imported if (ROOT / "data" / name / "eval.py").is_file()}
     if args.all:
@@ -154,10 +164,10 @@ def main(argv=None):
             benchmark_id TEXT, task_key TEXT, provider TEXT,
             PRIMARY KEY (benchmark_id, task_key, provider))""")
         if args.dry_run:
-            for row in work(db, hosted, "scratch", args.limit or -1):
+            for row in work(db, hosted, OPENROUTER_PROFILE, limit or -1, verify_grader=args.verify_grader):
                 print(f"{row['status']}\t{row['benchmark_id']}\t{row['task_key']}")
         else:
-            evaluate(db, hosted, local, args.ollama_profile, args.limit)
+            evaluate(db, hosted, local, args.ollama_profile, limit, verify_grader=args.verify_grader)
 
 
 if __name__ == "__main__":

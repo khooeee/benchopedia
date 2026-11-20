@@ -356,23 +356,13 @@ means the grader, or the reference, needs a closer look before any model runs.
 For a benchmark that needs a new evaluation path, extend the checks to verify
 results against its scoring rules.
 
-## 9. Run a model
+## 9. Verify the grader in a sweep
 
-`models/<model>.json` pins a model: its provider, the provider's model name, and
-the digest of its weights, so re-pulled weights cannot silently change a model.
-Its `profiles` hold request settings, such as GSM8K's `thinking` profile for
-[Qwen3.6-35B-A3B](../models/qwen3.6-35b-a3b.json). The runner sends every option
-in the profile with each request, so the recorded requests are complete.
-
-Try the evaluation on two tasks first. Scratch runs go to `build/scratch-runs/`,
-allow uncommitted code, and are never published. Two tasks are enough to see
-whether the answers parse: with the `thinking` profile on local hardware, a
-GSM8K task took about four minutes for its two attempts, and the run occupies
-the local model meanwhile.
+When adding or changing a grader, run a two-task scratch check. The sweep
+uses the [shared provider policy](running-benchmarks.md#task-and-model-priorities).
 
 ```sh
-python3 runner/run.py example-benchmark --model qwen3.6-35b-a3b --profile thinking \
-    --run-id scratch --scratch --limit 2
+python3 runner/sweep.py example-benchmark --verify-grader
 ```
 
 Check that the scratch run follows the benchmark's evaluation protocol and
@@ -380,43 +370,6 @@ records the scorer's results correctly. For text graders, inspect `unparseable`
 replies and adjust the prompt as needed. Include `eval.py`, any required
 infrastructure changes, and the outcomes of the grader checks and scratch run
 in the benchmark pull request.
-
-A published run is a separate step, started once the benchmark is merged. Name
-it by date, model, and profile:
-
-```sh
-python3 runner/run.py example-benchmark --model qwen3.6-35b-a3b --profile thinking \
-    --run-id 2026-11-19-qwen3.6-35b-a3b-thinking
-```
-
-The runner refuses uncommitted code and weights that differ from the model's
-pinned digest. It writes `data/<id>/runs/<run-id>/`:
-
-- `run.json`: the model, profile and settings, the attempts per task, the
-  commit, the software and hardware used, and the commands that reproduce the
-  run. `finished_at` stays `null` until every selected task is done;
-  `stopped_at` and `stop_reason` are set instead if the run is stopped early.
-- `code/`: a copy of every file the runner read, shown on the run's page.
-- `results.jsonl`: one line per task with its `result`, `pass` or `fail`, and
-  each attempt's verdict, graded output, and the exact request and response of
-  every model call.
-
-Run the same command again to resume an interrupted run; the runner refuses if
-the code, model, or Ollama version has changed since the run started. To end a
-run early instead, stop the runner (Ctrl-C, or kill its process), then record when and why so its
-page explains the missing tasks:
-
-```sh
-python3 runner/stop.py example-benchmark 2026-11-19-qwen3.6-35b-a3b-thinking \
-    --reason "Why the run was stopped, in a sentence or two readers will understand."
-```
-
-The tasks it reached keep their results. To run a
-stronger model on only the tasks earlier runs left open, add
-`--after <earlier-run-id>` for each earlier run, finished or stopped. Commit the
-run directory when the run finishes or is stopped. `scripts/check_evals.py` then re-grades every recorded attempt
-with the run's own copy of `eval.py`, and the build checks that each result
-matches its attempts and that a finished run covers every task it selected.
 
 ## 10. Build and check
 
@@ -464,9 +417,8 @@ Open <http://localhost:8765> and verify:
 - Its tasks page lists its tasks and searches their prompts or IDs.
 - Representative task pages show complete input, the correct reference solution,
   and the relevant source and environment links when available.
-- Once it has a published run, its Results section lists the run, and the run's
-  page shows its commands, code, and each task's result, with the full
-  trajectory one click away.
+- For benchmarks with recorded runs, the Results section lists them and the run
+  pages show their commands, code, task results, and model calls.
 - Existing benchmark pages and tasks still work.
 
 Review the diff for accidental changes to other benchmarks and generated files.
