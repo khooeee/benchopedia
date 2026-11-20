@@ -5,9 +5,10 @@ import hashlib
 import json
 from pathlib import Path
 import subprocess
+import tempfile
 from urllib.request import urlopen
 
-from eval import IMAGE, INPUTS_SHA256, inputs_path
+from eval import GO_FILES, IMAGE, INPUTS_SHA256, go_dir, go_ready, inputs_path
 
 
 BASE = ("https://raw.githubusercontent.com/zai-org/CodeGeeX/2838420b7b4492cf3d16bce5320e26e65960c9e2/"
@@ -21,11 +22,43 @@ DIGESTS = {
 }
 
 
+def setup_go():
+    if go_ready():
+        return
+    directory = go_dir()
+    directory.parent.mkdir(exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=directory.parent) as staging:
+        assets = Path(staging) / "go"
+        assets.mkdir()
+        for name, expected in GO_FILES.items():
+            with urlopen(f"{BASE}/go/evaluation/{name}", timeout=60) as response:
+                content = response.read()
+            if hashlib.sha256(content).hexdigest() != expected:
+                raise SystemExit(f"HumanEval-X {name} checksum differs")
+            (assets / name).write_bytes(content)
+        warm = 'package humanEval\nimport _ "github.com/go-openapi/inflect"\nimport _ "github.com/stretchr/testify/assert"\n'
+        (assets / "warm_test.go").write_text(warm)
+        subprocess.run(
+            ["docker", "run", "--rm", "--platform", "linux/amd64", "--workdir", "/out",
+             "--mount", f"type=bind,src={assets},dst=/out", "-e", "GOMODCACHE=/out/modules",
+             "-e", "GOCACHE=/out/cache", "--entrypoint", "/bin/sh", IMAGE, "-c",
+             "go mod download && go test -run '^$' warm_test.go"],
+            check=True,
+        )
+        (assets / "warm_test.go").unlink()
+        directory.mkdir(exist_ok=True)
+        for item in assets.iterdir():
+            target = directory / item.name
+            if target.exists():
+                # An incomplete installation should not overwrite local dependency data.
+                raise SystemExit(f"Remove incomplete HumanEval-X setup directory {directory} and rerun setup")
+            item.rename(target)
+
+
 def main():
-    directory = Path(__file__).resolve().parent
-    subprocess.run(["docker", "build", "--platform", "linux/amd64", "-f",
-                    str(directory / "Dockerfile.eval"), "-t", IMAGE, str(directory)], check=True)
+    subprocess.run(["docker", "pull", "--platform", "linux/amd64", IMAGE], check=True)
     target = inputs_path()
+    setup_go()
     if target.is_file() and hashlib.sha256(target.read_bytes()).hexdigest() == INPUTS_SHA256:
         return
     keys = {}
