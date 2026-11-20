@@ -67,4 +67,6 @@ Run `python3 data/ds-1000/setup_eval.py` with Docker running, then run
 `python3 runner/sweep.py ds-1000 --verify-grader`. The evaluator uses the pinned
 test contexts and the published dependency versions. It runs each answer in a
 fresh, network-isolated CPU container and records whether the execution and
-any string checks pass. Test data remain under the ignored build directory.
+any string checks pass. The image preloads the four Seaborn examples and
+California housing data used by the official tests. Test data remain under
+the ignored build directory.

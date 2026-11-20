@@ -11,6 +11,9 @@ RUN python -m pip install --no-cache-dir --no-deps torch==2.2.0+cpu \
 RUN python -m pip install --no-cache-dir --only-binary=:all: PyYAML==6.0.1
 ENV TF_CPP_MIN_LOG_LEVEL=3 CUDA_VISIBLE_DEVICES=-1 MPLBACKEND=Agg OMP_NUM_THREADS=1 \
     OPENBLAS_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 TF_NUM_INTEROP_THREADS=1 TF_NUM_INTRAOP_THREADS=1 \
-    MPLCONFIGDIR=/tmp/matplotlib
+    MPLCONFIGDIR=/tmp/matplotlib SEABORN_DATA=/opt/ds1000-fixtures/seaborn \
+    SCIKIT_LEARN_DATA=/opt/ds1000-fixtures/sklearn
+COPY setup_fixtures.py /tmp/setup_fixtures.py
+RUN python /tmp/setup_fixtures.py
 LABEL org.benchopedia.ds1000="b39aab71da6d23ef8d3cac59a7c5f834516ab334"
 ENTRYPOINT ["python3", "-I", "-B"]
