@@ -11,12 +11,33 @@ from uuid import uuid4
 ATTEMPTS = 1
 IMAGE = "bigcodebench/bigcodebench-evaluate@sha256:1327bddf60be9bc241648c59e6060cac4ca50248a0588ab735cd0200b17cc8c2"
 INPUTS_SHA256 = "81c918f4462d251f23d4f90a76dc3386b7cf3254a11bf2c05b2b81ae00b772d0"
+BOSTON_SHA256 = "1df1f5ccfcd1cb9e8f9eaa2c871bb3355eafdde755267bcd593f817b21b92a7b"
+BOSTON_TASK = "bigcodebench-0101"
 PREFIX = "Please provide a self-contained Python script that solves the following problem in a markdown code block:"
 WORKER = """
+import http.server
 import json
+from pathlib import Path
 import sys
+from threading import Thread
 from bigcodebench.evaluate import check_correctness
 from bigcodebench.sanitize import sanitize
+
+fixture = Path('/opt/boston')
+if fixture.is_file():
+    class BostonData(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.path != '/datasets/boston' or self.headers.get('Host') != 'lib.stat.cmu.edu':
+                self.send_error(404)
+                return
+            body = fixture.read_bytes()
+            self.send_response(200)
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+    server = http.server.HTTPServer(('127.0.0.1', 80), BostonData)
+    Thread(target=server.serve_forever, daemon=True).start()
 
 request = json.load(sys.stdin)
 record = request["problem"]
@@ -38,11 +59,18 @@ def inputs_path():
     return root / "build" / "bigcodebench-grading.json"
 
 
+def boston_path():
+    return inputs_path().with_name("bigcodebench-boston")
+
+
 @lru_cache(maxsize=1)
 def check_setup():
     path = inputs_path()
     if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != INPUTS_SHA256:
         return "Run python3 data/bigcodebench/setup_eval.py to install the pinned scoring inputs"
+    fixture = boston_path()
+    if not fixture.is_file() or hashlib.sha256(fixture.read_bytes()).hexdigest() != BOSTON_SHA256:
+        return "Run python3 data/bigcodebench/setup_eval.py to install the pinned Boston housing data"
     try:
         state = subprocess.run(["docker", "image", "inspect", IMAGE], capture_output=True, timeout=10)
         if state.returncode == 0:
@@ -87,6 +115,10 @@ def grade(task, output):
         "entry_point": "task_func",
     }
     name = f"benchopedia-bigcode-{uuid4().hex}"
+    fixture = []
+    if task["key"] == BOSTON_TASK:
+        fixture = ["--add-host", "lib.stat.cmu.edu:127.0.0.1", "--mount",
+                   f"type=bind,src={boston_path()},dst=/opt/boston,readonly"]
     try:
         result = subprocess.run(
             ["docker", "run", "--rm", "--init", "--platform", "linux/amd64", "--name", name,
@@ -94,7 +126,7 @@ def grade(task, output):
              "--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--user", "65534:65534",
              "--memory", "4g", "--memory-swap", "4g", "--cpus", "2", "--pids-limit", "128",
              "--tmpfs", "/tmp:size=512m,mode=1777,nosuid",
-             "--tmpfs", "/nonexistent:size=128m,mode=1777,nosuid,noexec", "--workdir", "/tmp",
+             "--tmpfs", "/nonexistent:size=128m,mode=1777,nosuid,noexec", *fixture, "--workdir", "/tmp",
              "-e", "MPLBACKEND=Agg", "-e", "MPLCONFIGDIR=/tmp/matplotlib", "-e", "XDG_CACHE_HOME=/tmp/cache",
              "-e", "OPENBLAS_NUM_THREADS=1", "--entrypoint", "python3",
              "-i", IMAGE, "-B", "-c", WORKER],

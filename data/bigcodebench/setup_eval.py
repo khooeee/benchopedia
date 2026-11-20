@@ -6,12 +6,13 @@ from pathlib import Path
 import subprocess
 from urllib.request import urlopen
 
-from eval import IMAGE, INPUTS_SHA256, inputs_path
+from eval import BOSTON_SHA256, IMAGE, INPUTS_SHA256, boston_path, inputs_path
 
 
 URL = ("https://huggingface.co/datasets/bigcode/bigcodebench/resolve/"
        "b74c0d0bf70d2c0bc459be537895cca163007f1a/data/v0.1.4-00000-of-00001.parquet")
 ARCHIVE_SHA256 = "d9a4965821c9507ebdfb551c288656b2d5fe553234f5183044333ca8a4018267"
+BOSTON_URL = "https://lib.stat.cmu.edu/datasets/boston"
 EXTRACT = """
 import io, json, sys
 import pyarrow.parquet as parquet
@@ -28,6 +29,16 @@ def main():
     parser.add_argument("--archive", type=Path)
     args = parser.parse_args()
     subprocess.run(["docker", "pull", "--platform", "linux/amd64", IMAGE], check=True)
+    fixture = boston_path()
+    if not fixture.is_file() or hashlib.sha256(fixture.read_bytes()).hexdigest() != BOSTON_SHA256:
+        with urlopen(BOSTON_URL, timeout=30) as response:
+            boston = response.read()
+        if hashlib.sha256(boston).hexdigest() != BOSTON_SHA256:
+            raise SystemExit("Boston housing checksum differs from the grader fixture")
+        fixture.parent.mkdir(exist_ok=True)
+        temporary = fixture.with_suffix(".tmp")
+        temporary.write_bytes(boston)
+        temporary.replace(fixture)
     target = inputs_path()
     if target.is_file() and hashlib.sha256(target.read_bytes()).hexdigest() == INPUTS_SHA256:
         return
