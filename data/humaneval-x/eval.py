@@ -22,13 +22,16 @@ GO_FILES = {
 INPUTS_SHA256 = "e8d9e79d695b4dcec8b8af83fecc467bf67a62d3f3a4f1530f3ee15be990bc3d"
 WORKER = """
 import json
+import os
 import shutil
+import tempfile
 import subprocess
 import sys
 from pathlib import Path
 
 task = json.load(sys.stdin)
 language = task["language"]
+os.chdir(tempfile.mkdtemp(dir="/tmp"))
 if language == "go":
     for name in ("go.mod", "go.sum"):
         shutil.copyfile("/opt/benchopedia-go/" + name, name)
