@@ -186,9 +186,11 @@ def grade(task, output):
         self.prepare_runner_fixture()
         evaluator = self.benchmark_dir / "eval.py"
         with evaluator.open("a") as f:
-            f.write('\nCAPTURE_FILES = ("offsets.json",)\n')
+            f.write('\nCAPTURE_FILES = ("offsets.json", "runner/shared.py")\n')
         support = evaluator.with_name("offsets.json")
         support.write_text("[1, 2]")
+        shared = self.root / "runner/shared.py"
+        shared.write_text("# shared evaluator helper")
         args = ["fixture", "--scratch", "--run-id", "capture", "--model", MODEL["id"],
                 "--profile", "default", "--task-key", "task-1"]
         with patch.object(run.ollama_api, "chat", side_effect=RuntimeError("interrupted")):
@@ -196,6 +198,8 @@ def grade(task, output):
                 run.main(args)
         capture = self.root / "build/scratch-runs/fixture/capture/code/data/fixture/offsets.json"
         self.assertEqual(capture.read_bytes(), support.read_bytes())
+        captured_helper = capture.parents[2] / "runner/shared.py"
+        self.assertEqual(captured_helper.read_bytes(), shared.read_bytes())
         support.write_text("[1, 3]")
         with self.assertRaisesRegex(SystemExit, "offsets.json"):
             run.main(args)
