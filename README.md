@@ -198,8 +198,9 @@ Run results come only from runs recorded in this repository, never from reported
 ## Adding Value
 
 - **Add a benchmark.** Expand the catalog with a sourced article and a reproducible
-  snapshot of upstream tasks cleared for redistribution. Explain what the benchmark
-  measures, how it scores answers, and where its results have limitations.
+  snapshot of upstream tasks cleared for redistribution. Include an `eval.py` grader
+  that follows the upstream scoring rules. Explain what the benchmark measures,
+  how it scores answers, and where its results have limitations.
   [Adding a benchmark](docs/adding-a-benchmark.md)
 - **Run a sweep.** Evaluate eligible tasks across one or more benchmarks. The runner
   prioritizes untested tasks, then pending evaluations, then open tasks with a
