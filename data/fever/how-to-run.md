@@ -60,3 +60,12 @@ strict_score, label_accuracy, precision, recall, f1 = fever_score(predictions, a
 ```
 
 The FEVER score is the fraction of claims that are strictly correct, and label accuracy the fraction with the right label. Evidence precision, recall and F1 are averaged over the claims that are not NOT ENOUGH INFO, where recall credits a claim only when a complete evidence set was retrieved. Official results come from the blind test split, scored by submission; scores on this split are self-reported.
+
+### Verify with the Benchopedia sweep
+
+Run `python3 data/fever/setup_eval.py` to build a local index of the pinned
+Wikipedia archive, then run `python3 runner/sweep.py fever --verify-grader`.
+The sweep uses a title-search retrieval baseline. It passes the claim and
+the top retrieved sentences to the model. The grader checks the original
+page and sentence IDs, keeps the five-evidence limit, and records strict
+FEVER score, label accuracy, and evidence precision and recall.
