@@ -71,3 +71,11 @@ results = {i: [passes(problems[i], generate(few_shot + task_prompt(problems[i]))
 print("problems solved:", sum(any(r) for r in results.values()) / len(results))
 print("samples passing:", sum(map(sum, results.values())) / (80 * len(results)))
 ```
+
+### Verify with the Benchopedia sweep
+
+Start Docker and run `python3 runner/python_sandbox.py` to install the pinned
+Python image. Then run `python3 runner/sweep.py mbpp --verify-grader`. Each
+attempt runs the completion and the three ordinary assertions in a fresh
+network-isolated container. The scratch sweep verifies two individual samples.
+Reproduce the paper's 80-sample metrics using the procedure above.
