@@ -15,11 +15,12 @@ dry run lists candidate tasks using the OpenRouter profile's priority order.
 
 ## Task and model priorities
 
-Evaluate eligible tasks awaiting a first attempt before tasks with a scored
-wrong answer. Tasks with interrupted or format-only attempts remain pending
-and can be completed before retrying open tasks. A task stays retired once
-it has a verified solve for the imported revision. For retries, prefer an
-available model the task has yet to face.
+Evaluate eligible tasks awaiting a first attempt before tasks with a
+completed failed evaluation. Every required attempt must be correct to pass.
+A wrong or unparseable reply counts as a failed attempt. A recorded
+evaluation stays pending while the required attempts or grading are
+incomplete. A task stays retired once it has a verified solve for the
+imported revision. For retries, prefer an available model the task has yet to face.
 
 The sweep starts with NVIDIA Nemotron 3 Ultra `:free` on OpenRouter. Copy
 `.env.template` to `.env` and set `OPENROUTER_API_KEY` to use it.
@@ -49,8 +50,8 @@ runs live in `data/<benchmark>/runs/<run-id>/`.
 
 ## Browse the evidence
 
-The **Open tasks** page shows tasks with a scored wrong answer and zero
-verified solves. It includes evaluated coverage and links to each task's
+The **Open tasks** page shows tasks with a completed failed evaluation and
+zero verified solves. It includes evaluated coverage and links to each task's
 recorded attempts. Task pages show first-solve attribution and run history.
 
 The local lookup uses published results plus local runs whose task revision

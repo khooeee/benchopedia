@@ -151,9 +151,9 @@ def grade(task, output):
             self.addCleanup(setting.stop)
 
     @staticmethod
-    def reply(model, messages, profile, seed):
+    def reply(model, messages, profile, seed, output="#### 4"):
         return ({"model": model, "messages": messages, "seed": seed},
-                {"message": {"content": "#### 4"}}, 10, "#### 4")
+                {"message": {"content": output}}, 10, output)
 
     def test_exact_selection_resumes_at_saved_attempt(self):
         self.prepare_runner_fixture(("task-3",))
@@ -194,7 +194,7 @@ def grade(task, output):
                 body = b'{"error":{"metadata":{"limit_source":"openrouter_free_tier_daily"}}}'
                 error = HTTPError("https://example.org", 429, "quota", {}, io.BytesIO(body))
                 raise sweep.openrouter_api.RateLimited(error)
-            return self.reply(model, messages, profile, seed)
+            return self.reply(model, messages, profile, seed, "#### 5")
 
         def ollama_chat(model, messages, profile, seed):
             local.append((messages[0]["content"], seed))
@@ -213,20 +213,21 @@ def grade(task, output):
         self.assertEqual({row[0]: row[1] for row in rows}, {"pass": 4, "fail": 1, "pending": 1})
         self.assertEqual(db.execute("SELECT count(*) FROM task_status WHERE status = 'solved'").fetchone()[0], 4)
 
-    def test_unparseable_only_is_pending(self):
-        self.results[1]["attempts"] = [attempt(1), attempt(2, "unparseable", None)]
-        self.write_run("first", self.run, self.results)
-        db, errors = self.build()
-        self.assertEqual(errors, [])
-        self.assertEqual(db.execute("SELECT status FROM task_status WHERE task_key = 'task-2'").fetchone()[0],
-                         "pending")
+    def test_unparseable_attempt_in_completed_evaluation_leaves_task_open(self):
+        for first in [attempt(1), attempt(1, "unparseable", None)]:
+            with self.subTest(first=first["verdict"]):
+                self.results[1]["attempts"] = [first, attempt(2, "unparseable", None)]
+                self.write_run("first", self.run, self.results)
+                db, errors = self.build()
+                self.assertEqual(errors, [])
+                status = db.execute("SELECT status FROM task_status WHERE task_key = 'task-2'").fetchone()[0]
+                self.assertEqual(status, "open")
 
     def test_handoff_when_last_hosted_call_uses_the_quota(self):
         self.prepare_runner_fixture()
 
         def wrong(model, messages, profile, seed):
-            request, _, latency, _ = self.reply(model, messages, profile, seed)
-            return request, {"message": {"content": "#### 5"}}, latency, "#### 5"
+            return self.reply(model, messages, profile, seed, "#### 5")
 
         with patch.object(sweep.openrouter_api, "free_requests_remaining", side_effect=[2, 0]):
             with patch.object(sweep.openrouter_api, "chat", side_effect=wrong) as hosted:

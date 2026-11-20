@@ -127,8 +127,7 @@ CREATE TABLE run_task (
     FOREIGN KEY (benchmark_id, task_key) REFERENCES task (benchmark_id, key)
 ) STRICT;
 
--- One try at a task. An unparseable answer fails the task like a wrong one, but
--- stays distinguishable so format failures are not mistaken for difficulty.
+-- One try at a task. The unparseable verdict identifies answer-format failures.
 CREATE TABLE attempt (
     benchmark_id TEXT NOT NULL,
     run_id       TEXT NOT NULL,
@@ -164,12 +163,7 @@ CREATE TABLE model_call (
 -- records predate explicit revision tracking.
 CREATE VIEW task_status AS
 WITH evidence AS (
-    SELECT rt.benchmark_id, rt.task_key, rt.result,
-           rt.result = 'fail' AND EXISTS (
-               SELECT 1 FROM attempt a
-               WHERE a.benchmark_id = rt.benchmark_id AND a.run_id = rt.run_id
-                 AND a.task_key = rt.task_key AND a.verdict = 'fail'
-           ) AS wrong
+    SELECT rt.benchmark_id, rt.task_key, rt.result
     FROM run_task rt
     JOIN run r ON r.benchmark_id = rt.benchmark_id AND r.id = rt.run_id
     JOIN benchmark b ON b.id = rt.benchmark_id
@@ -177,7 +171,7 @@ WITH evidence AS (
 )
 SELECT t.benchmark_id, t.key AS task_key,
        CASE WHEN max(e.result = 'pass') THEN 'solved'
-            WHEN max(e.wrong) THEN 'open'
+            WHEN max(e.result = 'fail') THEN 'open'
             WHEN count(e.result) > 0 THEN 'pending'
             ELSE 'untested' END AS status,
        count(e.result) AS runs

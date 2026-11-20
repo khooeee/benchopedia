@@ -23,8 +23,9 @@ loads everything into `build/benchopedia.db` (SQLite) and fails if any constrain
 `data/<benchmark>/runs/<run>/`: the commands that reproduce it, a copy of the code it
 ran, and for every task a `pass` or `fail` result backed by each attempt's verdict and
 the exact request and response of every model call. A task passes a run only when every
-attempt passes. A task with a scored wrong answer and zero verified solves
-appears on the **Open tasks** page.
+attempt passes. Unparseable replies count as failed attempts. A task with
+a completed failed evaluation and zero verified solves appears on the
+**Open tasks** page.
 
 ```sh
 python3 runner/run.py gsm8k --model qwen3.6-35b-a3b --profile thinking \
@@ -33,7 +34,7 @@ python3 runner/run.py gsm8k --model qwen3.6-35b-a3b --profile thinking \
 
 ## Evaluate tasks by priority
 
-The sweep runner selects untested tasks first, then scored failures. It uses
+The sweep runner selects untested tasks first, then completed failures. It uses
 OpenRouter's free Nemotron endpoint while daily quota remains and continues
 on Ollama when it runs out. Copy the environment template from the repository root.
 
@@ -140,8 +141,8 @@ erDiagram
 ```
 
 The `task_status` view reports `solved` after a verified pass, `open` after a
-scored wrong answer with zero verified passes, `pending` for incomplete
-evaluation, and `untested` before a recorded attempt.
+completed failed evaluation with zero verified passes, `pending` for recorded
+incomplete evaluations, and `untested` before a recorded attempt.
 
 ## Build the website
 

@@ -120,7 +120,7 @@ def run_task_url(r, key):
 REPOSITORY = 'https://github.com/khooeee/benchopedia'
 STATUS_TEXT = {
     'solved': 'a run passed this task',
-    'open': 'a model gave a scored wrong answer and no run has passed the task',
+    'open': 'at least one completed evaluation failed and zero runs have passed',
     'untested': 'no run has tried this task yet',
     'pending': 'attempts exist and evaluation is incomplete',
 }
@@ -161,7 +161,7 @@ def runs_table(runs):
 def results_section(b, runs, statuses):
     counts = {status: sum(s == status for s in statuses.values()) for status in STATUS_TEXT}
     links = ', '.join(f'<a href="{tasks_url(b)}?status={status}">{counts[status]:,} {status}</a>' for status in STATUS_TEXT)
-    return f'''<p>A task is solved once a run passes it. A task stays open while it has a scored wrong answer and zero verified solves. Open the run pages to see each grade and trajectory.</p>
+    return f'''<p>A task passes a run when every required attempt is correct. An unparseable reply counts as a failed attempt. Completed failures stay open until a run passes the task. Open the run pages to see each grade and trajectory.</p>
 <p>Of {b['task_count']:,} tasks: {links}.</p>{runs_table(runs)}'''
 
 
@@ -460,7 +460,7 @@ def open_tasks(statuses, results_by_task):
 <td><a href="{task_url(task)}">{esc(task['title'])}</a> <span class="task-id">{esc(key[1])}</span></td><td>{attempts}</td></tr>''')
     evaluated = counts['open'] + counts['solved']
     body = f'''<h1>Open tasks</h1>
-<p>Tasks with a scored wrong answer and zero verified solves in Benchopedia's records.</p>
+<p>Tasks with a completed failed evaluation and zero verified solves in Benchopedia's records. An evaluation passes when every required attempt is correct.</p>
 {facts_list([('Evaluated', f"{evaluated:,} of {len(statuses):,}"), ('Open', f"{counts['open']:,}"),
              ('Solved', f"{counts['solved']:,}"), ('Untested', f"{counts['untested']:,}"),
              ('Pending', f"{counts['pending']:,}")])}'''
