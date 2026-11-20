@@ -64,7 +64,7 @@ def passage_candidates(claim):
         relevant = []
         for line in lines.split("\n"):
             number, _, sentence = line.partition("\t")
-            if sentence.strip():
+            if number.isdecimal() and sentence.strip():
                 match = len(wanted.intersection(keywords(sentence)))
                 relevant.append((match, int(number), sentence))
         top = sorted(relevant, key=lambda row: (-row[0], row[1]))[:8]
@@ -85,7 +85,7 @@ def messages(task):
 def references(task):
     label, _, evidence = task["solution"].partition("\n\n")
     groups = []
-    for line in evidence.splitlines():
+    for line in evidence.split("\n") if evidence else ():
         if line.startswith("Evidence set "):
             groups.append([])
         else:
