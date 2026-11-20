@@ -210,9 +210,6 @@ Run results come only from runs recorded in this repository, never from reported
   fix scoring errors by matching the upstream evaluation rules and checking the
   grader against reference solutions and known failures.
   [Adding a benchmark](docs/adding-a-benchmark.md)
-- **Improve an existing benchmark page.** Correct source links, clarify the dataset
-  version or scoring rules, or make the instructions for reproducing a task easier
-  to follow. [Adding a benchmark](docs/adding-a-benchmark.md)
 
 ## Licensing
 
