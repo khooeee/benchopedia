@@ -345,17 +345,25 @@ Its `profiles` hold request settings, such as GSM8K's `thinking` profile for
 [Qwen3.6-35B-A3B](../models/qwen3.6-35b-a3b.json). The runner sends every option
 in the profile with each request, so the recorded requests are complete.
 
-Try the prompt on a few tasks first. Scratch runs go to `build/scratch-runs/`,
-allow uncommitted code, and are never published:
+Try the prompt on two tasks first. Scratch runs go to `build/scratch-runs/`,
+allow uncommitted code, and are never published. Two tasks are enough to see
+whether the answers parse: with the `thinking` profile on local hardware, a
+GSM8K task took about four minutes for its two attempts, and the run occupies
+the local model meanwhile.
 
 ```sh
 python3 runner/run.py example-benchmark --model qwen3.6-35b-a3b --profile thinking \
-    --run-id scratch --scratch --limit 20
+    --run-id scratch --scratch --limit 2
 ```
 
 Read the outputs, especially any `unparseable` ones, and adjust the instruction
-until the model's answers are read correctly. Then commit `eval.py` and start the
-published run, naming it by date, model, and profile:
+until the model's answers are read correctly. Then commit `eval.py`. Adding a
+benchmark stops here: its pull request includes `eval.py`, checked by
+`scripts/check_evals.py` and the scratch run, but no published run, because a
+full run takes days on local hardware.
+
+A published run is a separate step, started once the benchmark is merged. Name
+it by date, model, and profile:
 
 ```sh
 python3 runner/run.py example-benchmark --model qwen3.6-35b-a3b --profile thinking \
@@ -437,10 +445,11 @@ Open <http://localhost:8765> and verify:
 - Its tasks page lists its tasks and searches their prompts or IDs.
 - Representative task pages show complete input, the correct reference solution,
   and the relevant source and environment links when available.
-- Its Results section lists each run, and a run's page shows its commands, code,
-  and each task's result, with the full trajectory one click away.
+- Once it has a published run, its Results section lists the run, and the run's
+  page shows its commands, code, and each task's result, with the full
+  trajectory one click away.
 - Existing benchmark pages and tasks still work.
 
 Review the diff for accidental changes to other benchmarks and generated files.
-Summarize the imported scope, revision, count, checks, run results, and any remaining gaps.
+Summarize the imported scope, revision, count, checks, scratch-run results, and any remaining gaps.
 Keep development and previews local. Commit, push, or deploy only when requested.
