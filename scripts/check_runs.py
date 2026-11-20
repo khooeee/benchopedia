@@ -285,7 +285,7 @@ def grade(task, output):
     def test_sweep_reports_missing_evaluator_setup(self):
         self.prepare_runner_fixture()
         with (self.benchmark_dir / "eval.py").open("a") as evaluator:
-            evaluator.write('\ndef setup_error():\n    return "install the fixture harness"\n')
+            evaluator.write('\ndef check_setup():\n    return "install the fixture harness"\n')
 
         args = ["--dry-run", "--ollama-model", MODEL["id"], "--ollama-profile", "default"]
         error_output = io.StringIO()

@@ -31,7 +31,8 @@ print(json.dumps(result.follow_all_instructions))
 """
 
 
-def setup_error():
+def check_setup():
+    """Return setup instructions if needed, or None when ready."""
     if not (READY.is_file() and PYTHON.is_file() and INPUTS.is_file()):
         return "run python3.11 data/ifeval/setup_eval.py to install the pinned IFEval evaluator"
     if READY.read_text(encoding="utf-8").strip() != REVISION:
@@ -44,7 +45,7 @@ def messages(task):
 
 
 def grade(task, output):
-    error = setup_error()
+    error = check_setup()
     if error is not None:
         raise RuntimeError(error)
     environment = os.environ | {"PYTHONPATH": str(UPSTREAM), "NLTK_DATA": str(RUNTIME / "nltk_data")}

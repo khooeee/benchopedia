@@ -153,10 +153,10 @@ def main(argv=None):
             parser.error("cannot evaluate " + ", ".join(reasons))
     for name in sorted(scope):
         evaluation = run.load_eval(ROOT / "data" / name / "eval.py")
-        setup_error = getattr(evaluation, "setup_error", None)
-        if setup_error is None:
+        check_setup = getattr(evaluation, "check_setup", None)
+        if check_setup is None:
             continue
-        error = setup_error()
+        error = check_setup()
         if error:
             if not args.all:
                 parser.error(f"cannot evaluate {name} ({error})")
