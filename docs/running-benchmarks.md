@@ -24,6 +24,10 @@ report the benchmark and the specific blocker. For example, Terminal-Bench 2.0
 is blocked until the sweep can run an agent in Harbor and record the verifier's
 result.
 
+An evaluator with local prerequisites can define `setup_error()` to return a
+message with setup instructions when the prerequisites are missing. The sweep
+reports the message before making model calls for that benchmark.
+
 ## Task and model priorities
 
 Evaluate eligible tasks awaiting a first attempt before tasks with a

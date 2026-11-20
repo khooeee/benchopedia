@@ -151,6 +151,17 @@ def main(argv=None):
                 for name in sorted(unavailable)
             ]
             parser.error("cannot evaluate " + ", ".join(reasons))
+    for name in sorted(scope):
+        evaluation = run.load_eval(ROOT / "data" / name / "eval.py")
+        setup_error = getattr(evaluation, "setup_error", None)
+        if setup_error is None:
+            continue
+        error = setup_error()
+        if error:
+            if not args.all:
+                parser.error(f"cannot evaluate {name} ({error})")
+            print(f"Skipping {name} ({error})", file=sys.stderr)
+            scope.remove(name)
     hosted = json.loads(OPENROUTER_MODEL.read_text(encoding="utf-8"))
     local_path = ROOT / "models" / f"{args.ollama_model}.json"
     if not run.RUN_ID.fullmatch(args.ollama_model) or not local_path.is_file():
