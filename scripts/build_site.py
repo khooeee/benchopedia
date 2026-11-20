@@ -462,7 +462,7 @@ def open_tasks(statuses, results_by_task):
     body = f'''<h1>Open tasks</h1>
 <p>Tasks with a completed failed evaluation and zero verified solves in Benchopedia's records. An evaluation passes when every required attempt is correct.</p>
 {facts_list([('Evaluated', f"{evaluated:,} of {len(statuses):,}"), ('Open', f"{counts['open']:,}"),
-             ('Solved', f"{counts['solved']:,}"), ('Untested', f"{counts['untested']:,}")])}'''
+             ('Solved', f"{counts['solved']:,}")])}'''
     if rows:
         choices = ''.join(f'<option value="{esc(key)}">{esc(name)}</option>'
                           for key, name in sorted(options.items(), key=lambda pair: pair[1].casefold()))
