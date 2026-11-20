@@ -327,6 +327,12 @@ multiple model calls per attempt, or numeric scoring, include the required
 runner, result format, and validation changes in the benchmark addition. Keep
 existing evaluators and recorded runs compatible.
 
+When upstream defines numeric metrics without a correct-answer threshold,
+define `score(task, output)` in place of `grade(task, output)`. Return a
+dictionary of named finite scores or `None` for an invalid reply. If upstream
+limits generated output length, set `MAX_OUTPUT_CHARS`. The reference check
+scores the gold reply directly, since that limit applies to model output.
+
 For benchmarks graded from one text reply per attempt, `data/<id>/eval.py`
 builds the model input for [runner/run.py](../runner/run.py) and grades the
 reply. See [GSM8K's evaluator](../data/gsm8k/eval.py) for an example. Use only
@@ -355,12 +361,6 @@ It fails unless `grade()` passes each task's own reference solution. A failure
 means the grader, or the reference, needs a closer look before any model runs.
 For a benchmark that needs a new evaluation path, extend the checks to verify
 results against its scoring rules.
-
-When upstream defines numeric metrics without a correct-answer threshold,
-define `score(task, output)` in place of `grade(task, output)`. Return a
-dictionary of named finite scores or `None` for an invalid reply. If upstream
-limits generated output length, set `MAX_OUTPUT_CHARS`. The reference check
-scores the gold reply directly, since that limit applies to model output.
 
 ## 9. Verify the grader in a sweep
 

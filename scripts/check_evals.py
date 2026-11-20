@@ -31,6 +31,7 @@ def load_eval(path, name):
 
 
 def check_eval(evaluation, tasks, origin, errors):
+    scores_only = getattr(evaluation, "score", None) is not None
     if type(evaluation.ATTEMPTS) is not int or evaluation.ATTEMPTS < 1:
         errors.append(f"{origin}: ATTEMPTS must be a positive integer")
     graded = 0
@@ -40,14 +41,16 @@ def check_eval(evaluation, tasks, origin, errors):
                 or not all(isinstance(m, dict) and isinstance(m.get("role"), str)
                            and isinstance(m.get("content"), str) for m in messages)):
             errors.append(f"{origin}: messages() returned an invalid conversation for {task['key']}")
+        if scores_only:
+            if task.get("solution") is not None:
+                graded += 1
+                result = grade_output(task, evaluation, task["solution"], enforce_output_limit=False)
+                if result["verdict"] != "scored":
+                    errors.append(f"{origin}: score() did not score the reference of {task['key']}")
+            continue
         if task.get("solution") is None:
             continue
         graded += 1
-        if getattr(evaluation, "score", None) is not None:
-            result = grade_output(task, evaluation, task["solution"], enforce_output_limit=False)
-            if result["verdict"] != "scored":
-                errors.append(f"{origin}: score() did not score the reference of {task['key']}")
-            continue
         verdict, answer = evaluation.grade(task, task["solution"])
         if verdict != "pass":
             errors.append(f"{origin}: grade() gives {verdict} ({answer!r}) for the reference "
