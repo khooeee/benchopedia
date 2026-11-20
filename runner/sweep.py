@@ -29,11 +29,28 @@ def imported_benchmarks():
             and not (path.parent / "exclusions.md").exists()}
 
 
+def exclude_ineligible_tasks(db, benchmarks):
+    db.execute("""CREATE TEMP TABLE sweep_excluded (
+        benchmark_id TEXT, task_key TEXT, PRIMARY KEY (benchmark_id, task_key))""")
+    for benchmark_id in sorted(benchmarks):
+        directory = ROOT / "data" / benchmark_id
+        evaluation = run.load_eval(directory / "eval.py")
+        is_eligible = getattr(evaluation, "is_eligible", None)
+        if is_eligible is not None:
+            excluded = ((benchmark_id, task["key"]) for task in run.read_jsonl(directory / "tasks.jsonl")
+                        if not is_eligible(task))
+            db.executemany("INSERT INTO sweep_excluded VALUES (?, ?)", excluded)
+
+
 def work(db, model, profile, limit, *, verify_grader=False):
     return db.execute("""
         SELECT s.benchmark_id, s.task_key, s.status
         FROM task_status s
         WHERE (:verify_grader OR s.status <> 'solved')
+          AND NOT EXISTS (
+            SELECT 1 FROM sweep_excluded e WHERE e.benchmark_id = s.benchmark_id
+              AND e.task_key = s.task_key
+          )
           AND NOT EXISTS (
             SELECT 1 FROM sweep_done d WHERE d.benchmark_id = s.benchmark_id
               AND d.task_key = s.task_key AND (:verify_grader OR d.provider = :provider)
@@ -171,6 +188,7 @@ def main(argv=None):
         parser.error("unknown Ollama profile: " + args.ollama_profile)
     with closing(sqlite3.connect(":memory:")) as db:
         build_database(db, include_local=True, benchmarks=scope)
+        exclude_ineligible_tasks(db, scope)
         db.execute("""CREATE TEMP TABLE sweep_done (
             benchmark_id TEXT, task_key TEXT, provider TEXT,
             PRIMARY KEY (benchmark_id, task_key, provider))""")

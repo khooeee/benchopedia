@@ -345,13 +345,18 @@ Python's standard library.
   functions unchanged, link their pinned source, and cover them in the
   redistribution review.
 
-Then check the grader against every reference solution:
+If the upstream scorer omits some imported tasks, define `is_eligible(task)`.
+Return `True` for tasks that can be scored and `False` for tasks to skip. The
+sweep and grader checks use this hook. The catalog retains the complete
+imported split.
+
+Then check the grader against every eligible reference solution:
 
 ```sh
 python3 scripts/check_evals.py
 ```
 
-It fails unless `grade()` passes each task's own reference solution. A failure
+It fails unless `grade()` passes each eligible task's own reference solution. A failure
 means the grader, or the reference, needs a closer look before any model runs.
 For a benchmark that needs a new evaluation path, extend the checks to verify
 results against its scoring rules.
