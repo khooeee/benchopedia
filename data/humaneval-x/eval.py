@@ -70,7 +70,9 @@ def go_dir():
 
 def go_ready():
     root = go_dir()
-    return ((root / "cache").is_dir() and (root / "modules").is_dir()
+    stamp = root / "cache-version"
+    return (stamp.is_file() and stamp.read_text().strip() == "2"
+            and (root / "cache").is_dir() and (root / "modules").is_dir()
             and all((root / name).is_file() and hashlib.sha256((root / name).read_bytes()).hexdigest() == digest
                     for name, digest in GO_FILES.items()))
 

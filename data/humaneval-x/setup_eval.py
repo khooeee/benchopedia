@@ -40,13 +40,15 @@ def setup_go():
         warm = 'package humanEval\nimport _ "github.com/go-openapi/inflect"\nimport _ "github.com/stretchr/testify/assert"\n'
         (assets / "warm_test.go").write_text(warm)
         subprocess.run(
-            ["docker", "run", "--rm", "--platform", "linux/amd64", "--workdir", "/out",
-             "--mount", f"type=bind,src={assets},dst=/out", "-e", "GOMODCACHE=/out/modules",
-             "-e", "GOCACHE=/out/cache", "--entrypoint", "/bin/sh", IMAGE, "-c",
+            ["docker", "run", "--rm", "--platform", "linux/amd64", "--workdir", "/opt/benchopedia-go",
+             "--mount", f"type=bind,src={assets},dst=/opt/benchopedia-go",
+             "-e", "GOMODCACHE=/opt/benchopedia-go/modules", "-e", "GOCACHE=/opt/benchopedia-go/cache",
+             "-e", "GOPATH=/tmp/go", "-e", "GOMAXPROCS=2", "--entrypoint", "/bin/sh", IMAGE, "-c",
              "go mod download && go test -run '^$' warm_test.go"],
             check=True,
         )
         (assets / "warm_test.go").unlink()
+        (assets / "cache-version").write_text("2\n")
         if directory.exists():
             directory.rename(directory.with_name(f"{directory.name}-previous-{uuid4().hex}"))
         assets.rename(directory)
