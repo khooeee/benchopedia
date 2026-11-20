@@ -280,6 +280,13 @@ def main(argv=None):
         default_eval.relative_to(ROOT): eval_file,
         model_file.relative_to(ROOT): model_file,
     }
+    for name in getattr(evaluation, "CAPTURE_FILES", ()):
+        if not isinstance(name, str) or not RUN_ID.fullmatch(name) or name == default_eval.name:
+            parser.error("CAPTURE_FILES must name support files beside eval.py")
+        source = eval_file.with_name(name)
+        if source.is_symlink() or not source.is_file():
+            parser.error(f"evaluator support file missing or not a regular file: {source.relative_to(ROOT)}")
+        sources[(benchmark_dir / name).relative_to(ROOT)] = source
     commit = git("rev-parse", "HEAD").strip()
     env = environment()
 

@@ -201,6 +201,24 @@ def grade(task, output):
         with self.assertRaisesRegex(SystemExit, "at most once"):
             run.main(args[:-1] + ["task-3"])
 
+    def test_grader_support_file_is_captured_and_checked_on_resume(self):
+        self.prepare_runner_fixture()
+        evaluator = self.benchmark_dir / "eval.py"
+        with evaluator.open("a") as f:
+            f.write('\nCAPTURE_FILES = ("offsets.json",)\n')
+        support = evaluator.with_name("offsets.json")
+        support.write_text("[1, 2]")
+        args = ["fixture", "--scratch", "--run-id", "capture", "--model", MODEL["id"],
+                "--profile", "default", "--task-key", "task-1"]
+        with patch.object(run.ollama_api, "chat", side_effect=RuntimeError("interrupted")):
+            with self.assertRaisesRegex(RuntimeError, "interrupted"):
+                run.main(args)
+        capture = self.root / "build/scratch-runs/fixture/capture/code/data/fixture/offsets.json"
+        self.assertEqual(capture.read_bytes(), support.read_bytes())
+        support.write_text("[1, 3]")
+        with self.assertRaisesRegex(SystemExit, "offsets.json"):
+            run.main(args)
+
     def test_multiple_calls_resume_and_score_saved_replies(self):
         self.prepare_runner_fixture()
         (self.benchmark_dir / "eval.py").write_text("""
