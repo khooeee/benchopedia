@@ -2,7 +2,8 @@
 -- numbered from 1, and all of them passed.
 SELECT rt.benchmark_id, rt.run_id, rt.task_key, rt.result,
        r.attempts_per_task AS required, count(a.number) AS attempts,
-       max(a.number) AS last_attempt, total(a.verdict = 'pass') AS passed
+       max(a.number) AS last_attempt, total(a.verdict = 'pass') AS passed,
+       total(a.verdict = 'scored') AS scored
 FROM run_task rt
 JOIN run r ON r.benchmark_id = rt.benchmark_id AND r.id = rt.run_id
 LEFT JOIN attempt a
@@ -13,4 +14,6 @@ HAVING attempts <> required
     OR last_attempt <> required
     OR rt.result = 'pending'
     OR total(a.verdict = 'pending') > 0
-    OR (rt.result = 'pass') <> (passed = required);
+    OR (rt.result = 'pass') <> (passed = required)
+    OR (rt.result = 'scored') <> (scored = required)
+    OR (passed > 0 AND scored > 0);

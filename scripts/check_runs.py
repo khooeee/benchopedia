@@ -282,6 +282,29 @@ def grade(task, output):
         status = dict(db.execute("SELECT task_key, status FROM task_status").fetchall())
         self.assertEqual(status, {"task-1": "solved", "task-2": "open"})
 
+    def test_numeric_scores_retire_completed_work_without_a_solve(self):
+        self.prepare_runner_fixture()
+        with (self.benchmark_dir / "eval.py").open("a") as evaluator:
+            evaluator.write('\nMAX_OUTPUT_CHARS = 10\ndef score(task, output):\n    return {"overlap": 0.75}\n')
+        args = ["fixture", "--ollama-model", MODEL["id"], "--ollama-profile", "default"]
+        with patch.object(sweep.openrouter_api, "free_requests_remaining", return_value=0):
+            with patch.object(run.ollama_api, "chat", side_effect=self.reply):
+                with redirect_stdout(io.StringIO()):
+                    sweep.main(args + ["--verify-grader"])
+
+        db = sqlite3.connect(":memory:")
+        self.addCleanup(db.close)
+        build_sqlite.build_database(db, include_local=True)
+        results = db.execute("SELECT a.verdict, a.answer, a.scores FROM attempt a "
+                             "JOIN run r ON r.benchmark_id = a.benchmark_id AND r.id = a.run_id WHERE r.local = 1")
+        self.assertEqual([tuple(row) for row in results], [("scored", None, '{"overlap": 0.75}')] * 4)
+        status = dict(db.execute("SELECT task_key, status FROM task_status"))
+        self.assertEqual(status, {"task-1": "solved", "task-2": "scored"})
+        output = io.StringIO()
+        with redirect_stdout(output):
+            sweep.main(args + ["--dry-run"])
+        self.assertEqual(output.getvalue(), "")
+
     def test_task_passes_only_when_every_attempt_passes(self):
         self.results[1]["result"] = "pass"
         self.write_run("first", self.run, self.results)

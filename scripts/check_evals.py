@@ -9,11 +9,13 @@ recorded model output, and that output must be what the model returned.
 import importlib.util
 import json
 from pathlib import Path
+import sys
 
 from helpers.build_sqlite import read_results
 
 ROOT = Path(__file__).resolve().parent.parent
-VERDICTS = {"pass", "fail", "unparseable"}
+sys.path.insert(0, str(ROOT / "runner"))
+from run import grade_output
 
 
 def read_jsonl(path):
@@ -41,6 +43,11 @@ def check_eval(evaluation, tasks, origin, errors):
         if task.get("solution") is None:
             continue
         graded += 1
+        if getattr(evaluation, "score", None) is not None:
+            result = grade_output(task, evaluation, task["solution"], enforce_output_limit=False)
+            if result["verdict"] != "scored":
+                errors.append(f"{origin}: score() did not score the reference of {task['key']}")
+            continue
         verdict, answer = evaluation.grade(task, task["solution"])
         if verdict != "pass":
             errors.append(f"{origin}: grade() gives {verdict} ({answer!r}) for the reference "
@@ -69,12 +76,17 @@ def check_run(run_dir, tasks, errors):
             calls = attempt["model_calls"]
             if calls and calls[0]["request"].get("messages") != evaluation.messages(task):
                 errors.append(f"{where}: the request does not carry the prompt eval.py builds")
-            if calls and calls[-1]["response"].get("message", {}).get("content") != attempt["output"]:
-                errors.append(f"{where}: output differs from the model's final response")
-            regraded = list(evaluation.grade(task, attempt["output"]))
-            if regraded != [attempt["verdict"], attempt["answer"]]:
-                errors.append(f"{where}: recorded {attempt['verdict']} ({attempt['answer']!r}), "
-                              f"but eval.py grades it {regraded[0]} ({regraded[1]!r})")
+            if calls:
+                response = calls[-1]["response"]
+                reply = response.get("message")
+                if reply is None and response.get("choices"):
+                    reply = response["choices"][0].get("message")
+                if reply is None or (reply.get("content") or "") != attempt["output"]:
+                    errors.append(f"{where}: output differs from the model's final response")
+            regraded = grade_output(task, evaluation, attempt["output"])
+            recorded = {key: attempt[key] for key in ("verdict", "answer", "scores") if key in attempt}
+            if regraded != recorded:
+                errors.append(f"{where}: recorded grade {recorded!r} differs from {regraded!r}")
     return attempts
 
 
@@ -86,7 +98,8 @@ def main():
         tasks = read_jsonl(benchmark_dir / "tasks.jsonl")
         evaluation = load_eval(eval_file, f"eval_{benchmark_dir.name}".replace("-", "_"))
         graded = check_eval(evaluation, tasks, eval_file.relative_to(ROOT), errors)
-        summary.append(f"{benchmark_dir.name}: {graded:,} reference solutions pass")
+        outcome = "scored" if getattr(evaluation, "score", None) is not None else "pass"
+        summary.append(f"{benchmark_dir.name}: {graded:,} reference solutions {outcome}")
     for run_dir in sorted(p for p in (ROOT / "data").glob("*/runs/*") if p.is_dir()):
         tasks = read_jsonl(run_dir.parent.parent / "tasks.jsonl")
         attempts = check_run(run_dir, tasks, errors)

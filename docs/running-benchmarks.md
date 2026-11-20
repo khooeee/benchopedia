@@ -32,6 +32,9 @@ A wrong or unparseable reply counts as a failed attempt. A recorded
 evaluation stays pending while the required attempts or grading are
 incomplete. A task stays retired once it has a verified solve for the
 imported revision. For retries, prefer an available model the task has yet to face.
+For benchmarks with numeric metrics, a task is **scored** once all its attempts
+have valid scores. A regular sweep then moves on. The local preview shows
+per-attempt scores and the mean over scored tasks in the run.
 
 Sweeps and grader checks start with NVIDIA Nemotron 3 Ultra `:free` on
 OpenRouter. Copy `.env.template` to `.env` and set `OPENROUTER_API_KEY` there

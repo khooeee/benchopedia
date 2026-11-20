@@ -120,7 +120,7 @@ CREATE TABLE run_task (
     benchmark_id TEXT NOT NULL,
     run_id       TEXT NOT NULL,
     task_key     TEXT NOT NULL,
-    result       TEXT NOT NULL CHECK (result IN ('pass', 'fail', 'pending')),
+    result       TEXT NOT NULL CHECK (result IN ('pass', 'fail', 'pending', 'scored')),
     graded_at    TEXT CHECK (graded_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T*Z'),
     PRIMARY KEY (benchmark_id, run_id, task_key),
     FOREIGN KEY (benchmark_id, run_id) REFERENCES run (benchmark_id, id),
@@ -133,11 +133,14 @@ CREATE TABLE attempt (
     run_id       TEXT NOT NULL,
     task_key     TEXT NOT NULL,
     number       INTEGER NOT NULL CHECK (number > 0),
-    verdict      TEXT NOT NULL CHECK (verdict IN ('pass', 'fail', 'unparseable', 'pending')),
+    verdict      TEXT NOT NULL CHECK (verdict IN ('pass', 'fail', 'unparseable', 'pending', 'scored')),
     -- The model's final text, which the grader read.
     output       TEXT NOT NULL,
     -- What the grader extracted from the output; NULL when it found nothing.
-    answer       TEXT CHECK ((answer IS NULL) = (verdict IN ('unparseable', 'pending'))),
+    answer       TEXT CHECK ((answer IS NULL) = (verdict IN ('unparseable', 'pending', 'scored'))),
+    scores       TEXT CHECK ((scores IS NOT NULL) = (verdict = 'scored') AND
+                           CASE WHEN scores IS NULL THEN 1 WHEN json_valid(scores)
+                                THEN json_type(scores) = 'object' AND scores <> '{}' ELSE 0 END),
     started_at   TEXT NOT NULL CHECK (started_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T*Z'),
     PRIMARY KEY (benchmark_id, run_id, task_key, number),
     FOREIGN KEY (benchmark_id, run_id, task_key) REFERENCES run_task (benchmark_id, run_id, task_key)
@@ -171,6 +174,7 @@ WITH evidence AS (
 )
 SELECT t.benchmark_id, t.key AS task_key,
        CASE WHEN max(e.result = 'pass') THEN 'solved'
+            WHEN max(e.result = 'scored') THEN 'scored'
             WHEN max(e.result = 'fail') THEN 'open'
             WHEN count(e.result) > 0 THEN 'pending'
             ELSE 'untested' END AS status,

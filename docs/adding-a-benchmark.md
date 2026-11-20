@@ -356,6 +356,12 @@ means the grader, or the reference, needs a closer look before any model runs.
 For a benchmark that needs a new evaluation path, extend the checks to verify
 results against its scoring rules.
 
+When upstream defines numeric metrics without a correct-answer threshold,
+define `score(task, output)` in place of `grade(task, output)`. Return a
+dictionary of named finite scores or `None` for an invalid reply. If upstream
+limits generated output length, set `MAX_OUTPUT_CHARS`. The reference check
+scores the gold reply directly, since that limit applies to model output.
+
 ## 9. Verify the grader in a sweep
 
 When adding or changing a grader, run a two-task scratch check. The sweep

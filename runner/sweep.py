@@ -33,7 +33,7 @@ def work(db, model, profile, limit, *, verify_grader=False):
     return db.execute("""
         SELECT s.benchmark_id, s.task_key, s.status
         FROM task_status s
-        WHERE (:verify_grader OR s.status <> 'solved')
+        WHERE (:verify_grader OR s.status NOT IN ('solved', 'scored'))
           AND NOT EXISTS (
             SELECT 1 FROM sweep_done d WHERE d.benchmark_id = s.benchmark_id
               AND d.task_key = s.task_key AND (:verify_grader OR d.provider = :provider)

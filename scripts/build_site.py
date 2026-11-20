@@ -120,6 +120,7 @@ def run_task_url(r, key):
 REPOSITORY = 'https://github.com/khooeee/benchopedia'
 STATUS_TEXT = {
     'solved': 'a run passed this task',
+    'scored': 'a run recorded numeric scores for this task',
     'open': 'at least one completed evaluation failed and zero runs have passed',
     'untested': 'no run has tried this task yet',
     'pending': 'attempts exist and evaluation is incomplete',
@@ -141,10 +142,10 @@ def run_title(r):
 
 def runs_table(runs):
     rows = []
+    show_scored = any(t['result'] == 'scored' for r in runs for t in r['tasks'])
     for r in runs:
-        passed = sum(t['result'] == 'pass' for t in r['tasks'])
-        failed = sum(t['result'] == 'fail' for t in r['tasks'])
-        pending = len(r['tasks']) - passed - failed
+        counts = Counter(t['result'] for t in r['tasks'])
+        scored_cell = f'<td class="number">{counts["scored"]:,}</td>' if show_scored else ''
         if r['finished_at']:
             status = f"finished {esc(r['finished_at'][:10])}"
         elif r['stopped_at']:
@@ -152,16 +153,18 @@ def runs_table(runs):
         else:
             status = 'in progress'
         rows.append(f'''<tr><td><a href="{run_url(r)}">{esc(r['id'])}</a></td><td>{esc(run_title(r))}</td>
-<td class="number">{r['attempts_per_task']}</td><td class="number">{len(r['tasks']):,}</td><td class="number">{passed:,}</td>
-<td class="number">{failed:,}</td><td class="number">{pending:,}</td><td>{status}</td></tr>''')
+<td class="number">{r['attempts_per_task']}</td><td class="number">{len(r['tasks']):,}</td><td class="number">{counts['pass']:,}</td>
+{scored_cell}<td class="number">{counts['fail']:,}</td><td class="number">{counts['pending']:,}</td><td>{status}</td></tr>''')
+    scored_heading = '<th>Scored</th>' if show_scored else ''
     return ('<div class="table-scroll"><table><thead><tr><th>Run</th><th>Model</th><th>Attempts per task</th><th>Tasks tried</th>'
-            '<th>Passed</th><th>Failed</th><th>Pending</th><th>Status</th></tr></thead><tbody>' + ''.join(rows) + '</tbody></table></div>')
+            f'<th>Passed</th>{scored_heading}<th>Failed</th><th>Pending</th><th>Status</th></tr></thead><tbody>'
+            + ''.join(rows) + '</tbody></table></div>')
 
 
 def results_section(b, runs, statuses):
     counts = {status: sum(s == status for s in statuses.values()) for status in STATUS_TEXT}
     links = ', '.join(f'<a href="{tasks_url(b)}?status={status}">{counts[status]:,} {status}</a>' for status in STATUS_TEXT)
-    return f'''<p>A task passes a run when every required attempt is correct. An unparseable reply counts as a failed attempt. Completed failures stay open until a run passes the task. Open the run pages to see each grade and trajectory.</p>
+    return f'''<p>A task passes a run when every required attempt is correct. An unparseable reply counts as a failed attempt. Benchmarks with numeric scoring record tasks with completed scores as scored. Open the run pages to see the grades, scores, and trajectories.</p>
 <p>Of {b['task_count']:,} tasks: {links}.</p>{runs_table(runs)}'''
 
 
@@ -329,11 +332,24 @@ def task_page(q, previous, following, results=()):
     write(relative+'index.html',layout(q['title'],body,description=q['title']))
 
 
+def mean_scores(tasks):
+    sums, counts = Counter(), Counter()
+    for task in tasks:
+        if task['result'] == 'scored':
+            for attempt in task['attempts']:
+                scores = json.loads(attempt['scores'])
+                sums.update(scores)
+                counts.update(scores.keys())
+    return {key: sums[key] / counts[key] for key in sorted(counts)}
+
+
 def run_page(b, r, tasks_by_key):
     model = r['model']
-    passed = sum(t['result'] == 'pass' for t in r['tasks'])
-    failed = sum(t['result'] == 'fail' for t in r['tasks'])
-    pending = len(r['tasks']) - passed - failed
+    counts = Counter(t['result'] for t in r['tasks'])
+    result_counts = [f'{counts["pass"]:,} passed', f'{counts["fail"]:,} failed', f'{counts["pending"]:,} pending']
+    if counts['scored']:
+        result_counts.insert(0, f'{counts["scored"]:,} scored')
+    averages = mean_scores(r['tasks'])
     after = json.loads(r['after_runs'])
     selection = 'every task' if not after else 'tasks left open by ' + ', '.join(
         f'<a href="{run_url({"benchmark_id": b["id"], "id": earlier})}">{esc(earlier)}</a>' for earlier in after)
@@ -355,7 +371,8 @@ def run_page(b, r, tasks_by_key):
              ('Profile', esc(r['profile'])),
              ('Attempts per task', str(r['attempts_per_task'])),
              ('Tasks selected', selection),
-             ('Results', f'{passed:,} passed, {failed:,} failed, {pending:,} pending{progress}'),
+             ('Results', ', '.join(result_counts) + progress),
+             *([(f'{name} mean', f'{score:.6g}') for name, score in averages.items()]),
              ('Started', esc(r['started_at'])),
              *ended,
              ('Commit', f'<a href="{REPOSITORY}/commit/{esc(r["commit_sha"])}"><code>{esc(r["commit_sha"])}</code></a>')]
@@ -378,7 +395,7 @@ def run_page(b, r, tasks_by_key):
                 ('settings', 'Settings', f'<p>The options sent with every request, from the model\'s <code>{esc(r["profile"])}</code> profile.</p><pre><code>{esc(json.dumps(json.loads(r["settings"]), indent=2))}</code></pre>'),
                 ('environment', 'Environment', environment),
                 ('code', 'Code', f'<p>The files the runner read, copied when the run started.</p>{files}'),
-                ('tasks', 'Tasks', f'''<form class="search-form"><label for="result-filter">Result:</label> <select id="result-filter"><option value="">All</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="pending">Pending</option></select>
+                ('tasks', 'Tasks', f'''<form class="search-form"><label for="result-filter">Result:</label> <select id="result-filter"><option value="">All</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="pending">Pending</option><option value="scored">Scored</option></select>
 <span id="result-count" role="status" aria-live="polite">{len(r['tasks']):,} tasks</span></form><ol class="entry-list">{''.join(entries)}</ol>''')]
     contents = ''.join(f'<li><a href="#{key}">{title}</a></li>' for key, title, _ in sections)
     article = '\n'.join(f'<section id="{key}"><h2>{title}</h2>{html}</section>' for key, title, html in sections)
@@ -412,12 +429,22 @@ def model_call_view(attempt_number, call):
 
 def run_task_page(b, r, t, q, previous, following):
     passed = sum(a['verdict'] == 'pass' for a in t['attempts'])
+    scored = sum(a['verdict'] == 'scored' for a in t['attempts'])
+    outcome = f'{scored} of {len(t["attempts"])} attempts scored' if scored else f'{passed} of {len(t["attempts"])} attempts passed'
     attempts = []
     for a in t['attempts']:
         answer = f'<code>{esc(a["answer"])}</code>' if a['answer'] is not None else 'none found'
+        facts = [('Started', esc(a['started_at']))]
+        if a['scores'] is None:
+            facts.insert(0, ('Extracted answer', answer))
+        else:
+            facts.extend(
+                (name, f'<span data-text="score-{a["number"]}:{esc(name)}">{esc(value)}</span>')
+                for name, value in sorted(json.loads(a['scores']).items())
+            )
         calls = ''.join(model_call_view(a['number'], c) for c in a['calls'])
         attempts.append(f'''<section id="attempt-{a['number']}"><h2>Attempt {a['number']}: {label(a['verdict'])}</h2>
-{facts_list([('Extracted answer', answer), ('Started', esc(a['started_at']))])}
+{facts_list(facts)}
 <details><summary>Graded output</summary><pre class="wrap"><code data-text="output-{a['number']}">{esc(a['output'])}</code></pre></details>
 <h3>Trajectory</h3>{calls}</section>''')
     solution = ''
@@ -427,7 +454,7 @@ def run_task_page(b, r, t, q, previous, following):
     next_link = f'<a href="{run_task_url(r, following)}">Next task</a>' if following else '<span></span>'
     body = f'''<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Benchmarks</a> &gt; <a href="{benchmark_url(b)}">{esc(b['name'])}</a> &gt; <a href="{benchmark_url(b)}#results">Results</a> &gt; <a href="{run_url(r)}">{esc(r['id'])}</a></nav>
 <p class="task-id">{esc(q['key'])}</p><h1>{esc(q['title'])}</h1>
-<p class="run-result" data-result="{esc(t['result'])}">Result: {label(t['result'])}: {passed} of {len(t['attempts'])} attempts passed.</p>
+<p class="run-result" data-result="{esc(t['result'])}">Result: {label(t['result'])}: {outcome}.</p>
 {facts_list([('Run', f'<a href="{run_url(r)}">{esc(r["id"])}</a>'), ('Model', esc(run_title(r))), ('Task', f'<a href="{task_url(q)}">{esc(q["key"])}</a>')])}
 <article class="prose">{solution}{''.join(attempts)}</article>
 <nav class="task-adjacent" aria-label="Adjacent tasks">{prev_link}<a href="{run_url(r)}#tasks">Run's tasks</a>{next_link}</nav>'''
@@ -458,7 +485,7 @@ def open_tasks(statuses, results_by_task):
                               if run['dataset_revision'] in (None, b['dataset_revision']))
         rows.append(f'''<tr data-open-benchmark="{esc(b['id'])}"><td><a href="{benchmark_url(b)}">{esc(b['name'])}</a></td>
 <td><a href="{task_url(task)}">{esc(task['title'])}</a> <span class="task-id">{esc(key[1])}</span></td><td>{attempts}</td></tr>''')
-    evaluated = counts['open'] + counts['solved']
+    evaluated = counts['open'] + counts['solved'] + counts['scored']
     body = f'''<h1>Open tasks</h1>
 <p>Tasks with a completed failed evaluation and zero verified solves in Benchopedia's records. An evaluation passes when every required attempt is correct.</p>
 {facts_list([('Evaluated', f"{evaluated:,} of {len(statuses):,}"), ('Open', f"{counts['open']:,}"),

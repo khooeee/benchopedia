@@ -30,7 +30,11 @@ def stop_run(run_dir, reason):
     run |= {"stopped_at": now(), "stop_reason": reason}
     write_json(run_file, run)
     passed = sum(r["result"] == "pass" for r in records)
-    print(f"Stopped {run_file.parent}: {passed} of {len(records)} tasks passed")
+    scored = sum(r["result"] == "scored" for r in records)
+    if scored:
+        print(f"Stopped {run_file.parent}: {scored} of {len(records)} tasks scored")
+    else:
+        print(f"Stopped {run_file.parent}: {passed} of {len(records)} tasks passed")
 
 
 def main():

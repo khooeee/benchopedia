@@ -75,7 +75,7 @@
     const filter = $('#result-filter');
     const items = [...document.querySelectorAll('[data-result]')];
     const requested = new URLSearchParams(location.search).get('result');
-    filter.value = ['pass', 'fail', 'pending'].includes(requested) ? requested : '';
+    filter.value = ['pass', 'fail', 'pending', 'scored'].includes(requested) ? requested : '';
     function filterResults() {
       let count = 0;
       items.forEach((item) => {
@@ -100,7 +100,7 @@
   const initialParams = new URLSearchParams(location.search);
   search.value = initialParams.get('q') || '';
   page = Math.max(1, Number.parseInt(initialParams.get('page'), 10) || 1);
-  if (status) status.value = ['solved', 'open', 'untested', 'pending'].includes(initialParams.get('status')) ? initialParams.get('status') : '';
+  if (status) status.value = ['solved', 'open', 'untested', 'pending', 'scored'].includes(initialParams.get('status')) ? initialParams.get('status') : '';
 
   function updateURL() {
     const params = new URLSearchParams();
