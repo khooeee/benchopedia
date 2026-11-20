@@ -398,7 +398,7 @@ Python's standard library.
   functions unchanged, link their pinned source, and cover them in the
   redistribution review.
 
-If a grader needs immutable support files, name them in a tuple
+If a grader needs immutable UTF-8 support files, name them in a tuple
 `CAPTURE_FILES`. Put the files next to `eval.py`. The runner captures them beside
 the grader for recorded-run checks and compares them on resume.
 

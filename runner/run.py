@@ -286,6 +286,10 @@ def main(argv=None):
         source = eval_file.with_name(name)
         if source.is_symlink() or not source.is_file():
             parser.error(f"evaluator support file missing or not a regular file: {source.relative_to(ROOT)}")
+        try:
+            source.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            parser.error(f"evaluator support files must be UTF-8 text: {source.relative_to(ROOT)}")
         sources[(benchmark_dir / name).relative_to(ROOT)] = source
     commit = git("rev-parse", "HEAD").strip()
     env = environment()
