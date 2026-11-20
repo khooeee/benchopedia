@@ -6,6 +6,7 @@ eval.py the run kept must reproduce each attempt's prompt and verdict from the
 recorded model output, and that output must be what the model returned.
 """
 
+import argparse
 import importlib.util
 import json
 from pathlib import Path
@@ -116,13 +117,27 @@ def check_run(run_dir, tasks, errors):
     return attempts
 
 
-def main():
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--skip-missing-setup", action="store_true",
+                        help="report and skip benchmark reference checks whose local setup is absent")
+    args = parser.parse_args(argv)
     errors = []
     summary = []
     for eval_file in sorted((ROOT / "data").glob("*/eval.py")):
         benchmark_dir = eval_file.parent
         tasks = read_jsonl(benchmark_dir / "tasks.jsonl")
         evaluation = load_eval(eval_file, f"eval_{benchmark_dir.name}".replace("-", "_"))
+        setup_check = getattr(evaluation, "check_setup", None)
+        if setup_check is not None and any(task.get("solution") is not None for task in tasks):
+            setup_error = setup_check()
+            if setup_error:
+                message = f"{benchmark_dir.name}: reference checks need setup ({setup_error})"
+                if args.skip_missing_setup:
+                    print("Skipping " + message, file=sys.stderr)
+                else:
+                    errors.append(message)
+                continue
         graded = check_eval(evaluation, tasks, eval_file.relative_to(ROOT), errors)
         numeric = any(getattr(evaluation, name, None) is not None for name in ("score", "score_responses"))
         outcome = "scored" if numeric else "pass"
