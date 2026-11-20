@@ -11,6 +11,7 @@ IMAGE = "benchopedia-minif2f:e4f1130"
 REVISION = "e4f113090ad82d64f8ce064d2f55b613a9b6bded"
 FENCE = re.compile(r"```(?:lean|lean3)?[ \t]*\n(.*?)\n```", re.DOTALL | re.IGNORECASE)
 NO_PROOF = re.compile(r"\b(?:sorry|sorryAx|admit)\b", re.IGNORECASE)
+KERNEL_AXIOMS = {"propext", "quot.sound", "classical.choice"}
 PREAMBLES = {
     "test": "import minif2f_import\nopen_locale big_operators\nopen_locale nat\nopen_locale real\nopen_locale rat",
     "valid": "import minif2f_import\nopen_locale big_operators\nopen_locale real\nopen_locale nat\nopen_locale topological_space",
@@ -75,8 +76,13 @@ def grade(task, output):
         return "fail", "incomplete proof"
     split, theorem = task["key"].split("-", 1)
     helper = TEST_HELPER if split == "test" else ""
-    program = f"{PREAMBLES[split]}\n{helper}\n\n{statement(task)}\n{proof}\n#print axioms {theorem}\n"
-    container = f"benchopedia-lean-{uuid4().hex}"
+    nonce = uuid4().hex
+    start, end = f"axioms-start-{nonce}", f"axioms-end-{nonce}"
+    program = (
+        f"{PREAMBLES[split]}\n{helper}\n\n{statement(task)}\n{proof}\n"
+        f'#eval "{start}"\n#print axioms {theorem}\n#eval "{end}"\n'
+    )
+    container = f"benchopedia-lean-{nonce}"
     try:
         result = subprocess.run(
             ["docker", "run", "--rm", "--init", "--name", container, "--pull=never",
@@ -92,6 +98,13 @@ def grade(task, output):
     if result.returncode in (125, 126, 127):
         raise RuntimeError(f"Lean sandbox could not start: {result.stderr.strip()}")
     diagnostics = result.stdout + result.stderr
-    if result.returncode or NO_PROOF.search(diagnostics) or not diagnostics.strip():
+    if result.returncode or NO_PROOF.search(diagnostics):
         return "fail", "Lean rejected the proof"
+    _, start_marker, tail = result.stdout.partition(f'"{start}"\n')
+    axioms, end_marker, _ = tail.partition(f'"{end}"\n')
+    assumptions = set(axioms.splitlines())
+    if not start_marker or not end_marker or not assumptions:
+        return "fail", "Lean did not check the proof's axioms"
+    if assumptions != {"no axioms"} and not assumptions <= KERNEL_AXIOMS:
+        return "fail", "proof depends on an extra axiom"
     return "pass", "Lean accepted the proof"
