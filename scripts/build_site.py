@@ -321,8 +321,8 @@ def task_page(q, previous, following, results=()):
     if solution_source or solution_content:
         solution_section = f'<section id="solution"><h2>Solution</h2>{solution_content}{solution_source}</section>'
     results_section = task_results_section(q, results) if q.get('status') else ''
-    body = f'''<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Benchmarks</a> &gt; <a href="{benchmark_url(b)}">{esc(b['name'])}</a> &gt; <a href="{tasks_url(b)}">Tasks</a></nav>
-<p class="task-id">{esc(q['key'])}</p><h1>{esc(q['title'])}</h1>
+    body = f'''<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/">Benchmarks</a> &gt; <a href="{benchmark_url(b)}">{esc(b['name'])}</a> &gt; <a href="{tasks_url(b)}">Tasks</a> &gt; <span class="task-id" aria-current="page">{esc(q['key'])}</span></nav>
+<h1>{esc(q['title'])}</h1>
 <article class="prose">{environment_section}<section id="task-prompt"><h2>Task Prompt</h2><div class="prompt-content">{markdown(q['prompt'])}</div>{prompt_source}</section>{solution_section}{results_section}</article>
 <nav class="task-adjacent" aria-label="Adjacent tasks">{prev_link}<a href="{tasks_url(b)}">Task index</a>{next_link}</nav>'''
     relative = output_path(site_url(task_url(q)))
