@@ -66,3 +66,11 @@ The script reads two files from directories given with trailing slashes, and pai
 python evaluation.py --predicted_sql_path predictions/ --ground_truth_path gold/ --data_mode dev \
   --db_root_path dev_databases/ --diff_json_path dev_20251106-00000-of-00001.json --num_cpus 16 --meta_time_out 30.0
 ```
+
+### Verify with the Benchopedia sweep
+
+Run `python3 data/bird-sql/setup_eval.py` to install the eleven pinned databases,
+then run `python3 runner/sweep.py bird-sql --verify-grader`. The model sees
+the SQLite schema, evidence, and question. The evaluator accepts complete
+queries or a continuation after SELECT. It compares both result sets in a
+read-only worker with a 30-second SQL budget. Database rows stay local.
