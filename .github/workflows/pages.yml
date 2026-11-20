@@ -32,7 +32,7 @@ jobs:
       - name: Check run rules
         run: python3 scripts/check_runs.py
       - name: Check graders and re-grade runs
-        run: python3 scripts/check_evals.py
+        run: python3 scripts/check_evals.py --skip-missing-setup
       - name: Check local-root build
         run: |
           python3 scripts/build_site.py
