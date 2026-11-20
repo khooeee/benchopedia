@@ -35,10 +35,10 @@ def exclude_ineligible_tasks(db, benchmarks):
     for benchmark_id in sorted(benchmarks):
         directory = ROOT / "data" / benchmark_id
         evaluation = run.load_eval(directory / "eval.py")
-        eligible = getattr(evaluation, "eligible", None)
-        if eligible is not None:
+        is_eligible = getattr(evaluation, "is_eligible", None)
+        if is_eligible is not None:
             excluded = ((benchmark_id, task["key"]) for task in run.read_jsonl(directory / "tasks.jsonl")
-                        if not eligible(task))
+                        if not is_eligible(task))
             db.executemany("INSERT INTO sweep_excluded VALUES (?, ?)", excluded)
 
 

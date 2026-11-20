@@ -279,7 +279,7 @@ def grade(task, output):
         self.prepare_runner_fixture(("task-3",))
         self.write_run("first", self.run | {"selected_tasks": ["task-1", "task-2"]}, self.results)
         with (self.benchmark_dir / "eval.py").open("a") as evaluator:
-            evaluator.write('\ndef eligible(task):\n    return task["key"] != "task-2"\n')
+            evaluator.write('\ndef is_eligible(task):\n    return task["key"] != "task-2"\n')
 
         args = ["fixture", "--dry-run", "--ollama-model", MODEL["id"], "--ollama-profile", "default"]
         output = io.StringIO()

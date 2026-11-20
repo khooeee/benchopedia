@@ -22,13 +22,13 @@ def gold_label(task):
     return task["solution"].partition("\n")[0]
 
 
-def eligible(task):
+def is_eligible(task):
     """The archive excludes pairs whose annotators did not reach a majority."""
     return gold_label(task) != NO_MAJORITY
 
 
 def messages(task):
-    if not eligible(task):
+    if not is_eligible(task):
         raise ValueError(f"{task['key']}: SNLI excludes pairs with no majority label")
     return [{"role": "user", "content": f"{task['prompt']}\n\n{INSTRUCTION}"}]
 

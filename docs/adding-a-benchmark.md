@@ -345,9 +345,10 @@ Python's standard library.
   functions unchanged, link their pinned source, and cover them in the
   redistribution review.
 
-If the upstream scorer omits some imported tasks, define `eligible(task)` to
-return whether each task can be scored. The sweep and grader checks use this
-hook, while the catalog retains the complete imported split.
+If the upstream scorer omits some imported tasks, define `is_eligible(task)`.
+Return `True` for tasks that can be scored and `False` for tasks to skip. The
+sweep and grader checks use this hook. The catalog retains the complete
+imported split.
 
 Then check the grader against every eligible reference solution:
 
