@@ -2,7 +2,6 @@
 
 import argparse
 import hashlib
-import json
 from pathlib import Path
 import subprocess
 from urllib.request import urlopen
