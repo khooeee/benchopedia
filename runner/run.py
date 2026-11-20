@@ -14,10 +14,12 @@ what ran. Run the same command again to resume an interrupted run; the runner
 refuses if the code, model or Ollama version changed in between. To end a run
 early instead, stop the runner and record why with runner/stop.py. --scratch writes to
 build/scratch-runs/ instead, allows uncommitted code and --limit, and is never published.
+Scratch runs record their selected keys and save unfinished model exchanges in partial/.
 Only Python's standard library is required.
 """
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import platform
@@ -48,6 +50,12 @@ def read_jsonl(path):
     # Iterate physical lines; Unicode line separators can occur inside text.
     with path.open(encoding="utf-8", newline="") as f:
         return [json.loads(line) for line in f]
+
+
+def write_json(path, value):
+    temporary = path.with_suffix(".json.tmp")
+    temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    temporary.replace(path)
 
 
 def load_eval(path):
@@ -114,8 +122,8 @@ def commands(model, commit, argv, attempts):
     return steps
 
 
-def select_tasks(runs_dir, tasks, after_runs):
-    """Every task, or only those that none of the earlier runs passed."""
+def select_tasks(runs_dir, tasks, after_runs, task_keys=()):
+    """Choose eligible tasks, in the requested key order when supplied."""
     passed = set()
     for run_id in after_runs:
         earlier = runs_dir / run_id
@@ -123,7 +131,15 @@ def select_tasks(runs_dir, tasks, after_runs):
         if not run.get("finished_at") and not run.get("stopped_at"):
             raise SystemExit(f"{earlier}: is still running, so its open tasks are not known yet")
         passed |= {line["key"] for line in read_jsonl(earlier / "results.jsonl") if line["result"] == "pass"}
-    return [task for task in tasks if task["key"] not in passed]
+    eligible = {task["key"]: task for task in tasks if task["key"] not in passed}
+    if not task_keys:
+        return list(eligible.values())
+    if len(task_keys) != len(set(task_keys)):
+        raise SystemExit("--task-key must name each task at most once")
+    missing = [key for key in task_keys if key not in eligible]
+    if missing:
+        raise SystemExit("Unknown or excluded task keys: " + ", ".join(missing))
+    return [eligible[key] for key in task_keys]
 
 
 def completed_keys(results_file):
@@ -150,23 +166,30 @@ def sort_results(results_file):
     return records
 
 
-def attempt_task(task, evaluation, model, profile, backend):
-    attempts = []
+def attempt_task(task, evaluation, model, profile, backend, checkpoint=None):
+    attempts = (json.loads(checkpoint.read_text(encoding="utf-8"))["attempts"]
+                if checkpoint and checkpoint.is_file() else [])
     for number in range(1, evaluation.ATTEMPTS + 1):
-        started_at = now()
-        request, response, latency_ms, output = backend.chat(
-            model["provider_model"], evaluation.messages(task), profile, seed=number)
-        verdict, answer = evaluation.grade(task, output)
-        attempts.append({
-            "number": number, "verdict": verdict, "output": output, "answer": answer,
-            "started_at": started_at,
-            "model_calls": [{"number": 1, "request": request, "response": response, "latency_ms": latency_ms}],
-        })
+        if number > len(attempts):
+            started_at = now()
+            request, response, latency_ms, output = backend.chat(
+                model["provider_model"], evaluation.messages(task), profile, seed=number)
+            attempts.append({
+                "number": number, "output": output, "started_at": started_at,
+                "model_calls": [{"number": 1, "request": request, "response": response, "latency_ms": latency_ms}],
+            })
+            if checkpoint:
+                write_json(checkpoint, {"key": task["key"], "attempts": attempts})
+        attempt = attempts[number - 1]
+        if "verdict" not in attempt:
+            attempt["verdict"], attempt["answer"] = evaluation.grade(task, attempt["output"])
+            if checkpoint:
+                write_json(checkpoint, {"key": task["key"], "attempts": attempts})
     result = "pass" if all(a["verdict"] == "pass" for a in attempts) else "fail"
     return {"key": task["key"], "result": result, "attempts": attempts}
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("benchmark")
     model_choices = parser.add_mutually_exclusive_group(required=True)
@@ -181,18 +204,31 @@ def main():
     parser.add_argument("--scratch", action="store_true", help="write to build/scratch-runs/ instead")
     parser.add_argument("--scratch-eval", type=Path, metavar="PATH",
                         help="use a local evaluator from within the repository; needs --scratch")
+    parser.add_argument("--task-key", action="append", default=[], metavar="KEY",
+                        help="select an exact task in argument order; repeatable, needs --scratch")
     parser.add_argument("--limit", type=int, help="only the first N selected tasks; needs --scratch")
-    args = parser.parse_args()
+    argv = sys.argv[1:] if argv is None else argv
+    args = parser.parse_args(argv)
     if args.limit is not None and not args.scratch:
         parser.error("--limit needs --scratch: a published run covers every task it selects")
     if args.scratch_eval is not None and not args.scratch:
         parser.error("--scratch-eval needs --scratch")
     if args.scratch_model is not None and not args.scratch:
         parser.error("--scratch-model needs --scratch")
+    if args.task_key and not args.scratch:
+        parser.error("--task-key needs --scratch")
+    if args.task_key and args.limit is not None:
+        parser.error("--task-key supplies the selection; use --limit to select a prefix instead")
+    if not re.fullmatch(r"[a-z0-9-]+", args.benchmark):
+        parser.error("benchmark must be a catalog ID")
     if not RUN_ID.fullmatch(args.run_id):
         parser.error("--run-id must use lowercase letters, digits, dots and hyphens")
 
     benchmark_dir = ROOT / "data" / args.benchmark
+    runs_dir = ROOT / "build" / "scratch-runs" / args.benchmark if args.scratch else benchmark_dir / "runs"
+    tasks = select_tasks(runs_dir, read_jsonl(benchmark_dir / "tasks.jsonl"), args.after, args.task_key)
+    if args.limit is not None:
+        tasks = tasks[:args.limit]
     model_file = (args.scratch_model.resolve() if args.scratch_model is not None
                   else ROOT / "models" / f"{args.model}.json")
     if not model_file.is_relative_to(ROOT) or not model_file.is_file():
@@ -235,7 +271,6 @@ def main():
         raise SystemExit(f"Ollama's {model['provider_model']} has digest {env['weights_digest']}, "
                          f"but {model_file.relative_to(ROOT)} pins {model['weights_digest']}")
 
-    runs_dir = ROOT / "build" / "scratch-runs" / args.benchmark if args.scratch else benchmark_dir / "runs"
     run_dir = runs_dir / args.run_id
     run_file = run_dir / "run.json"
     settings = {"model_id": args.model or model["id"], "profile": args.profile, "settings": profile,
@@ -244,6 +279,10 @@ def main():
         settings["scratch_model"] = str(model_file.relative_to(ROOT))
     if args.scratch_eval is not None:
         settings["scratch_eval"] = str(eval_file.relative_to(ROOT))
+    metadata = json.loads((benchmark_dir / "benchmark.json").read_text(encoding="utf-8"))
+    settings["dataset_revision"] = metadata["dataset_revision"]
+    if args.scratch:
+        settings["selected_tasks"] = [task["key"] for task in tasks]
     if run_file.exists():
         run = json.loads(run_file.read_text(encoding="utf-8"))
         if run["finished_at"]:
@@ -251,7 +290,7 @@ def main():
         if run.get("stopped_at"):
             raise SystemExit(f"{run_dir} was stopped: {run['stop_reason']}\n"
                              f"To try the tasks it did not pass, start a new run with --after {args.run_id}")
-        changed = [k for k, v in settings.items() if run[k] != v]
+        changed = [k for k, v in settings.items() if run.get(k) != v]
         changed += [str(path) for path, source in sources.items()
                     if (run_dir / "code" / path).read_bytes() != source.read_bytes()]
         env_keys = ("ollama_version", "weights_digest") if backend is ollama_api else ("provider", "endpoint")
@@ -265,13 +304,10 @@ def main():
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(source.read_bytes())
         run = settings | {"commit_sha": commit, "environment": env,
-                          "commands": commands(model, commit, sys.argv[1:], evaluation.ATTEMPTS),
+                          "commands": commands(model, commit, argv, evaluation.ATTEMPTS),
                           "started_at": now(), "finished_at": None, "stopped_at": None, "stop_reason": None}
-        run_file.write_text(json.dumps(run, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        write_json(run_file, run)
 
-    tasks = select_tasks(runs_dir, read_jsonl(benchmark_dir / "tasks.jsonl"), args.after)
-    if args.limit is not None:
-        tasks = tasks[:args.limit]
     results_file = run_dir / "results.jsonl"
     done = completed_keys(results_file)
     pending = [task for task in tasks if task["key"] not in done]
@@ -279,32 +315,44 @@ def main():
 
     lock = threading.Lock()
     counts = {"pass": 0, "fail": 0}
+    partial_dir = run_dir / "partial"
+    if args.scratch:
+        partial_dir.mkdir(exist_ok=True)
 
     def run_one(task):
-        record = attempt_task(task, evaluation, model, profile, backend)
+        key_hash = hashlib.sha256(task["key"].encode("utf-8")).hexdigest()
+        checkpoint = partial_dir / f"{key_hash}.json" if args.scratch else None
+        record = attempt_task(task, evaluation, model, profile, backend, checkpoint)
         with lock:
             # Ollama must not change mid-run: an update restarts it with another version.
             if backend is ollama_api and ollama_api.version() != env["ollama_version"]:
                 raise SystemExit("Ollama's version changed during the run; the last task was not saved")
+            record["graded_at"] = now()
             with results_file.open("a", encoding="utf-8", newline="\n") as f:
                 f.write(json.dumps(record, ensure_ascii=False) + "\n")
+            if checkpoint:
+                checkpoint.unlink(missing_ok=True)
             counts[record["result"]] += 1
             seconds = sum(c["latency_ms"] for a in record["attempts"] for c in a["model_calls"]) / 1000
             verdicts = " ".join(a["verdict"] for a in record["attempts"])
             print(f"[{len(done) + sum(counts.values())}/{len(tasks)}] {task['key']} {record['result']} "
                   f"({verdicts}) {seconds:.0f}s", flush=True)
 
-    pool = ThreadPoolExecutor(max_workers=args.parallel)
-    try:
-        for future in [pool.submit(run_one, task) for task in pending]:
-            future.result()
-    finally:
-        # On failure, let tasks already sent to the model finish, but start no more.
-        pool.shutdown(wait=True, cancel_futures=True)
+    if args.parallel == 1:
+        for task in pending:
+            run_one(task)
+    else:
+        pool = ThreadPoolExecutor(max_workers=args.parallel)
+        try:
+            for future in [pool.submit(run_one, task) for task in pending]:
+                future.result()
+        finally:
+            # On failure, let tasks already sent to the model finish, but start no more.
+            pool.shutdown(wait=True, cancel_futures=True)
 
     records = sort_results(results_file)
     run["finished_at"] = now()
-    run_file.write_text(json.dumps(run, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    write_json(run_file, run)
     passed = sum(r["result"] == "pass" for r in records)
     print(f"Finished {run_dir}: {passed} of {len(records)} tasks passed")
 

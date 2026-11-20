@@ -9,6 +9,7 @@ import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from urllib.error import HTTPError
 from unittest.mock import patch
 
 from helpers import build_sqlite
@@ -16,6 +17,8 @@ from helpers import build_sqlite
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "runner"))
 import stop  # noqa: E402
+import run  # noqa: E402
+import sweep  # noqa: E402
 
 STOPPED = {"finished_at": None, "stopped_at": "2026-11-19T00:30:00Z", "stop_reason": "Too slow."}
 DIGEST = "sha256:" + "0" * 64
@@ -111,6 +114,130 @@ class RunChecks(unittest.TestCase):
     def assertFails(self, needle):
         _, errors = self.build()
         self.assertTrue(any(needle in error for error in errors), errors)
+
+    def prepare_runner_fixture(self, extra_tasks=()):
+        metadata = self.benchmark_dir / "benchmark.json"
+        benchmark = json.loads(metadata.read_text())
+        benchmark["task_count"] += len(extra_tasks)
+        metadata.write_text(json.dumps(benchmark))
+        with (self.benchmark_dir / "tasks.jsonl").open("a") as tasks:
+            for key in extra_tasks:
+                tasks.write(json.dumps({"key": key, "prompt": "What is 2 + 2?", "solution": "#### 4"}) + "\n")
+        (self.benchmark_dir / "eval.py").write_text("""
+ATTEMPTS = 2
+def messages(task):
+    return [{"role": "user", "content": task["key"]}]
+def grade(task, output):
+    return ("pass" if output == task["solution"] else "fail"), output
+""")
+        runner = self.root / "runner" / "run.py"
+        runner.parent.mkdir()
+        runner.write_bytes((ROOT / "runner" / "run.py").read_bytes())
+        schema = self.root / "db" / "schema.sql"
+        schema.parent.mkdir()
+        schema.write_bytes((ROOT / "db" / "schema.sql").read_bytes())
+        hosted = runner.parent / "hosted.json"
+        hosted.write_bytes(sweep.OPENROUTER_MODEL.read_bytes())
+        patches = [
+            patch.multiple(run, ROOT=self.root, __file__=str(runner),
+                           git=lambda *args: "a" * 40 if args[0] == "rev-parse" else "https://example.org/repo.git"),
+            patch.multiple(sweep, ROOT=self.root, OPENROUTER_MODEL=hosted),
+            patch.object(run.ollama_api, "version", return_value="fixture"),
+            patch.object(run.ollama_api, "digest", return_value=DIGEST),
+            patch.object(sweep.openrouter_api, "api_key", return_value="fixture"),
+        ]
+        for setting in patches:
+            setting.start()
+            self.addCleanup(setting.stop)
+
+    @staticmethod
+    def reply(model, messages, profile, seed):
+        return ({"model": model, "messages": messages, "seed": seed},
+                {"message": {"content": "#### 4"}}, 10, "#### 4")
+
+    def test_exact_selection_resumes_at_saved_attempt(self):
+        self.prepare_runner_fixture(("task-3",))
+        seen = []
+
+        def chat(model, messages, profile, seed):
+            seen.append((messages[0]["content"], seed))
+            if len(seen) == 2:
+                raise RuntimeError("fixture interruption")
+            return self.reply(model, messages, profile, seed)
+
+        args = ["fixture", "--scratch", "--run-id", "selected", "--model", MODEL["id"],
+                "--profile", "default", "--task-key", "task-3", "--task-key", "task-1"]
+        with patch.object(run.ollama_api, "chat", side_effect=chat), redirect_stdout(io.StringIO()):
+            with self.assertRaisesRegex(RuntimeError, "fixture interruption"):
+                run.main(args)
+            with self.assertRaisesRegex(SystemExit, "selected_tasks"):
+                run.main(args[:-1] + ["task-2"])
+            run.main(args)
+        self.assertEqual(seen, [("task-3", 1), ("task-3", 2), ("task-3", 2), ("task-1", 1), ("task-1", 2)])
+        directory = self.root / "build" / "scratch-runs" / "fixture" / "selected"
+        self.assertEqual(json.loads((directory / "run.json").read_text())["selected_tasks"], ["task-3", "task-1"])
+        self.assertEqual([r["key"] for r in build_sqlite.read_results(directory)], ["task-1", "task-3"])
+        with self.assertRaisesRegex(SystemExit, "Unknown"):
+            run.main(args[:-1] + ["missing"])
+        with self.assertRaisesRegex(SystemExit, "at most once"):
+            run.main(args[:-1] + ["task-3"])
+
+    def test_daily_quota_handoff_uses_latest_status_and_preserves_partial_calls(self):
+        self.prepare_runner_fixture(("task-3", "task-4"))
+        self.write_run("first", self.run | STOPPED, self.results)
+        hosted = []
+        local = []
+
+        def openrouter_chat(model, messages, profile, seed):
+            hosted.append((messages[0]["content"], seed))
+            if seed == 2:
+                body = b'{"error":{"metadata":{"limit_source":"openrouter_free_tier_daily"}}}'
+                error = HTTPError("https://example.org", 429, "quota", {}, io.BytesIO(body))
+                raise sweep.openrouter_api.RateLimited(error)
+            return self.reply(model, messages, profile, seed)
+
+        def ollama_chat(model, messages, profile, seed):
+            local.append((messages[0]["content"], seed))
+            return self.reply(model, messages, profile, seed)
+
+        with patch.object(sweep.openrouter_api, "free_requests_remaining", return_value=1):
+            with patch.object(sweep.openrouter_api, "chat", side_effect=openrouter_chat):
+                with patch.object(run.ollama_api, "chat", side_effect=ollama_chat), redirect_stdout(io.StringIO()):
+                    sweep.main(["fixture", "--limit", "3", "--ollama-model", MODEL["id"], "--ollama-profile", "default"])
+        self.assertEqual(hosted, [("task-3", 1), ("task-3", 2)])
+        self.assertEqual(local, [(task, seed) for task in ("task-4", "task-3", "task-2") for seed in (1, 2)])
+        db = sqlite3.connect(":memory:")
+        self.addCleanup(db.close)
+        build_sqlite.build_database(db, include_local=True)
+        rows = db.execute("SELECT result, count(*) FROM run_task GROUP BY result")
+        self.assertEqual({row[0]: row[1] for row in rows}, {"pass": 4, "fail": 1, "pending": 1})
+        self.assertEqual(db.execute("SELECT count(*) FROM task_status WHERE status = 'solved'").fetchone()[0], 4)
+
+    def test_unparseable_only_is_pending(self):
+        self.results[1]["attempts"] = [attempt(1), attempt(2, "unparseable", None)]
+        self.write_run("first", self.run, self.results)
+        db, errors = self.build()
+        self.assertEqual(errors, [])
+        self.assertEqual(db.execute("SELECT status FROM task_status WHERE task_key = 'task-2'").fetchone()[0],
+                         "pending")
+
+    def test_handoff_when_last_hosted_call_uses_the_quota(self):
+        self.prepare_runner_fixture()
+
+        def wrong(model, messages, profile, seed):
+            request, _, latency, _ = self.reply(model, messages, profile, seed)
+            return request, {"message": {"content": "#### 5"}}, latency, "#### 5"
+
+        with patch.object(sweep.openrouter_api, "free_requests_remaining", side_effect=[2, 0]):
+            with patch.object(sweep.openrouter_api, "chat", side_effect=wrong) as hosted:
+                with patch.object(run.ollama_api, "chat", side_effect=self.reply) as local:
+                    with redirect_stdout(io.StringIO()):
+                        sweep.main(["fixture", "--limit", "2", "--ollama-model", MODEL["id"],
+                                    "--ollama-profile", "default"])
+        self.assertEqual(hosted.call_count, 2)
+        self.assertEqual(local.call_count, 2)
+        for call in [*hosted.call_args_list, *local.call_args_list]:
+            self.assertEqual(call.args[1][0]["content"], "task-2")
 
     def test_valid_run_loads_and_reports_task_status(self):
         db, errors = self.build()

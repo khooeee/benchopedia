@@ -56,12 +56,26 @@
     filterBenchmarks();
   }
 
-  // A run's page lists every task it tried; filter them by pass or fail.
+  const openBenchmark = $('#open-benchmark');
+  if (openBenchmark) {
+    const rows = [...document.querySelectorAll('[data-open-benchmark]')];
+    $('#open-filter').hidden = false;
+    openBenchmark.addEventListener('change', () => {
+      let count = 0;
+      for (const row of rows) {
+        row.hidden = !!openBenchmark.value && row.dataset.openBenchmark !== openBenchmark.value;
+        if (!row.hidden) count++;
+      }
+      $('#open-count').textContent = `${count.toLocaleString()} task${count === 1 ? '' : 's'}`;
+    });
+  }
+
+  // A run's page lists every task it tried.
   if ($('#result-filter')) {
     const filter = $('#result-filter');
     const items = [...document.querySelectorAll('[data-result]')];
     const requested = new URLSearchParams(location.search).get('result');
-    filter.value = ['pass', 'fail'].includes(requested) ? requested : '';
+    filter.value = ['pass', 'fail', 'pending'].includes(requested) ? requested : '';
     function filterResults() {
       let count = 0;
       items.forEach((item) => {
@@ -77,7 +91,7 @@
 
   const search = $('#task-search');
   if (!search) return;
-  // Only benchmarks with runs offer a status filter: solved, open or untested.
+  // Only benchmarks with runs offer a status filter.
   const status = $('#task-status');
   // Each benchmark has its own task page and search index.
   const benchmark = encodeURIComponent($('.task-library').dataset.benchmarkId);
@@ -86,7 +100,7 @@
   const initialParams = new URLSearchParams(location.search);
   search.value = initialParams.get('q') || '';
   page = Math.max(1, Number.parseInt(initialParams.get('page'), 10) || 1);
-  if (status) status.value = ['solved', 'open', 'untested'].includes(initialParams.get('status')) ? initialParams.get('status') : '';
+  if (status) status.value = ['solved', 'open', 'untested', 'pending'].includes(initialParams.get('status')) ? initialParams.get('status') : '';
 
   function updateURL() {
     const params = new URLSearchParams();

@@ -47,15 +47,15 @@ CREATE TABLE task (
 -- Runs: models attempting a benchmark's tasks. models/<id>.json defines a model;
 -- data/<benchmark>/runs/<run>/ holds one run, written by runner/run.py.
 
--- A model as served. Its weights are pinned by digest, so re-pulling a tag that
--- has changed makes a new model rather than silently editing this one.
+-- A model as served. Ollama supplies a weights digest.
 CREATE TABLE model (
     id             TEXT PRIMARY KEY CHECK (id <> '' AND id NOT GLOB '*[^a-z0-9.-]*'),
     name           TEXT NOT NULL CHECK (trim(name) <> ''),
     homepage_url   TEXT NOT NULL CHECK (homepage_url LIKE 'https://%'),
-    provider       TEXT NOT NULL CHECK (provider IN ('ollama')),
+    provider       TEXT NOT NULL CHECK (provider IN ('ollama', 'openrouter')),
     provider_model TEXT NOT NULL CHECK (trim(provider_model) <> ''),
-    weights_digest TEXT NOT NULL CHECK (weights_digest GLOB 'sha256:*')
+    weights_digest TEXT CHECK (weights_digest GLOB 'sha256:*'),
+    CHECK ((weights_digest IS NOT NULL) = (provider = 'ollama'))
 ) STRICT;
 
 -- One pass of one model over one benchmark's tasks, with fixed settings and code.
@@ -70,6 +70,11 @@ CREATE TABLE run (
     attempts_per_task INTEGER NOT NULL CHECK (attempts_per_task > 0),
     -- [] runs every task; otherwise only the tasks none of these earlier runs passed.
     after_runs        TEXT NOT NULL CHECK (json_valid(after_runs) AND json_type(after_runs) = 'array'),
+    selected_tasks   TEXT CHECK (selected_tasks IS NULL OR
+                                (json_valid(selected_tasks) AND json_type(selected_tasks) = 'array')),
+    dataset_revision TEXT CHECK (trim(dataset_revision) <> ''),
+    local             INTEGER NOT NULL DEFAULT 0 CHECK (local IN (0, 1)),
+    model_file        TEXT,
     -- The Benchopedia commit the run's code and model definition came from.
     commit_sha        TEXT NOT NULL CHECK (length(commit_sha) = 40 AND commit_sha NOT GLOB '*[^0-9a-f]*'),
     -- Software and hardware versions, including the weights digest the provider reported.
@@ -115,7 +120,8 @@ CREATE TABLE run_task (
     benchmark_id TEXT NOT NULL,
     run_id       TEXT NOT NULL,
     task_key     TEXT NOT NULL,
-    result       TEXT NOT NULL CHECK (result IN ('pass', 'fail')),
+    result       TEXT NOT NULL CHECK (result IN ('pass', 'fail', 'pending')),
+    graded_at    TEXT CHECK (graded_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T*Z'),
     PRIMARY KEY (benchmark_id, run_id, task_key),
     FOREIGN KEY (benchmark_id, run_id) REFERENCES run (benchmark_id, id),
     FOREIGN KEY (benchmark_id, task_key) REFERENCES task (benchmark_id, key)
@@ -128,11 +134,11 @@ CREATE TABLE attempt (
     run_id       TEXT NOT NULL,
     task_key     TEXT NOT NULL,
     number       INTEGER NOT NULL CHECK (number > 0),
-    verdict      TEXT NOT NULL CHECK (verdict IN ('pass', 'fail', 'unparseable')),
+    verdict      TEXT NOT NULL CHECK (verdict IN ('pass', 'fail', 'unparseable', 'pending')),
     -- The model's final text, which the grader read.
     output       TEXT NOT NULL,
     -- What the grader extracted from the output; NULL when it found nothing.
-    answer       TEXT CHECK ((answer IS NULL) = (verdict = 'unparseable')),
+    answer       TEXT CHECK ((answer IS NULL) = (verdict IN ('unparseable', 'pending'))),
     started_at   TEXT NOT NULL CHECK (started_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T*Z'),
     PRIMARY KEY (benchmark_id, run_id, task_key, number),
     FOREIGN KEY (benchmark_id, run_id, task_key) REFERENCES run_task (benchmark_id, run_id, task_key)
@@ -154,15 +160,27 @@ CREATE TABLE model_call (
         REFERENCES attempt (benchmark_id, run_id, task_key, number)
 ) STRICT;
 
--- Where each task stands: solved once any run passes it, open while every run
--- that tried it failed, untested before any run tries it. Open tasks are the
--- candidates for unsaturated ones.
+-- Count only evidence against the current dataset revision. Older published
+-- records predate explicit revision tracking.
 CREATE VIEW task_status AS
+WITH evidence AS (
+    SELECT rt.benchmark_id, rt.task_key, rt.result,
+           rt.result = 'fail' AND EXISTS (
+               SELECT 1 FROM attempt a
+               WHERE a.benchmark_id = rt.benchmark_id AND a.run_id = rt.run_id
+                 AND a.task_key = rt.task_key AND a.verdict = 'fail'
+           ) AS wrong
+    FROM run_task rt
+    JOIN run r ON r.benchmark_id = rt.benchmark_id AND r.id = rt.run_id
+    JOIN benchmark b ON b.id = rt.benchmark_id
+    WHERE r.dataset_revision IS NULL OR r.dataset_revision = b.dataset_revision
+)
 SELECT t.benchmark_id, t.key AS task_key,
-       CASE WHEN max(rt.result = 'pass') THEN 'solved'
-            WHEN count(rt.run_id) > 0 THEN 'open'
+       CASE WHEN max(e.result = 'pass') THEN 'solved'
+            WHEN max(e.wrong) THEN 'open'
+            WHEN count(e.result) > 0 THEN 'pending'
             ELSE 'untested' END AS status,
-       count(rt.run_id) AS runs
+       count(e.result) AS runs
 FROM task t
-LEFT JOIN run_task rt ON rt.benchmark_id = t.benchmark_id AND rt.task_key = t.key
+LEFT JOIN evidence e ON e.benchmark_id = t.benchmark_id AND e.task_key = t.key
 GROUP BY t.benchmark_id, t.key;

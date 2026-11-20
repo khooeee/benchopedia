@@ -23,16 +23,19 @@ loads everything into `build/benchopedia.db` (SQLite) and fails if any constrain
 `data/<benchmark>/runs/<run>/`: the commands that reproduce it, a copy of the code it
 ran, and for every task a `pass` or `fail` result backed by each attempt's verdict and
 the exact request and response of every model call. A task passes a run only when every
-attempt passes. Tasks that no run has passed are open: the candidates for tasks
-models have not yet saturated.
+attempt passes. A task with a scored wrong answer and zero verified solves
+appears on the **Open tasks** page.
 
 ```sh
 python3 runner/run.py gsm8k --model qwen3.6-35b-a3b --profile thinking \
     --run-id 2026-11-19-qwen3.6-35b-a3b-thinking
 ```
 
-For a local scratch run with hosted inference, copy the environment template
-from the repository root:
+## Evaluate tasks by priority
+
+The sweep runner selects untested tasks first, then scored failures. It uses
+OpenRouter's free Nemotron endpoint while daily quota remains and continues
+on Ollama when it runs out. Copy the environment template from the repository root.
 
 ```sh
 cp -n .env.template .env
@@ -43,11 +46,16 @@ set the key in the process environment. The runner saves the request body and
 response locally, and grading runs on this machine.
 
 `make openrouter-quota` prints the number of free model requests remaining today.
+Preview the selection and then run a bounded sweep.
 
 ```sh
-python3 runner/run.py gsm8k --scratch --limit 2 --run-id nemotron-free-smoke \
-    --scratch-model runner/models/nemotron-3-ultra-550b-a55b-free.json --profile scratch
+python3 runner/sweep.py gsm8k --dry-run --limit 10
+python3 runner/sweep.py gsm8k --limit 10
 ```
+
+See [Running benchmarks](docs/running-benchmarks.md) for exact task selections,
+resume behavior, and the local Open tasks preview. See
+[Future goals](docs/future-goals.md) for planned work.
 
 ## Schema
 
@@ -94,7 +102,7 @@ erDiagram
     }
     model {
         TEXT id PK "its file name under models/"
-        TEXT provider "ollama"
+        TEXT provider "ollama or openrouter"
         TEXT provider_model
         TEXT weights_digest "pins the weights"
     }
@@ -105,6 +113,8 @@ erDiagram
         TEXT settings "JSON options sent with every request"
         INTEGER attempts_per_task
         TEXT after_runs "JSON array; only tasks these left open"
+        TEXT selected_tasks "ordered selection for local runs"
+        TEXT dataset_revision "task snapshot the run evaluated"
         TEXT commit_sha "the code's commit"
         TEXT environment "JSON software and hardware"
         TEXT finished_at "null while running or if stopped"
@@ -113,11 +123,11 @@ erDiagram
     run_task {
         TEXT run_id PK, FK
         TEXT task_key PK, FK
-        TEXT result "pass or fail"
+        TEXT result "pass, fail or pending"
     }
     attempt {
         INTEGER number PK
-        TEXT verdict "pass, fail or unparseable"
+        TEXT verdict "pass, fail, unparseable or pending"
         TEXT output "the graded text"
         TEXT answer "what the grader extracted"
     }
@@ -129,8 +139,9 @@ erDiagram
     }
 ```
 
-The `task_status` view marks each task `solved` once any run passes it, `open` while
-every run that tried it failed, and `untested` before any run tries it.
+The `task_status` view reports `solved` after a verified pass, `open` after a
+scored wrong answer with zero verified passes, `pending` for incomplete
+evaluation, and `untested` before a recorded attempt.
 
 ## Build the website
 
@@ -150,6 +161,9 @@ pagination. Articles and every task also have their own static HTML pages.
 The optional UI checks use Node.js and exercise the browser logic with fictional
 fixtures, without external test packages or a generated site. They do not depend
 on which benchmarks have been imported.
+
+To preview qualifying local runs and their trajectories, build with
+`python3 scripts/build_site.py --local-runs` and serve `build/local-site/`.
 
 The website build first rebuilds and validates SQLite, then reads it to generate
 `dist/`. It includes the benchmark index, article pages, a searchable task list

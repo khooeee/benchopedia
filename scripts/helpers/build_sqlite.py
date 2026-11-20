@@ -11,9 +11,11 @@ Exits non-zero if anything fails.
 """
 
 from datetime import date
+import hashlib
 import json
 import re
 import sqlite3
+import subprocess
 import sys
 from pathlib import Path
 
@@ -68,7 +70,7 @@ def load_exclusions(errors):
     return {record.parent.name for record in records}
 
 
-def load_benchmark(db, benchmark_dir, excluded, errors):
+def load_benchmark(db, benchmark_dir, excluded, errors, include_local=False):
     benchmark_file = benchmark_dir / "benchmark.json"
     benchmark = json.loads(benchmark_file.read_text(encoding="utf-8"))
     if benchmark.get("id") != benchmark_dir.name:
@@ -129,6 +131,10 @@ def load_benchmark(db, benchmark_dir, excluded, errors):
             insert(db, "task", task, origin, errors)
     for run_dir in sorted(p for p in (benchmark_dir / "runs").glob("*") if p.is_dir()):
         load_run(db, benchmark["id"], run_dir, errors)
+    if include_local:
+        local_dir = ROOT / "build" / "scratch-runs" / benchmark["id"]
+        for run_file in sorted(local_dir.glob("*/run.json")):
+            load_run(db, benchmark["id"], run_file.parent, errors, local=True)
 
 
 def read_results(run_dir):
@@ -164,19 +170,77 @@ def load_models(db, errors):
         insert(db, "model", model, origin, errors)
 
 
-def load_run(db, benchmark_id, run_dir, errors):
+def recorded_revision(benchmark_id, run):
+    if run.get("dataset_revision"):
+        return run["dataset_revision"]
+    commit = run.get("commit_sha", "")
+    if re.fullmatch(r"[0-9a-f]{40}", commit):
+        historical = subprocess.run(
+            ["git", "show", f"{commit}:data/{benchmark_id}/benchmark.json"],
+            cwd=ROOT, capture_output=True, text=True,
+        )
+        if historical.returncode == 0:
+            return json.loads(historical.stdout)["dataset_revision"]
+    return None
+
+
+def local_model(db, run_dir, run, errors):
+    path = Path(run.pop("scratch_model", f"models/{run['model_id']}.json"))
+    if path.is_absolute() or ".." in path.parts:
+        errors.append(f"{run_dir.relative_to(ROOT)}/run.json: invalid model source path")
+        return None
+    source = run_dir / "code" / path
+    if not source.is_file():
+        errors.append(f"{source.relative_to(ROOT)}: missing model snapshot")
+        return None
+    model = json.loads(source.read_text(encoding="utf-8"))
+    provider = model["provider"]
+    name = model["provider_model"]
+    digest = model.get("weights_digest")
+    identity = json.dumps([provider, name, digest])
+    model_id = "local-" + hashlib.sha256(identity.encode()).hexdigest()
+    if db.execute("SELECT 1 FROM model WHERE id = ?", (model_id,)).fetchone() is None:
+        insert(db, "model", {"id": model_id, "name": model.get("name", name),
+                             "homepage_url": model.get("homepage_url", "https://openrouter.ai/" + name),
+                             "provider": provider, "provider_model": name, "weights_digest": digest},
+               source.relative_to(ROOT), errors)
+    return {"model_id": model_id, "model_file": path.as_posix()}
+
+
+def load_run(db, benchmark_id, run_dir, errors, local=False):
     """Load one run: run.json, the code it copied, and results.jsonl, one task per line."""
-    key = {"benchmark_id": benchmark_id, "run_id": run_dir.name}
     run_file = run_dir / "run.json"
     if not run_file.is_file():
         errors.append(f"{run_file.relative_to(ROOT)}: missing")
         return
     run = json.loads(run_file.read_text(encoding="utf-8"))
+    run["dataset_revision"] = recorded_revision(benchmark_id, run)
+    run_id = run_dir.name
+    if local:
+        grader = Path("data") / benchmark_id / "eval.py"
+        snapshot = run_dir / "code" / grader
+        current = ROOT / grader
+        revision = db.execute("SELECT dataset_revision FROM benchmark WHERE id = ?",
+                              (benchmark_id,)).fetchone()[0]
+        if (run.get("scratch_eval") or run["dataset_revision"] != revision
+                or not current.is_file() or not snapshot.is_file()
+                or current.read_bytes() != snapshot.read_bytes()):
+            return
+        model_fields = local_model(db, run_dir, run, errors)
+        if model_fields is None:
+            return
+        run |= model_fields | {"local": 1}
+        while db.execute("SELECT 1 FROM run WHERE benchmark_id = ? AND id = ?",
+                         (benchmark_id, run_id)).fetchone() is not None:
+            run_id = "local." + run_id
+    key = {"benchmark_id": benchmark_id, "run_id": run_id}
     commands = run.pop("commands", None)
     for field in ("settings", "after_runs", "environment"):
         run[field] = json.dumps(run.get(field), ensure_ascii=False)
+    if run.get("selected_tasks") is not None:
+        run["selected_tasks"] = json.dumps(run["selected_tasks"], ensure_ascii=False)
     before = len(errors)
-    insert(db, "run", {"benchmark_id": benchmark_id, "id": run_dir.name} | run,
+    insert(db, "run", {"benchmark_id": benchmark_id, "id": run_id} | run,
            run_file.relative_to(ROOT), errors)
     if len(errors) > before:
         return
@@ -190,9 +254,21 @@ def load_run(db, benchmark_id, run_dir, errors):
         insert(db, "run_file", key | {"path": path.relative_to(code_dir).as_posix(),
                                       "content": path.read_text(encoding="utf-8")},
                path.relative_to(ROOT), errors)
-    results_file = run_dir / "results.jsonl"
-    for line_number, result in enumerate(read_results(run_dir), start=1):
-        origin = f"{results_file.relative_to(ROOT)}:{line_number}"
+    records = read_results(run_dir)
+    located = [(record, f"{(run_dir / 'results.jsonl').relative_to(ROOT)}:{number}")
+               for number, record in enumerate(records, start=1)]
+    if local:
+        complete = {record["key"] for record in records}
+        for checkpoint in sorted((run_dir / "partial").glob("*.json")):
+            record = json.loads(checkpoint.read_text(encoding="utf-8"))
+            if record["key"] in complete:
+                continue
+            record["result"] = "pending"
+            for attempt in record["attempts"]:
+                attempt.setdefault("verdict", "pending")
+                attempt.setdefault("answer", None)
+            located.append((record, checkpoint.relative_to(ROOT)))
+    for result, origin in located:
         task = key | {"task_key": result.pop("key", None)}
         attempts = result.pop("attempts", None)
         insert(db, "run_task", task | result, origin, errors)
@@ -224,10 +300,7 @@ def run_checks(db, errors):
     return len(check_files)
 
 
-def main():
-    DB_PATH.parent.mkdir(exist_ok=True)
-    DB_PATH.unlink(missing_ok=True)
-    db = sqlite3.connect(DB_PATH)
+def build_database(db, include_local=False, benchmarks=None):
     db.row_factory = sqlite3.Row
     db.execute("PRAGMA foreign_keys = ON")
     db.executescript((ROOT / "db" / "schema.sql").read_text(encoding="utf-8"))
@@ -236,21 +309,29 @@ def main():
     excluded = load_exclusions(errors)
     load_models(db, errors)
     for benchmark_dir in sorted(p for p in DATA_DIR.iterdir() if p.is_dir()):
-        load_benchmark(db, benchmark_dir, excluded, errors)
+        if benchmarks is None or benchmark_dir.name in benchmarks:
+            load_benchmark(db, benchmark_dir, excluded, errors, include_local)
     db.commit()
     check_count = run_checks(db, errors)
-
-    benchmarks = db.execute("SELECT count(*) FROM benchmark").fetchone()[0]
-    tasks = db.execute("SELECT count(*) FROM task").fetchone()[0]
-    runs = db.execute("SELECT count(*) FROM run").fetchone()[0]
-    db.close()
 
     if errors:
         print("\n".join(errors), file=sys.stderr)
         sys.exit(f"\nFAILED: {len(errors)} problem line(s) above")
+    return check_count
+
+
+def main(include_local=False, path=None):
+    path = DB_PATH if path is None else path
+    path.parent.mkdir(exist_ok=True)
+    path.unlink(missing_ok=True)
+    with sqlite3.connect(path) as db:
+        check_count = build_database(db, include_local)
+        benchmarks = db.execute("SELECT count(*) FROM benchmark").fetchone()[0]
+        tasks = db.execute("SELECT count(*) FROM task").fetchone()[0]
+        runs = db.execute("SELECT count(*) FROM run").fetchone()[0]
     print(f"OK: {benchmarks} benchmark(s), {tasks} task(s), {runs} run(s), "
           f"{check_count} check(s) passed")
-    print(f"Built {DB_PATH.relative_to(ROOT)}")
+    print(f"Built {path.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

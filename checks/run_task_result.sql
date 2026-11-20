@@ -7,7 +7,10 @@ FROM run_task rt
 JOIN run r ON r.benchmark_id = rt.benchmark_id AND r.id = rt.run_id
 LEFT JOIN attempt a
        ON a.benchmark_id = rt.benchmark_id AND a.run_id = rt.run_id AND a.task_key = rt.task_key
+WHERE rt.result <> 'pending' OR r.local = 0
 GROUP BY rt.benchmark_id, rt.run_id, rt.task_key
 HAVING attempts <> required
     OR last_attempt <> required
+    OR rt.result = 'pending'
+    OR total(a.verdict = 'pending') > 0
     OR (rt.result = 'pass') <> (passed = required);

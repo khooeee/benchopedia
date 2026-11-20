@@ -3,12 +3,15 @@
 Run `python3 scripts/build_site.py`; no third-party packages are required.
 """
 
+import argparse
+from collections import Counter
 import html
 import json
 import re
 import shutil
 import sqlite3
 from pathlib import Path
+from contextlib import closing
 from urllib.parse import quote
 
 from helpers.build_sqlite import main as build_sqlite
@@ -117,8 +120,9 @@ def run_task_url(r, key):
 REPOSITORY = 'https://github.com/khooeee/benchopedia'
 STATUS_TEXT = {
     'solved': 'a run passed this task',
-    'open': 'every run that tried this task failed it',
+    'open': 'a model gave a scored wrong answer and no run has passed the task',
     'untested': 'no run has tried this task yet',
+    'pending': 'attempts exist and evaluation is incomplete',
 }
 
 
@@ -139,6 +143,8 @@ def runs_table(runs):
     rows = []
     for r in runs:
         passed = sum(t['result'] == 'pass' for t in r['tasks'])
+        failed = sum(t['result'] == 'fail' for t in r['tasks'])
+        pending = len(r['tasks']) - passed - failed
         if r['finished_at']:
             status = f"finished {esc(r['finished_at'][:10])}"
         elif r['stopped_at']:
@@ -147,17 +153,15 @@ def runs_table(runs):
             status = 'in progress'
         rows.append(f'''<tr><td><a href="{run_url(r)}">{esc(r['id'])}</a></td><td>{esc(run_title(r))}</td>
 <td class="number">{r['attempts_per_task']}</td><td class="number">{len(r['tasks']):,}</td><td class="number">{passed:,}</td>
-<td class="number">{len(r['tasks']) - passed:,}</td><td>{status}</td></tr>''')
+<td class="number">{failed:,}</td><td class="number">{pending:,}</td><td>{status}</td></tr>''')
     return ('<div class="table-scroll"><table><thead><tr><th>Run</th><th>Model</th><th>Attempts per task</th><th>Tasks tried</th>'
-            '<th>Passed</th><th>Failed</th><th>Status</th></tr></thead><tbody>' + ''.join(rows) + '</tbody></table></div>')
+            '<th>Passed</th><th>Failed</th><th>Pending</th><th>Status</th></tr></thead><tbody>' + ''.join(rows) + '</tbody></table></div>')
 
 
 def results_section(b, runs, statuses):
     counts = {status: sum(s == status for s in statuses.values()) for status in STATUS_TEXT}
     links = ', '.join(f'<a href="{tasks_url(b)}?status={status}">{counts[status]:,} {status}</a>' for status in STATUS_TEXT)
-    return f'''<p>Benchopedia runs models on these tasks with the code and commands shown on each run's page. A task
-passes a run only when every attempt passes; a task is solved once any run passes it, and open while every run that
-tried it failed it. Open tasks are candidates for tasks models have not yet saturated.</p>
+    return f'''<p>A task is solved once a run passes it. A task stays open while it has a scored wrong answer and zero verified solves. Open the run pages to see each grade and trajectory.</p>
 <p>Of {b['task_count']:,} tasks: {links}.</p>{runs_table(runs)}'''
 
 
@@ -181,7 +185,7 @@ def layout(title, body, active="benchmarks", description="Descriptions, datasets
 <link rel="stylesheet" href="/assets/style.css"><script src="/assets/app.js" defer></script></head>
 <body><a class="skip" href="#main">Skip to content</a>
 <header class="site-header"><div class="header-inner"><a class="site-name" href="/">Benchopedia</a><span class="site-description">The AI benchmark encyclopedia</span>
-<nav aria-label="Main navigation">{nav('benchmarks','/','Benchmarks')} <span aria-hidden="true">|</span> {nav('about','/about/','About')}</nav></div></header>
+<nav aria-label="Main navigation">{nav('benchmarks','/','Benchmarks')} <span aria-hidden="true">|</span> {nav('open-tasks','/open-tasks/','Open tasks')} <span aria-hidden="true">|</span> {nav('about','/about/','About')}</nav></div></header>
 <main id="main" tabindex="-1">{body}</main>
 <footer><a href="/about/">About Benchopedia</a> · <a href="https://github.com/khooeee/benchopedia/issues">Corrections &amp; suggestions</a></footer>
 </body></html>'''
@@ -287,7 +291,18 @@ def task_results_section(q, results):
 <td><a href="{run_task_url(r, q['key'])}">{label(t['result'])}</a></td><td>{attempts}</td></tr>''')
     table = ('<div class="table-scroll"><table><thead><tr><th>Run</th><th>Model</th><th>Result</th><th>Attempts</th></tr></thead><tbody>'
              + ''.join(rows) + '</tbody></table></div>') if rows else ''
-    return f'''<section id="results"><h2>Results</h2><p>Status: {label(q['status'])}: {STATUS_TEXT[q['status']]}.</p>{table}</section>'''
+    first_solve = ''
+    if q['status'] == 'solved':
+        revision = next(b['dataset_revision'] for b in BENCHMARKS if b['id'] == q['benchmark_id'])
+        passes = [(r, t) for r, t in results
+                  if t['result'] == 'pass' and r['dataset_revision'] in (None, revision)]
+        if passes:
+            r, t = min(passes, key=lambda pair: (
+                pair[1]['graded_at'] or max(a['started_at'] for a in pair[1]['attempts']),
+                pair[0]['id'],
+            ))
+            first_solve = f'<p>First recorded solve by <a href="{run_task_url(r, q["key"])}">{esc(run_title(r))}</a>.</p>'
+    return f'''<section id="results"><h2>Results</h2><p>{label(q['status'])} {STATUS_TEXT[q['status']].capitalize()}.</p>{first_solve}{table}</section>'''
 
 
 def task_page(q, previous, following, results=()):
@@ -317,9 +332,15 @@ def task_page(q, previous, following, results=()):
 def run_page(b, r, tasks_by_key):
     model = r['model']
     passed = sum(t['result'] == 'pass' for t in r['tasks'])
+    failed = sum(t['result'] == 'fail' for t in r['tasks'])
+    pending = len(r['tasks']) - passed - failed
     after = json.loads(r['after_runs'])
     selection = 'every task' if not after else 'tasks left open by ' + ', '.join(
         f'<a href="{run_url({"benchmark_id": b["id"], "id": earlier})}">{esc(earlier)}</a>' for earlier in after)
+    if r['selected_tasks'] is not None:
+        selection = f'{len(json.loads(r["selected_tasks"])):,} tasks selected by key'
+    elif r['local']:
+        selection = 'local scratch selection'
     if r['finished_at']:
         progress, ended = '', [('Finished', esc(r['finished_at']))]
     elif r['stopped_at']:
@@ -330,11 +351,11 @@ def run_page(b, r, tasks_by_key):
         progress, ended = ' so far; the run is still in progress', [('Finished', 'in progress')]
     facts = [('Model', f'<a href="{esc(model["homepage_url"])}">{esc(model["name"])}</a>'),
              ('Served as', f'<code>{esc(model["provider_model"])}</code> on {esc(model["provider"])}'),
-             ('Weights digest', f'<code>{esc(model["weights_digest"])}</code>'),
+             *([('Weights digest', f'<code>{esc(model["weights_digest"])}</code>')] if model["weights_digest"] else []),
              ('Profile', esc(r['profile'])),
              ('Attempts per task', str(r['attempts_per_task'])),
              ('Tasks selected', selection),
-             ('Results', f'{passed:,} passed, {len(r["tasks"]) - passed:,} failed{progress}'),
+             ('Results', f'{passed:,} passed, {failed:,} failed, {pending:,} pending{progress}'),
              ('Started', esc(r['started_at'])),
              *ended,
              ('Commit', f'<a href="{REPOSITORY}/commit/{esc(r["commit_sha"])}"><code>{esc(r["commit_sha"])}</code></a>')]
@@ -357,7 +378,7 @@ def run_page(b, r, tasks_by_key):
                 ('settings', 'Settings', f'<p>The options sent with every request, from the model\'s <code>{esc(r["profile"])}</code> profile.</p><pre><code>{esc(json.dumps(json.loads(r["settings"]), indent=2))}</code></pre>'),
                 ('environment', 'Environment', environment),
                 ('code', 'Code', f'<p>The files the runner read, copied when the run started.</p>{files}'),
-                ('tasks', 'Tasks', f'''<form class="search-form"><label for="result-filter">Result:</label> <select id="result-filter"><option value="">All</option><option value="pass">Pass</option><option value="fail">Fail</option></select>
+                ('tasks', 'Tasks', f'''<form class="search-form"><label for="result-filter">Result:</label> <select id="result-filter"><option value="">All</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="pending">Pending</option></select>
 <span id="result-count" role="status" aria-live="polite">{len(r['tasks']):,} tasks</span></form><ol class="entry-list">{''.join(entries)}</ol>''')]
     contents = ''.join(f'<li><a href="#{key}">{title}</a></li>' for key, title, _ in sections)
     article = '\n'.join(f'<section id="{key}"><h2>{title}</h2>{html}</section>' for key, title, html in sections)
@@ -372,15 +393,18 @@ def model_call_view(attempt_number, call):
     request, response = json.loads(call['request']), json.loads(call['response'])
     sent = ''.join(f'''<div class="message"><p class="role">Sent: {esc(m.get('role', ''))} message</p><pre>{esc(m.get('content', ''))}</pre></div>'''
                    for m in request.get('messages', []))
-    reply = response.get('message', {})
+    choices = response.get('choices') or [{}]
+    reply = response.get('message') or choices[0].get('message', {})
+    thinking = reply.get('thinking') or reply.get('reasoning')
     reasoning = ''
-    if reply.get('thinking'):
-        reasoning = f'''<details class="message"><summary>Reasoning ({len(reply['thinking']):,} characters)</summary><pre>{esc(reply['thinking'])}</pre></details>'''
+    if thinking:
+        reasoning = f'''<details class="message"><summary>Reasoning ({len(thinking):,} characters)</summary><pre>{esc(thinking)}</pre></details>'''
     answer = f'''<div class="message"><p class="role">Received: {esc(reply.get('role', ''))} message</p><pre>{esc(reply.get('content', ''))}</pre></div>'''
+    tokens = response.get('usage') or {}
     usage = facts_list([(k, esc(v)) for k, v in (('Latency', f"{call['latency_ms'] / 1000:,.1f} s"),
-                                                 ('Input tokens', response.get('prompt_eval_count')),
-                                                 ('Output tokens', response.get('eval_count')),
-                                                 ('Stop reason', response.get('done_reason'))) if v is not None])
+                                                 ('Input tokens', response.get('prompt_eval_count', tokens.get('prompt_tokens'))),
+                                                 ('Output tokens', response.get('eval_count', tokens.get('completion_tokens'))),
+                                                 ('Stop reason', response.get('done_reason', choices[0].get('finish_reason')))) if v is not None])
     raw = f'''<details><summary>Exact request and response JSON</summary><h4>Request</h4><pre class="wrap"><code>{esc(json.dumps(request, indent=2, ensure_ascii=False))}</code></pre>
 <h4>Response</h4><pre class="wrap"><code>{esc(json.dumps(response, indent=2, ensure_ascii=False))}</code></pre></details>'''
     return f'<div class="model-call" id="attempt-{attempt_number}-call-{call["number"]}">{sent}{reasoning}{answer}{usage}{raw}</div>'
@@ -418,6 +442,41 @@ def about():
     write('404.html',layout('Page not found','<h1>Page not found</h1><p>This address does not match a benchmark or task.</p><p><a href="/">Return to the benchmark index</a></p>'))
 
 
+def open_tasks(statuses, results_by_task):
+    counts = Counter(statuses.values())
+    benchmarks = {b['id']: b for b in BENCHMARKS}
+    rows = []
+    options = {}
+    for task in TASKS:
+        key = task['benchmark_id'], task['key']
+        if statuses[key] != 'open':
+            continue
+        b = benchmarks[key[0]]
+        options[b['id']] = b['name']
+        attempts = ' · '.join(f'<a href="{run_task_url(run, key[1])}">{esc(run_title(run))}</a>'
+                              for run, _ in results_by_task.get(key, ())
+                              if run['dataset_revision'] in (None, b['dataset_revision']))
+        rows.append(f'''<tr data-open-benchmark="{esc(b['id'])}"><td><a href="{benchmark_url(b)}">{esc(b['name'])}</a></td>
+<td><a href="{task_url(task)}">{esc(task['title'])}</a> <span class="task-id">{esc(key[1])}</span></td><td>{attempts}</td></tr>''')
+    evaluated = counts['open'] + counts['solved']
+    body = f'''<h1>Open tasks</h1>
+<p>Tasks with a scored wrong answer and zero verified solves in Benchopedia's records.</p>
+{facts_list([('Evaluated', f"{evaluated:,} of {len(statuses):,}"), ('Open', f"{counts['open']:,}"),
+             ('Solved', f"{counts['solved']:,}"), ('Untested', f"{counts['untested']:,}"),
+             ('Pending', f"{counts['pending']:,}")])}'''
+    if rows:
+        choices = ''.join(f'<option value="{esc(key)}">{esc(name)}</option>'
+                          for key, name in sorted(options.items(), key=lambda pair: pair[1].casefold()))
+        body += f'''<div id="open-filter" class="search-form" hidden><label for="open-benchmark">Benchmark</label>
+<select id="open-benchmark"><option value="">All</option>{choices}</select>
+<span id="open-count" role="status">{len(rows):,} tasks</span></div>
+<div class="table-scroll"><table><thead><tr><th>Benchmark</th><th>Task</th><th>Recorded attempts</th></tr></thead>
+<tbody>{''.join(rows)}</tbody></table></div>'''
+    else:
+        body += '<p>No tasks are open in the recorded results.</p>'
+    write('open-tasks/index.html', layout('Open tasks', body, 'open-tasks'))
+
+
 def load_runs(db):
     """Every run with its model, commands, code, and each task's attempts and model calls."""
     models = {m['id']: dict(m) for m in db.execute('SELECT * FROM model')}
@@ -442,10 +501,15 @@ def load_runs(db):
     return runs
 
 
-def main():
-    global BENCHMARKS, TASKS
-    build_sqlite()
-    with sqlite3.connect(ROOT/'build'/'benchopedia.db') as db:
+def main(argv=None):
+    global BENCHMARKS, TASKS, OUT
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--local-runs', action='store_true', help='include qualifying local runs in build/local-site')
+    args = parser.parse_args(argv)
+    path = ROOT / 'build' / ('benchopedia-local.db' if args.local_runs else 'benchopedia.db')
+    OUT = ROOT / ('build/local-site' if args.local_runs else 'dist')
+    build_sqlite(args.local_runs, path)
+    with closing(sqlite3.connect(path)) as db:
         db.row_factory = sqlite3.Row
         BENCHMARKS = [dict(r) for r in db.execute('SELECT * FROM benchmark ORDER BY name')]
         TASKS = [dict(r) for r in db.execute('SELECT * FROM task ORDER BY benchmark_id, key')]
@@ -473,6 +537,7 @@ def main():
             child.unlink()
     shutil.copytree(ROOT/'assets',OUT/'assets')
     home()
+    open_tasks(statuses, results_by_task)
     for b in BENCHMARKS:
         rows = tasks_by_benchmark[b['id']]
         benchmark_runs = runs_by_benchmark[b['id']]
@@ -491,7 +556,7 @@ def main():
         task_page(q,same(TASKS[i-1] if i else None),same(TASKS[i+1] if i+1<len(TASKS) else None),
                   results_by_task.get((q['benchmark_id'], q['key']), ()))
     about()
-    print(f'Built {len(list(OUT.rglob("*.html"))):,} pages in dist/')
+    print(f'Built {len(list(OUT.rglob("*.html"))):,} pages in {OUT.relative_to(ROOT)}/')
 
 
 if __name__ == '__main__':

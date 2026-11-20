@@ -13,7 +13,24 @@ the tasks it did not pass, start a new run with --after <run-id>.
 import argparse
 import json
 
-from run import ROOT, completed_keys, now, sort_results
+from run import ROOT, completed_keys, now, sort_results, write_json
+
+
+def stop_run(run_dir, reason):
+    run_file = run_dir / "run.json"
+    run = json.loads(run_file.read_text(encoding="utf-8"))
+    if run["finished_at"]:
+        raise SystemExit(f"{run_file.parent} has already finished")
+    if run.get("stopped_at"):
+        raise SystemExit(f"{run_file.parent} was already stopped: {run['stop_reason']}")
+
+    results_file = run_file.parent / "results.jsonl"
+    completed_keys(results_file)
+    records = sort_results(results_file)
+    run |= {"stopped_at": now(), "stop_reason": reason}
+    write_json(run_file, run)
+    passed = sum(r["result"] == "pass" for r in records)
+    print(f"Stopped {run_file.parent}: {passed} of {len(records)} tasks passed")
 
 
 def main():
@@ -27,20 +44,7 @@ def main():
         parser.error("--reason must say why the run was stopped")
 
     runs_dir = ROOT / "build" / "scratch-runs" / args.benchmark if args.scratch else ROOT / "data" / args.benchmark / "runs"
-    run_file = runs_dir / args.run_id / "run.json"
-    run = json.loads(run_file.read_text(encoding="utf-8"))
-    if run["finished_at"]:
-        raise SystemExit(f"{run_file.parent} has already finished")
-    if run.get("stopped_at"):
-        raise SystemExit(f"{run_file.parent} was already stopped: {run['stop_reason']}")
-
-    results_file = run_file.parent / "results.jsonl"
-    completed_keys(results_file)
-    records = sort_results(results_file)
-    run |= {"stopped_at": now(), "stop_reason": args.reason.strip()}
-    run_file.write_text(json.dumps(run, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    passed = sum(r["result"] == "pass" for r in records)
-    print(f"Stopped {run_file.parent}: {passed} of {len(records)} tasks passed")
+    stop_run(runs_dir / args.run_id, args.reason.strip())
 
 
 if __name__ == "__main__":

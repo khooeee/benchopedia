@@ -3,6 +3,7 @@
 import json
 import os
 from pathlib import Path
+import threading
 import time
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -11,6 +12,22 @@ from urllib.request import Request, urlopen
 CHAT_URL = "https://openrouter.ai/api/v1/chat/completions"
 KEY_URL = "https://openrouter.ai/api/v1/key"
 ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
+FREE_INTERVAL = 3.1
+free_request_lock = threading.Lock()
+next_free_request = 0.0
+
+
+class RateLimited(RuntimeError):
+    def __init__(self, error):
+        try:
+            metadata = json.load(error).get("error", {}).get("metadata") or {}
+        except (ValueError, AttributeError):
+            metadata = {}
+        self.daily = metadata.get("limit_source") == "openrouter_free_tier_daily"
+        retry_after = error.headers.get("Retry-After", "") if error.headers else ""
+        self.retry_after = int(retry_after) if retry_after.isascii() and retry_after.isdigit() else None
+        super().__init__("OpenRouter daily free-model quota exhausted" if self.daily
+                         else "OpenRouter returned HTTP 429")
 
 
 def api_key():
@@ -32,6 +49,8 @@ def request_json(request, timeout):
         with urlopen(request, timeout=timeout) as response:
             return json.load(response)
     except HTTPError as error:
+        if error.code == 429:
+            raise RateLimited(error) from None
         raise RuntimeError(f"OpenRouter returned HTTP {error.code}") from None
     except (URLError, TimeoutError) as error:
         raise RuntimeError(f"OpenRouter connection failed ({type(error).__name__})") from None
@@ -50,6 +69,7 @@ def free_requests_remaining():
 
 
 def chat(provider_model, messages, profile, seed):
+    global next_free_request
     request = profile["options"] | {
         "model": provider_model,
         "messages": messages,
@@ -61,6 +81,12 @@ def chat(provider_model, messages, profile, seed):
         "Content-Type": "application/json",
     }
     http_request = Request(CHAT_URL, data=json.dumps(request).encode("utf-8"), headers=headers)
+    if provider_model.endswith(":free"):
+        with free_request_lock:
+            wait = next_free_request - time.monotonic()
+            if wait > 0:
+                time.sleep(wait)
+            next_free_request = time.monotonic() + FREE_INTERVAL
     started = time.monotonic()
     response = request_json(http_request, timeout=300)
     elapsed_ms = round((time.monotonic() - started) * 1000)

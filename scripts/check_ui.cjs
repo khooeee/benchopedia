@@ -90,6 +90,26 @@ function runTasks(search = '') {
 }
 
 (async () => {
+  const openElements = Object.fromEntries(['#open-filter', '#open-benchmark', '#open-count']
+    .map((key) => [key, new Element()]));
+  const openRows = ['alpha', 'beta', 'beta']
+    .map((openBenchmark) => Object.assign(new Element(), {dataset:{openBenchmark}}));
+  openElements['#open-filter'].hidden = true;
+  vm.runInNewContext(source, {document:{
+    querySelector:(key) => openElements[key] || null,
+    querySelectorAll:() => openRows,
+    addEventListener(){},
+  }});
+  assert.equal(openElements['#open-filter'].hidden, false);
+  openElements['#open-benchmark'].value = 'beta';
+  openElements['#open-benchmark'].emit('change');
+  assert.deepEqual(openRows.map((row) => row.hidden), [true, false, false]);
+  assert.equal(openElements['#open-count'].textContent, '2 tasks');
+  openElements['#open-benchmark'].value = '';
+  openElements['#open-benchmark'].emit('change');
+  assert.ok(openRows.every((row) => !row.hidden));
+  console.log('OK: Open tasks benchmark filter and counts');
+
   const run = runTasks('?result=fail');
   assert.equal(run.elements['#result-filter'].value, 'fail');
   assert.deepEqual(run.items.map((item) => item.hidden), [true, false, false]);

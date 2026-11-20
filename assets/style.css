@@ -90,7 +90,7 @@ td.number { text-align: right; font-variant-numeric: tabular-nums; }
 .status { display: inline-block; border: 1px solid; border-radius: 2px; padding: 0 5px; font-size: .8rem; font-weight: bold; line-height: 1.5; }
 .status-pass, .status-solved { color: #1d5e20; background: #edf6ec; }
 .status-fail, .status-open { color: #8d2020; background: #fbeeee; }
-.status-unparseable, .status-untested { color: #5b4a10; background: #fbf5e3; }
+.status-unparseable, .status-untested, .status-pending { color: #5b4a10; background: #fbf5e3; }
 .verdicts { color: #555; margin-left: 6px; }
 .steps > li { margin: 6px 0 14px; }
 .steps p { margin: 0 0 6px; }
