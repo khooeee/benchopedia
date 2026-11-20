@@ -21,10 +21,9 @@ OPENROUTER_MODEL = ROOT / "runner/models/nemotron-3-ultra-550b-a55b-free.json"
 BATCH_SIZE = 100
 
 
-def ready_benchmarks():
-    return {path.parent.name for path in (ROOT / "data").glob("*/eval.py")
-            if (path.parent / "benchmark.json").is_file()
-            and (path.parent / "tasks.jsonl").is_file()
+def imported_benchmarks():
+    return {path.parent.name for path in (ROOT / "data").glob("*/benchmark.json")
+            if path.is_file() and (path.parent / "tasks.jsonl").is_file()
             and not (path.parent / "exclusions.md").exists()}
 
 
@@ -125,11 +124,23 @@ def main(argv=None):
         parser.error("choose benchmark IDs or --all")
     if args.limit is not None and args.limit < 1:
         parser.error("--limit must be positive")
-    ready = ready_benchmarks()
-    scope = ready if args.all else set(args.benchmarks)
-    missing = scope - ready
-    if missing:
-        parser.error("missing tasks or a grader: " + ", ".join(sorted(missing)))
+    imported = imported_benchmarks()
+    ready = {name for name in imported if (ROOT / "data" / name / "eval.py").is_file()}
+    if args.all:
+        scope = ready
+        skipped = imported - ready
+        if skipped:
+            print("No sweep evaluator (eval.py) for " + ", ".join(sorted(skipped))
+                  + ". Skipping these benchmarks.", file=sys.stderr)
+    else:
+        scope = set(args.benchmarks)
+        unavailable = scope - ready
+        if unavailable:
+            reasons = [
+                f"{name} ({'missing eval.py' if name in imported else 'no imported tasks'})"
+                for name in sorted(unavailable)
+            ]
+            parser.error("cannot evaluate " + ", ".join(reasons))
     hosted = json.loads(OPENROUTER_MODEL.read_text(encoding="utf-8"))
     local_path = ROOT / "models" / f"{args.ollama_model}.json"
     if not run.RUN_ID.fullmatch(args.ollama_model) or not local_path.is_file():

@@ -9,9 +9,19 @@ python3 runner/sweep.py gsm8k boolq --dry-run --limit 10
 python3 runner/sweep.py gsm8k boolq --limit 10
 ```
 
-Pass `--all` to include every benchmark with a grader. `--limit` caps task
-evaluations, and each evaluation can require multiple model calls. The
-dry run lists candidate tasks using the OpenRouter profile's priority order.
+Pass `--all` to include every benchmark with imported tasks and a sweep
+evaluator. It reports imported benchmarks it skips because they lack an
+evaluator. If you name an unavailable benchmark explicitly, the sweep stops
+before making any model calls. `--limit` caps task evaluations, and each
+evaluation can require multiple model calls. The dry run lists candidate tasks
+using the OpenRouter profile's priority order.
+
+Use existing evaluators for sweep requests. Adding an evaluator is a separate
+task. Before starting a sweep, check that the evaluator and runner support the
+benchmark's evaluation protocol in its `how-to-run.md`. If the evaluator or a
+required harness, tool loop, or grading capability is missing, report the
+benchmark and the specific blocker. For example, Terminal-Bench 2.0 is blocked
+until the sweep can run an agent in Harbor and record the verifier's result.
 
 ## Task and model priorities
 
