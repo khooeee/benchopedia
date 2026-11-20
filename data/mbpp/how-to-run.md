@@ -42,7 +42,7 @@ code = generate(few_shot + task_prompt(problem)).split("[DONE]")[0]
 
 ### 4. Score it
 
-The program runs in a fresh Python process with the task's setup code before it and its three tests after it. It passes when every assertion holds. The paper sets no time limit, so ten seconds here is a choice. The additional tests some problems carry are not part of the score.
+The program runs in a fresh Python process, followed by the task's setup code and its three tests. The one test problem with setup code builds fixtures from the program's Node class, so load the class before building those fixtures. It passes when every assertion holds. The paper sets no time limit, so ten seconds here is a choice. The additional tests some problems carry are not part of the score.
 
 ```python
 import subprocess
@@ -50,7 +50,7 @@ import sys
 import tempfile
 
 def passes(row, code: str, timeout: float = 10.0) -> bool:
-    program = "\n".join([row["test_setup_code"], code, *row["test_list"]])
+    program = "\n".join([code, row["test_setup_code"], *row["test_list"]])
     with tempfile.TemporaryDirectory() as workdir:
         try:
             run = subprocess.run([sys.executable, "-c", program], cwd=workdir, capture_output=True, timeout=timeout)

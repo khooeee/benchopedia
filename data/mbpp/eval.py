@@ -60,5 +60,5 @@ def grade(task, output):
     if not completion.strip():
         return "unparseable", None
     _, setup, tests = fields(task)
-    result = sandbox().execute("\n".join([setup, completion, tests]), TIMEOUT)
+    result = sandbox().execute("\n".join([completion, setup, tests]), TIMEOUT)
     return ("pass" if result == "passed" else "fail"), result
