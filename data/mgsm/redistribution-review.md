@@ -2,7 +2,7 @@
 
 ## Scope
 
-The snapshot contains all 2,750 rows of the eleven MGSM language files at commit `452a21ad3dae5668c06ceeac21ff073e1e40f9be` of google-research/url-nlp: 250 problems and numeric answers in each of Bengali, Chinese, English, French, German, Japanese, Russian, Spanish, Swahili, Telugu, and Thai. The translated few-shot examples are not included. Both the public repository and the website publish the problems and answers. No code or images are copied. [Language files](https://github.com/google-research/url-nlp/tree/452a21ad3dae5668c06ceeac21ff073e1e40f9be/mgsm)
+The snapshot contains all 2,750 rows of the eleven MGSM language files at commit `452a21ad3dae5668c06ceeac21ff073e1e40f9be` of google-research/url-nlp: 250 problems and numeric answers in each of Bengali, Chinese, English, French, German, Japanese, Russian, Spanish, Swahili, Telugu, and Thai. The repository's evaluator includes the first six worked examples in each of the eleven languages from the pinned [exemplars.py](https://github.com/google-research/url-nlp/blob/452a21ad3dae5668c06ceeac21ff073e1e40f9be/mgsm/exemplars.py). Any local run record can show the selected examples in its model request. Both the public repository and the website publish the test problems and answers. No upstream evaluator code or images are copied. [Language files](https://github.com/google-research/url-nlp/tree/452a21ad3dae5668c06ceeac21ff073e1e40f9be/mgsm)
 
 ## Terms
 
@@ -12,7 +12,7 @@ The problems are translations of the first 250 GSM8K test problems, and the Engl
 
 ## Changes
 
-Benchopedia converts each tab-separated row into a task record, assigns IDs from the language code and line number, and adds source links. Question and answer text is unchanged.
+Benchopedia converts each tab-separated row into a task record, assigns IDs from the language code and line number, and adds source links. Question and answer text is unchanged. The evaluator joins six worked examples with blank lines and uses their localized question and answer labels for the test question. The worked-example wording is unchanged.
 
 ## Notices
 
