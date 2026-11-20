@@ -2,6 +2,12 @@ The authors' [instruction_following_eval](https://github.com/google-research/goo
 
 ### 1. Install the evaluator
 
+For Benchopedia sweeps, run `python3.11 data/ifeval/setup_eval.py` from the
+repository root. It installs the pinned strict scorer and tokenizer under
+`build/ifeval/`. The sweep's solve verdict uses the official strict
+prompt-level score. The steps below also show how to get the loose and
+instruction-level scores with the full upstream evaluator.
+
 The evaluator lives inside the large google-research repository, so fetch only its folder. Its requirements.txt names `absl`, which is published as `absl-py`. The scorer loads NLTK's Punkt sentence tokenizer by its old pickle name; NLTK 3.10.4 maps that name to the `punkt_tab` data.
 
 ```sh

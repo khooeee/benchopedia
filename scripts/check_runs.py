@@ -282,6 +282,24 @@ def grade(task, output):
         status = dict(db.execute("SELECT task_key, status FROM task_status").fetchall())
         self.assertEqual(status, {"task-1": "solved", "task-2": "open"})
 
+    def test_sweep_reports_missing_evaluator_setup(self):
+        self.prepare_runner_fixture()
+        with (self.benchmark_dir / "eval.py").open("a") as evaluator:
+            evaluator.write('\ndef check_setup():\n    return "install the fixture harness"\n')
+
+        args = ["--dry-run", "--ollama-model", MODEL["id"], "--ollama-profile", "default"]
+        error_output = io.StringIO()
+        with redirect_stderr(error_output), self.assertRaises(SystemExit):
+            sweep.main(args + ["fixture"])
+        self.assertIn("cannot evaluate fixture (install the fixture harness)", error_output.getvalue())
+
+        error_output = io.StringIO()
+        output = io.StringIO()
+        with redirect_stderr(error_output), redirect_stdout(output):
+            sweep.main(args + ["--all"])
+        self.assertIn("Skipping fixture (install the fixture harness)", error_output.getvalue())
+        self.assertEqual(output.getvalue(), "")
+
     def test_task_passes_only_when_every_attempt_passes(self):
         self.results[1]["result"] = "pass"
         self.write_run("first", self.run, self.results)
