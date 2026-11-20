@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 from urllib.request import urlopen
+from uuid import uuid4
 
 from eval import GO_FILES, IMAGE, INPUTS_SHA256, go_dir, go_ready, inputs_path
 
@@ -46,13 +47,9 @@ def setup_go():
             check=True,
         )
         (assets / "warm_test.go").unlink()
-        directory.mkdir(exist_ok=True)
-        for item in assets.iterdir():
-            target = directory / item.name
-            if target.exists():
-                # An incomplete installation should not overwrite local dependency data.
-                raise SystemExit(f"Remove incomplete HumanEval-X setup directory {directory} and rerun setup")
-            item.rename(target)
+        if directory.exists():
+            directory.rename(directory.with_name(f"{directory.name}-previous-{uuid4().hex}"))
+        assets.rename(directory)
 
 
 def main():
