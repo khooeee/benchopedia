@@ -1,0 +1,45 @@
+{
+  "id": "proofwriter",
+  "name": "ProofWriter",
+  "summary": "20,030 questions that state a few facts and if-then rules in plain English and ask whether a statement is true, false, or unknown, with proofs up to five steps deep.",
+  "homepage_url": "https://web.archive.org/web/20240227065042/https://allenai.org/data/proofwriter",
+  "dataset_url": "https://aristo-data-public.s3.amazonaws.com/proofwriter/proofwriter-dataset-V2020.12.3.zip",
+  "dataset_revision": "bbc5694901e8306d0bd659aa1ad53ccfd02c201864f4b320ffa3777827d1fc26",
+  "released_on": "2021-10-06",
+  "task_count": 20030,
+  "has_solutions": true,
+  "overview": "ProofWriter tests deductive reasoning over knowledge stated in English. Each question gives a small theory, a list of facts such as \"The squirrel is round.\" and rules such as \"If something is round then it eats the cow.\", and a statement to judge. The statement is true if it can be proved from the theory, false if its negation can be proved, and unknown if neither can. Oyvind Tafjord, Bhavana Dalvi Mishra, and Peter Clark of the Allen Institute for AI presented it at Findings of ACL-IJCNLP 2021. [Paper](https://arxiv.org/abs/2012.13048) and [ACL Anthology](https://aclanthology.org/2021.findings-acl.317/)\n\nThe datasets extend those of RuleTaker, earlier work at the same institute that showed transformers could learn to label such statements true or false. ProofWriter adds a version under the open-world assumption, in which a statement that cannot be proved is unknown rather than false, and records every possible proof of each answer, so a system can be asked to show its reasoning as well as give an answer. [Paper](https://arxiv.org/abs/2012.13048) and [RuleTaker paper](https://arxiv.org/abs/2002.05867)\n\nThe theories are generated as small logic programs with their implications, then written out in English from fixed patterns. In the set imported here, 520 theories describe eight people with attributes, such as \"Gary is big.\", and 428 describe ten animals with relations, such as \"The lion visits the cow.\"; some include negated facts and rules. Proving a statement takes up to five steps of reasoning. [Paper](https://arxiv.org/abs/2012.13048) and [archive README](https://aristo-data-public.s3.amazonaws.com/proofwriter/proofwriter-dataset-V2020.12.3-README.md)\n\nThe authors' ProofWriter model, a fine-tuned T5-11B, answered 99.7% of these test questions correctly and produced a correct proof for 98.0%. Prompted language models do much worse: on a balanced sample of 600 of these questions, Liangming Pan and colleagues found GPT-4 answered 52.67% correctly with standard few-shot prompting and 68.11% with chain-of-thought prompting. Their Logic-LM method, in which GPT-4 translates each problem into logic for a symbolic solver, reached 79.66%. [Paper](https://arxiv.org/abs/2012.13048) and [Logic-LM](https://arxiv.org/abs/2305.12295)",
+  "methodology": "This snapshot contains the complete open-world depth-5 test set, `OWA/depth-5/meta-test.jsonl`, from version V2020.12.3 of the ProofWriter datasets, which AI2's dataset page links to. It was uploaded on 2021-10-06, after versions V2020.12.1 and V2020.12.2. Its changelog says it fixed theories whose text sometimes used a different wording of the rules from their listed facts and rules. The importer checks the archive's SHA-256 digest. The set has 948 theories and 20,030 questions: 5,688 true, 5,688 false, and 8,654 unknown. The true and false questions are spread evenly over proof depths 0 to 5, 1,896 at each. The archive's other datasets, including the closed-world versions, the shallower depths, the hand-written birds and electricity theories, the crowdsourced paraphrases, and the files for staged and abductive reasoning, are not imported. [Archive README](https://aristo-data-public.s3.amazonaws.com/proofwriter/proofwriter-dataset-V2020.12.3-README.md) and [paper](https://arxiv.org/abs/2012.13048)\n\nEach Task Prompt is the theory's text as published, its facts followed by its rules, then the statement after the label `Statement:`, then a question Benchopedia adds that defines the three answers: true if the statement follows from the facts and rules, false if its negation does, and unknown if neither does. The dataset publishes no prompt of its own.\n\nEach Solution starts with the answer, `True`, `False`, or `Unknown`. For true and false answers it then gives the `proofs` field as published, every possible proof of the answer, separated by `OR`. In it, `tripleN` and `ruleN` name the theory's Nth fact and Nth rule, and `->` applies a rule to the facts and conclusions before it. For a false answer the proofs establish the statement's negation. A line for each fact and rule the proofs cite follows, with its text. 2,456 questions have more than one proof, and one has 729. Unknown answers have no proof; the dataset gives a failed search for those, which is not copied.\n\nKeys join the theory's ID and the question's number, as in `RelNeg-OWA-D5-332-Q1`. The archive has no per-question address, so source links point at the archive. The importer uses only Python's standard library. It checks the archive's digest, the theory and question counts, that keys are unique, that each theory's text matches its numbered facts and rules, that each answer agrees with how the question was derived, that every cited fact and rule exists, and that true and false answers are balanced. It can be rerun with `python3 data/proofwriter/import.py`.",
+  "scoring": "The paper reports answer accuracy, the fraction of questions answered correctly, and proof accuracy, the fraction whose generated proof exactly matches one of the gold proofs. Both are also broken down by proof depth, with unknown questions counted separately. The dataset comes with no scoring script. [Paper](https://arxiv.org/abs/2012.13048)\n\nBenchopedia's runner sends each prompt with an instruction to end the reply with a line `Answer: True`, `Answer: False`, or `Answer: Unknown`, reads that word, and compares it with the answer; it does not check proofs. Each task is tried three times and passes a run only when all three attempts pass, so guessing passes one time in 27.",
+  "limitations": "The language is generated from a small set of templates and vocabulary, so the questions test reasoning over stated rules rather than understanding of natural text. The paper's crowdsourced paraphrases, which test more natural wording, are a separate set not imported here. [Paper](https://arxiv.org/abs/2012.13048)\n\nThe questions are not independent. Each of the 948 theories has 12 to 24 questions, which share its facts and rules. The answers are not balanced: 43.2% are unknown, so answering unknown every time scores 43.2%.\n\nThe answers depend on the open-world reading the prompt states. Under the closed-world reading of the archive's other version, in which a statement that cannot be proved is false, every statement labelled unknown here would be true or false instead. [Archive README](https://aristo-data-public.s3.amazonaws.com/proofwriter/proofwriter-dataset-V2020.12.3-README.md)\n\nThe training split of this set was used to fine-tune the paper's models, and the data has been public since 2020 with no canary string. Studies of prompted models often report results on samples of this test set rather than all of it, so their figures are not directly comparable with scores on the full set. [Logic-LM](https://arxiv.org/abs/2305.12295)",
+  "sources": [
+    {
+      "title": "ProofWriter: Generating Implications, Proofs, and Abductive Statements over Natural Language",
+      "url": "https://arxiv.org/abs/2012.13048"
+    },
+    {
+      "title": "ProofWriter · ACL Anthology",
+      "url": "https://aclanthology.org/2021.findings-acl.317/"
+    },
+    {
+      "title": "ProofWriter · AI2 dataset page (archived 2024-02-27)",
+      "url": "https://web.archive.org/web/20240227065042/https://allenai.org/data/proofwriter"
+    },
+    {
+      "title": "ProofWriter · Dataset archive V2020.12.3",
+      "url": "https://aristo-data-public.s3.amazonaws.com/proofwriter/proofwriter-dataset-V2020.12.3.zip"
+    },
+    {
+      "title": "ProofWriter · Archive README",
+      "url": "https://aristo-data-public.s3.amazonaws.com/proofwriter/proofwriter-dataset-V2020.12.3-README.md"
+    },
+    {
+      "title": "Transformers as Soft Reasoners over Language (RuleTaker)",
+      "url": "https://arxiv.org/abs/2002.05867"
+    },
+    {
+      "title": "Logic-LM: Empowering Large Language Models with Symbolic Solvers for Faithful Logical Reasoning",
+      "url": "https://arxiv.org/abs/2305.12295"
+    }
+  ]
+}
