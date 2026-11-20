@@ -411,7 +411,7 @@ def main(argv=None):
     write_json(run_file, run)
     passed = sum(r["result"] == "pass" for r in records)
     scored = sum(r["result"] == "scored" for r in records)
-    if getattr(evaluation, "score", None) is not None:
+    if any(getattr(evaluation, name, None) is not None for name in ("score", "score_responses")):
         print(f"Finished {run_dir}: {scored} of {len(records)} tasks scored")
     else:
         print(f"Finished {run_dir}: {passed} of {len(records)} tasks passed")
