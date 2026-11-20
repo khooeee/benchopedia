@@ -89,6 +89,7 @@ th { background: #f4f4f4; font-weight: bold; }
 td.number { text-align: right; font-variant-numeric: tabular-nums; }
 .status { display: inline-block; border: 1px solid; border-radius: 2px; padding: 0 5px; font-size: .8rem; font-weight: bold; line-height: 1.5; }
 .status-pass, .status-solved { color: #1d5e20; background: #edf6ec; }
+.status-scored { color: #1d4375; background: #edf4fb; }
 .status-fail, .status-open { color: #8d2020; background: #fbeeee; }
 .status-unparseable, .status-untested, .status-pending { color: #5b4a10; background: #fbf5e3; }
 .verdicts { color: #555; margin-left: 6px; }

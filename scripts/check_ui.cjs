@@ -77,9 +77,9 @@ function catalog(search = '', basePath = '') {
   return {elements,rows,groups,context};
 }
 
-function runTasks(search = '') {
+function runTasks(search = '', results = ['pass', 'fail', 'fail']) {
   const elements = Object.fromEntries(['#result-filter', '#result-count'].map((key) => [key, new Element()]));
-  const items = ['pass', 'fail', 'fail'].map((result) => Object.assign(new Element(), {dataset:{result}}));
+  const items = results.map((result) => Object.assign(new Element(), {dataset:{result}}));
   const context = {
     URLSearchParams, location:{search, pathname:'/benchmarks/alpha/runs/first/', hash:''},
     document:{querySelector:(key) => elements[key] || null, querySelectorAll:() => items, addEventListener(){}},
@@ -124,6 +124,10 @@ function runTasks(search = '') {
   assert.ok(run.items.every((item) => !item.hidden));
   assert.equal(run.context.url, '/benchmarks/alpha/runs/first/');
   assert.equal(runTasks('?result=maybe').elements['#result-filter'].value, '');
+  const scoredRun = runTasks('?result=scored', ['scored', 'pending']);
+  assert.equal(scoredRun.elements['#result-filter'].value, 'scored');
+  assert.deepEqual(scoredRun.items.map((item) => item.hidden), [false, true]);
+  assert.equal(scoredRun.elements['#result-count'].textContent, '1 task');
   console.log('OK: run task pass/fail filter, counts and URL state');
   const home = catalog('?q=alpha');
   assert.equal(home.elements['#benchmark-count'].textContent,'1 benchmark');
@@ -296,6 +300,9 @@ function runTasks(search = '') {
   assert.equal(unknownStatus.elements['#task-status'].value, '');
   assert.equal(unknownStatus.elements['#task-count'].textContent, `1–25 of ${data.length} tasks`);
   assert.equal(unknownStatus.context.url, '/benchopedia/benchmarks/alpha/tasks/');
+  const scoredTasks = await library('?status=scored', false, [{...task(1), status:'scored'}], '', true);
+  assert.equal(scoredTasks.elements['#task-status'].value, 'scored');
+  assert.ok(scoredTasks.elements['#task-results'].innerHTML.includes('status-scored'));
   console.log('OK: task status filter, status labels, URL state and reset');
   console.log('OK: project-path asset fetch, task links, pagination, search URLs and fallback');
   console.log('OK: benchmark tasks/solutions checkboxes, combined search, URL state, counts and reset');

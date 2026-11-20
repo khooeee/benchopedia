@@ -277,6 +277,12 @@ def load_run(db, benchmark_id, run_dir, errors, local=False):
             continue
         for attempt in attempts:
             calls = attempt.pop("model_calls", None)
+            if attempt.get("scores") is not None:
+                try:
+                    attempt["scores"] = json.dumps(attempt["scores"], allow_nan=False)
+                except ValueError:
+                    errors.append(f"{origin}: attempt scores must be finite")
+                    continue
             insert(db, "attempt", task | attempt, origin, errors)
             if not isinstance(calls, list):
                 errors.append(f"{origin}: attempt {attempt.get('number')}: model_calls must be a list")

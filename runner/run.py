@@ -22,6 +22,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import math
 import platform
 import re
 import shlex
@@ -166,6 +167,24 @@ def sort_results(results_file):
     return records
 
 
+def grade_output(task, evaluation, output, *, enforce_output_limit=True):
+    score = getattr(evaluation, "score", None)
+    if score is None:
+        verdict, answer = evaluation.grade(task, output)
+        return {"verdict": verdict, "answer": answer}
+
+    limit = getattr(evaluation, "MAX_OUTPUT_CHARS", None)
+    scores = None if enforce_output_limit and limit is not None and len(output) > limit else score(task, output)
+    if scores is None:
+        return {"verdict": "unparseable", "answer": None}
+    if not isinstance(scores, dict) or not scores or not all(
+        isinstance(name, str) and name.strip() and type(value) in (int, float) and math.isfinite(value)
+        for name, value in scores.items()
+    ):
+        raise ValueError(f"{task['key']}: score() must return named finite numbers or None")
+    return {"verdict": "scored", "answer": None, "scores": scores}
+
+
 def attempt_task(task, evaluation, model, profile, backend, checkpoint=None):
     attempts = (json.loads(checkpoint.read_text(encoding="utf-8"))["attempts"]
                 if checkpoint and checkpoint.is_file() else [])
@@ -182,10 +201,14 @@ def attempt_task(task, evaluation, model, profile, backend, checkpoint=None):
                 write_json(checkpoint, {"key": task["key"], "attempts": attempts})
         attempt = attempts[number - 1]
         if "verdict" not in attempt:
-            attempt["verdict"], attempt["answer"] = evaluation.grade(task, attempt["output"])
+            attempt.update(grade_output(task, evaluation, attempt["output"]))
             if checkpoint:
                 write_json(checkpoint, {"key": task["key"], "attempts": attempts})
-    result = "pass" if all(a["verdict"] == "pass" for a in attempts) else "fail"
+    verdicts = {a["verdict"] for a in attempts}
+    if verdicts == {"scored"}:
+        result = "scored"
+    else:
+        result = "pass" if verdicts == {"pass"} else "fail"
     return {"key": task["key"], "result": result, "attempts": attempts}
 
 
@@ -314,7 +337,7 @@ def main(argv=None):
     print(f"{len(tasks)} tasks selected, {len(done)} already done, {len(pending)} to run", flush=True)
 
     lock = threading.Lock()
-    counts = {"pass": 0, "fail": 0}
+    counts = {"pass": 0, "fail": 0, "scored": 0}
     partial_dir = run_dir / "partial"
     if args.scratch:
         partial_dir.mkdir(exist_ok=True)
@@ -354,7 +377,11 @@ def main(argv=None):
     run["finished_at"] = now()
     write_json(run_file, run)
     passed = sum(r["result"] == "pass" for r in records)
-    print(f"Finished {run_dir}: {passed} of {len(records)} tasks passed")
+    scored = sum(r["result"] == "scored" for r in records)
+    if getattr(evaluation, "score", None) is not None:
+        print(f"Finished {run_dir}: {scored} of {len(records)} tasks scored")
+    else:
+        print(f"Finished {run_dir}: {passed} of {len(records)} tasks passed")
 
 
 if __name__ == "__main__":

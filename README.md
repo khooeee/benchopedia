@@ -103,13 +103,14 @@ erDiagram
     run_task {
         TEXT run_id PK, FK
         TEXT task_key PK, FK
-        TEXT result "pass, fail or pending"
+        TEXT result "pass, fail, scored or pending"
     }
     attempt {
         INTEGER number PK
-        TEXT verdict "pass, fail, unparseable or pending"
+        TEXT verdict "pass, fail, scored, unparseable or pending"
         TEXT output "the graded text"
         TEXT answer "what the grader extracted"
+        TEXT scores "named numeric scores as JSON"
     }
     model_call {
         INTEGER number PK
@@ -119,8 +120,8 @@ erDiagram
     }
 ```
 
-The `task_status` view reports `solved` after a verified pass, `open` after a
-completed failed evaluation with zero verified passes, `pending` for recorded
+The `task_status` view reports `solved` after a verified pass, `scored` after a
+complete numeric evaluation, `open` after a completed failure, `pending` for
 incomplete evaluations, and `untested` before a recorded attempt.
 
 ## Build the website

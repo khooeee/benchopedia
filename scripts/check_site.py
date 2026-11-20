@@ -183,6 +183,7 @@ def page_for(pages, url):
 def check_runs(pages, tasks):
     """Each run's pages show its exact commands, code, results and graded outputs."""
     expected_status = {}
+    status_priority = {"untested": 0, "open": 1, "scored": 2, "solved": 3}
     run_dirs = sorted(p for p in (ROOT / "data").glob("*/runs/*") if p.is_dir())
     for run_dir in run_dirs:
         benchmark_id = run_dir.parent.parent.name
@@ -204,9 +205,13 @@ def check_runs(pages, tasks):
             for attempt in result["attempts"]:
                 assert task_page.texts.get(f"output-{attempt['number']}") == attempt["output"], \
                     f"Output differs: {run_url} {result['key']} attempt {attempt['number']}"
+                for metric, value in attempt.get("scores", {}).items():
+                    assert task_page.texts.get(f"score-{attempt['number']}:{metric}") == str(value), \
+                        f"Score differs: {run_url} {result['key']} {metric}"
             key = (benchmark_id, result["key"])
-            if result["result"] == "pass" or expected_status.get(key) != "solved":
-                expected_status[key] = "solved" if result["result"] == "pass" else "open"
+            status = {"pass": "solved", "fail": "open", "scored": "scored"}[result["result"]]
+            if status_priority[status] > status_priority[expected_status.get(key, "untested")]:
+                expected_status[key] = status
         benchmark_page = page_for(pages, f"/benchmarks/{quote(benchmark_id, safe='')}/")
         assert "results" in benchmark_page.sections, f"Missing Results section: {benchmark_id}"
     benchmarks_with_runs = {run_dir.parent.parent.name for run_dir in run_dirs}
