@@ -14,16 +14,22 @@ from uuid import uuid4
 
 
 ATTEMPTS = 1
-IMAGE = "rishubi/codegeex@sha256:dae21e19f49f46144c45f0f5566a02b05f2735ca1db49b1ac5f1b8cd455825e0"
+IMAGE = "benchopedia-humaneval-x:2838420"
+REVISION = "2838420b7b4492cf3d16bce5320e26e65960c9e2"
 INPUTS_SHA256 = "e8d9e79d695b4dcec8b8af83fecc467bf67a62d3f3a4f1530f3ee15be990bc3d"
 WORKER = """
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 task = json.load(sys.stdin)
 language = task["language"]
+if language == "go":
+    for name in ("go.mod", "go.sum"):
+        shutil.copyfile("/opt/benchopedia-go/" + name, name)
+    shutil.copytree("/opt/benchopedia-go/cache", "/tmp/gocache")
 file, commands = {
     "python": ("test.py", [["python3", "-I", "-B", "test.py"]]),
     "cpp": ("test.cpp", [["/usr/bin/g++", "-std=c++11", "test.cpp"] +
@@ -58,12 +64,15 @@ def check_setup():
     if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != INPUTS_SHA256:
         return "Run python3 data/humaneval-x/setup_eval.py to install the pinned test metadata"
     try:
-        result = subprocess.run(["docker", "image", "inspect", IMAGE], capture_output=True, timeout=10)
-        if result.returncode == 0:
+        result = subprocess.run(
+            ["docker", "image", "inspect", "--format", '{{index .Config.Labels "org.benchopedia.humanevalx"}}', IMAGE],
+            text=True, capture_output=True, timeout=10,
+        )
+        if result.returncode == 0 and result.stdout.strip() == REVISION:
             return None
     except (OSError, subprocess.TimeoutExpired):
         pass
-    return "Start Docker and run python3 data/humaneval-x/setup_eval.py to pull the pinned CodeGeeX image"
+    return "Start Docker and run python3 data/humaneval-x/setup_eval.py to prepare the pinned CodeGeeX runtime"
 
 
 @lru_cache(maxsize=1)
@@ -113,7 +122,7 @@ def grade(task, output):
              "--pull=never", "--log-driver", "none", "--network", "none", "--read-only",
              "--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--user", "65534:65534",
              "--memory", "1g", "--memory-swap", "1g", "--cpus", "2", "--pids-limit", "96",
-             "--tmpfs", "/tmp:size=256m,mode=1777,exec,nosuid", "--workdir", "/tmp",
+             "--tmpfs", "/tmp:size=512m,mode=1777,exec,nosuid", "--workdir", "/tmp",
              "-e", "GOCACHE=/tmp/gocache", "-e", "GOPATH=/tmp/go", "-e", "GOMAXPROCS=2",
              "-e", "JAVA_TOOL_OPTIONS=-Xmx256m", "--entrypoint", "python3", "-i", IMAGE, "-I", "-B", "-c", WORKER],
             input=json.dumps({"language": language, "number": int(number), "program": program}),

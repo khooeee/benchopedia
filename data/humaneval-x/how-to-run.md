@@ -71,5 +71,5 @@ bash scripts/evaluate_humaneval_x.sh samples_cpp.jsonl cpp 64 5
 With Docker running, run `python3 data/humaneval-x/setup_eval.py` and
 `python3 runner/sweep.py humaneval-x --verify-grader`. Each completion runs in
 the pinned CodeGeeX image without network access or host mounts, with the
-published compilation and execution limits. Java assertions are enabled.
+published compilation and execution limits. The build preloads the pinned Go modules. Java assertions are enabled.
 The sweep records pass or fail for individual samples.

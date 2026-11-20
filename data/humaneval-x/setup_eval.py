@@ -3,6 +3,7 @@
 import gzip
 import hashlib
 import json
+from pathlib import Path
 import subprocess
 from urllib.request import urlopen
 
@@ -21,7 +22,9 @@ DIGESTS = {
 
 
 def main():
-    subprocess.run(["docker", "pull", "--platform", "linux/amd64", IMAGE], check=True)
+    directory = Path(__file__).resolve().parent
+    subprocess.run(["docker", "build", "--platform", "linux/amd64", "-f",
+                    str(directory / "Dockerfile.eval"), "-t", IMAGE, str(directory)], check=True)
     target = inputs_path()
     if target.is_file() and hashlib.sha256(target.read_bytes()).hexdigest() == INPUTS_SHA256:
         return
@@ -33,7 +36,7 @@ def main():
         if hashlib.sha256(archive).hexdigest() != expected:
             raise SystemExit(f"HumanEval-X archive differs from the pinned {language} release")
         slug = "javascript" if language == "js" else language
-        for i, row in enumerate(map(json.loads, gzip.decompress(archive).decode("utf-8").split("\n")[:-1])):
+        for i, row in enumerate(map(json.loads, (line for line in gzip.decompress(archive).decode("utf-8").split("\n") if line.strip()))):
             extra = [row["import"], row["test_setup"]] if language == "go" else []
             keys[f"{slug}-{i:03d}"] = [len(row["canonical_solution"]), *extra]
     payload = json.dumps(keys, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode() + b"\n"
