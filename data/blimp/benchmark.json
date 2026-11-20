@@ -1,0 +1,41 @@
+{
+  "id": "blimp",
+  "name": "BLiMP",
+  "summary": "67,000 pairs of English sentences that differ in one point of grammar, such as agreement, islands, or negative polarity items, each asking which sentence is acceptable.",
+  "homepage_url": "https://github.com/alexwarstadt/blimp/tree/3e56b06fcabca9b30822fc66435fca6b1aa40bb1",
+  "dataset_url": "https://github.com/alexwarstadt/blimp/tree/3e56b06fcabca9b30822fc66435fca6b1aa40bb1/data",
+  "dataset_revision": "3e56b06fcabca9b30822fc66435fca6b1aa40bb1",
+  "released_on": "2019-11-29",
+  "task_count": 67000,
+  "has_solutions": true,
+  "overview": "BLiMP, the Benchmark of Linguistic Minimal Pairs, tests what language models know about English grammar. Each item is a minimal pair: two sentences that differ in one place, one acceptable and one not, such as \"The truck has clearly tipped over.\" against \"The truck has ever tipped over.\". Alex Warstadt, Alicia Parrish, Haokun Liu, Anhad Mohananey, Wei Peng, Sheng-Fu Wang, and Samuel R. Bowman of New York University published it in Transactions of the Association for Computational Linguistics in 2020. [Paper](https://github.com/alexwarstadt/blimp/blob/3e56b06fcabca9b30822fc66435fca6b1aa40bb1/BLiMP.pdf) and [TACL](https://doi.org/10.1162/tacl_a_00321)\n\nThe pairs fall into 67 paradigms of 1,000 pairs each, and the paradigms into 12 phenomena across morphology, syntax, and semantics: anaphor agreement, argument structure, binding, control and raising, determiner-noun agreement, ellipsis, filler-gap dependencies, irregular forms, island effects, negative polarity items such as \"ever\", quantifiers, and subject-verb agreement. The sentences are generated: for each paradigm a script fills a template written by linguists with words from a vocabulary of over 3,000 items annotated with the features needed to keep sentences grammatical. [Paper](https://github.com/alexwarstadt/blimp/blob/3e56b06fcabca9b30822fc66435fca6b1aa40bb1/BLiMP.pdf) and [generation code](https://github.com/alexwarstadt/data_generation)\n\nTo check the labels, 20 crowdworkers per pair chose the acceptable sentence for five pairs from each paradigm. The majority agreed with BLiMP's label on 96.4% of those pairs, and individual workers on 88.6%. A paradigm was kept only if the majority agreed on at least four of its five pairs; two paradigms failed and were left out. [Paper](https://github.com/alexwarstadt/blimp/blob/3e56b06fcabca9b30822fc66435fca6b1aa40bb1/BLiMP.pdf)\n\nIn the paper, which tests whether a model gives the acceptable sentence the higher probability, GPT-2 was the strongest model at 83.0% of pairs, followed by an LSTM at 69.8%, Transformer-XL at 69.6%, and a 5-gram model at 61.2%, against 88.6% for individual humans and 50% for guessing. GPT-2 came within 5 points of humans on anaphor, determiner-noun, and subject-verb agreement, while island effects were the hardest phenomenon for most models and negative polarity items and quantifiers were also hard. [Paper](https://github.com/alexwarstadt/blimp/blob/3e56b06fcabca9b30822fc66435fca6b1aa40bb1/BLiMP.pdf)",
+  "methodology": "This snapshot contains all 67,000 minimal pairs: the 67 files in `data/` at commit `3e56b06` of alexwarstadt/blimp, 1,000 pairs each. The commit is the latest in the repository, from 2022-12-13, and changed only the README; the data files have not changed since they were added on 2019-11-29. The repository's `BLiMP.zip` holds the same files. The paper in the repository is a corrected version: the README says some results in Tables 3 and 4 of the version published in TACL were misreported. [Repository](https://github.com/alexwarstadt/blimp/tree/3e56b06fcabca9b30822fc66435fca6b1aa40bb1) and [README](https://github.com/alexwarstadt/blimp/blob/3e56b06fcabca9b30822fc66435fca6b1aa40bb1/README.md)\n\nBLiMP has no prompt; the paper compares the probabilities a language model gives the two sentences. Each Task Prompt is a question Benchopedia adds, asking which of the two sentences is grammatically acceptable, followed by the two sentences numbered 1 and 2, reproduced as published. The acceptable sentence comes first when the pair number is even and second when it is odd, so each position holds it in 33,500 pairs. Each Solution is the acceptable sentence with its number.\n\nKeys join the paradigm's identifier, which is also its file name, and the pair number from 0 to 999, as in `adjunct_island-0`. Source links point at the pair's line in the paradigm's file. The importer uses only Python's standard library. It checks that there are 67 files of 1,000 pairs, that each line's paradigm and pair number match its file and position, that both sentences are present, and that keys are unique. It can be rerun with `python3 data/blimp/import.py`.",
+  "scoring": "The paper scores a language model as correct on a pair when it assigns the acceptable sentence a higher probability than the unacceptable one. Overall accuracy is the proportion of the 67,000 pairs it gets right, and the paper also reports accuracy by phenomenon and by paradigm. Human performance comes from a forced choice between the two sentences. [Paper](https://github.com/alexwarstadt/blimp/blob/3e56b06fcabca9b30822fc66435fca6b1aa40bb1/BLiMP.pdf)\n\nA chat model cannot return sentence probabilities through Benchopedia's runner, so the runner asks the forced-choice question instead, with an instruction to end the reply with a line `Answer: 1` or `Answer: 2`, and compares the number with the acceptable sentence's position. Each task is tried five times and passes a run only when all five attempts pass, so guessing passes one time in 32. Scores from this forced choice are not directly comparable with the paper's probability comparisons.",
+  "limitations": "The sentences are generated, so some are implausible, such as the paper's example \"Sam ran around some glaciers\"; the authors note that both sentences in a pair are then equally implausible. Crowdworkers' agreement with the labels was below 100%, at 96.4% by majority vote and 88.6% for individuals, and it varies by paradigm, so some labels are debatable. The paper also notes that the paradigms rely on stereotyped pairings of names with genders and on contrasts that not every English dialect shares. [Paper](https://github.com/alexwarstadt/blimp/blob/3e56b06fcabca9b30822fc66435fca6b1aa40bb1/BLiMP.pdf)\n\nSeven pairs have the same sentence on both sides, so the paper's strict probability comparison never counts them correct and a forced choice can only guess: pairs 324 and 810 of `passive_1`, and pairs 105, 287, 372, 816, and 967 of `principle_A_case_2`. One pair appears twice, as pair 995 of `irregular_plural_subject_verb_agreement_2` and pair 29 of `regular_plural_subject_verb_agreement_2`.\n\nPairs within a paradigm share a template, so the 67,000 pairs test 67 contrasts many times over rather than 67,000 independent ones. The data covers English only and has been public since 2019, with no canary string.",
+  "sources": [
+    {
+      "title": "BLiMP: The Benchmark of Linguistic Minimal Pairs for English (corrected version in the repository)",
+      "url": "https://github.com/alexwarstadt/blimp/blob/3e56b06fcabca9b30822fc66435fca6b1aa40bb1/BLiMP.pdf"
+    },
+    {
+      "title": "BLiMP · Transactions of the Association for Computational Linguistics",
+      "url": "https://doi.org/10.1162/tacl_a_00321"
+    },
+    {
+      "title": "BLiMP · Repository",
+      "url": "https://github.com/alexwarstadt/blimp/tree/3e56b06fcabca9b30822fc66435fca6b1aa40bb1"
+    },
+    {
+      "title": "BLiMP · README",
+      "url": "https://github.com/alexwarstadt/blimp/blob/3e56b06fcabca9b30822fc66435fca6b1aa40bb1/README.md"
+    },
+    {
+      "title": "BLiMP · Paradigm files",
+      "url": "https://github.com/alexwarstadt/blimp/tree/3e56b06fcabca9b30822fc66435fca6b1aa40bb1/data"
+    },
+    {
+      "title": "BLiMP · Data generation code",
+      "url": "https://github.com/alexwarstadt/data_generation"
+    }
+  ]
+}
