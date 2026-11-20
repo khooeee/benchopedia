@@ -15,7 +15,7 @@ from helpers.build_sqlite import read_results
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "runner"))
-from run import grade_output
+from run import grade_output, grade_responses, next_messages, response_output
 
 
 def read_jsonl(path):
@@ -31,7 +31,8 @@ def load_eval(path, name):
 
 
 def check_eval(evaluation, tasks, origin, errors):
-    scores_only = getattr(evaluation, "score", None) is not None
+    score_responses = getattr(evaluation, "score_responses", None)
+    scores_only = score_responses is not None or getattr(evaluation, "score", None) is not None
     if type(evaluation.ATTEMPTS) is not int or evaluation.ATTEMPTS < 1:
         errors.append(f"{origin}: ATTEMPTS must be a positive integer")
     is_eligible = getattr(evaluation, "is_eligible", None)
@@ -39,7 +40,7 @@ def check_eval(evaluation, tasks, origin, errors):
     for task in tasks:
         if is_eligible is not None and not is_eligible(task):
             continue
-        messages = evaluation.messages(task)
+        messages = next_messages(evaluation, task, [])
         if (not isinstance(messages, list) or not messages
                 or not all(isinstance(m, dict) and isinstance(m.get("role"), str)
                            and isinstance(m.get("content"), str) for m in messages)):
@@ -47,7 +48,15 @@ def check_eval(evaluation, tasks, origin, errors):
         if scores_only:
             if task.get("solution") is not None:
                 graded += 1
-                result = grade_output(task, evaluation, task["solution"], enforce_output_limit=False)
+                if score_responses is not None:
+                    outputs = evaluation.reference_responses(task)
+                    if not outputs or any(next_messages(evaluation, task, outputs[:i]) is None
+                                          for i in range(len(outputs))) or next_messages(evaluation, task, outputs) is not None:
+                        errors.append(f"{origin}: invalid reference response sequence for {task['key']}")
+                        continue
+                    result = grade_responses(task, evaluation, outputs)
+                else:
+                    result = grade_output(task, evaluation, task["solution"], enforce_output_limit=False)
                 if result["verdict"] != "scored":
                     errors.append(f"{origin}: score() did not score the reference of {task['key']}")
             continue
@@ -82,16 +91,24 @@ def check_run(run_dir, tasks, errors):
             where = f"{results_file.relative_to(ROOT)}: {record['key']} attempt {attempt['number']}"
             attempts += 1
             calls = attempt["model_calls"]
-            if calls and calls[0]["request"].get("messages") != evaluation.messages(task):
-                errors.append(f"{where}: the request does not carry the prompt eval.py builds")
-            if calls:
-                response = calls[-1]["response"]
-                reply = response.get("message")
-                if reply is None and response.get("choices"):
-                    reply = response["choices"][0].get("message")
-                if reply is None or (reply.get("content") or "") != attempt["output"]:
-                    errors.append(f"{where}: output differs from the model's final response")
-            regraded = grade_output(task, evaluation, attempt["output"])
+            outputs = []
+            for call in calls:
+                expected = next_messages(evaluation, task, outputs)
+                if call["request"].get("messages") != expected or expected is None:
+                    errors.append(f"{where}: call {call['number']} does not carry the prompt eval.py builds")
+                try:
+                    outputs.append(response_output(call["response"]))
+                except (IndexError, KeyError, TypeError, AttributeError):
+                    errors.append(f"{where}: call {call['number']} has no saved reply")
+                    break
+            if not outputs or len(outputs) != len(calls):
+                continue
+            if outputs[-1] != attempt["output"]:
+                errors.append(f"{where}: output differs from the model's final response")
+            if next_messages(evaluation, task, outputs) is not None:
+                errors.append(f"{where}: recorded attempt is missing model calls")
+                continue
+            regraded = grade_responses(task, evaluation, outputs)
             recorded = {key: attempt[key] for key in ("verdict", "answer", "scores") if key in attempt}
             if regraded != recorded:
                 errors.append(f"{where}: recorded grade {recorded!r} differs from {regraded!r}")
@@ -106,7 +123,8 @@ def main():
         tasks = read_jsonl(benchmark_dir / "tasks.jsonl")
         evaluation = load_eval(eval_file, f"eval_{benchmark_dir.name}".replace("-", "_"))
         graded = check_eval(evaluation, tasks, eval_file.relative_to(ROOT), errors)
-        outcome = "scored" if getattr(evaluation, "score", None) is not None else "pass"
+        numeric = any(getattr(evaluation, name, None) is not None for name in ("score", "score_responses"))
+        outcome = "scored" if numeric else "pass"
         summary.append(f"{benchmark_dir.name}: {graded:,} reference solutions {outcome}")
     for run_dir in sorted(p for p in (ROOT / "data").glob("*/runs/*") if p.is_dir()):
         tasks = read_jsonl(run_dir.parent.parent / "tasks.jsonl")

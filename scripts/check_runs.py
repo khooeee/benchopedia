@@ -182,6 +182,43 @@ def grade(task, output):
         with self.assertRaisesRegex(SystemExit, "at most once"):
             run.main(args[:-1] + ["task-3"])
 
+    def test_multiple_calls_resume_and_score_saved_replies(self):
+        self.prepare_runner_fixture()
+        (self.benchmark_dir / "eval.py").write_text("""
+ATTEMPTS = 1
+def next_messages(task, outputs):
+    if not outputs:
+        return [{"role": "user", "content": task["prompt"]}]
+    if len(outputs) == 1:
+        return [{"role": "user", "content": f"Verify: {outputs[0]}"}]
+def score_responses(task, outputs):
+    return {"correct": int(task["solution"] in outputs)}
+""")
+        seeds = []
+
+        def chat(model, messages, profile, seed):
+            seeds.append(seed)
+            if seeds == [1, 2]:
+                raise RuntimeError("fixture interruption")
+            output = "#### 4" if seed == 1 else "other answer"
+            return self.reply(model, messages, profile, seed, output=output)
+
+        args = ["fixture", "--scratch", "--run-id", "multi", "--model", MODEL["id"],
+                "--profile", "default", "--task-key", "task-1"]
+        with patch.object(run.ollama_api, "chat", side_effect=chat), redirect_stdout(io.StringIO()):
+            with self.assertRaisesRegex(RuntimeError, "fixture interruption"):
+                run.main(args)
+            run.main(args)
+        directory = self.root / "build" / "scratch-runs" / "fixture" / "multi"
+        record, = build_sqlite.read_results(directory)
+        attempt, = record["attempts"]
+        self.assertEqual(seeds, [1, 2, 2])
+        self.assertEqual(record["result"], "scored")
+        self.assertEqual(attempt["scores"], {"correct": 1})
+        self.assertEqual(attempt["output"], "other answer")
+        self.assertEqual(attempt["model_calls"][1]["request"]["messages"],
+                         [{"role": "user", "content": "Verify: #### 4"}])
+
     def test_daily_quota_handoff_uses_latest_status_and_preserves_partial_calls(self):
         self.prepare_runner_fixture(("task-3", "task-4"))
         self.write_run("first", self.run | STOPPED, self.results)

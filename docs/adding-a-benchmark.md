@@ -333,6 +333,14 @@ dictionary of named finite scores or `None` for an invalid reply. If upstream
 limits generated output length, set `MAX_OUTPUT_CHARS`. The reference check
 scores the gold reply directly, since that limit applies to model output.
 
+For a numeric benchmark whose attempt needs multiple calls, define
+`next_messages(task, outputs)`. It receives the completed text replies in order,
+starting with an empty list. Return the next chat conversation or `None` when
+the attempt is complete. Define `score_responses(task, outputs)` to score the
+complete reply sequence and `reference_responses(task)` to supply an equivalent
+sequence of gold replies for validation. The runner records and checkpoints each
+call before requesting another.
+
 For benchmarks graded from one text reply per attempt, `data/<id>/eval.py`
 builds the model input for [runner/run.py](../runner/run.py) and grades the
 reply. See [GSM8K's evaluator](../data/gsm8k/eval.py) for an example. Use only
