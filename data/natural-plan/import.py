@@ -4,7 +4,6 @@ Run from the repository root: python3 data/natural-plan/import.py
 Only Python's standard library is required.
 """
 
-import gzip
 import json
 import re
 import sys
@@ -73,10 +72,12 @@ def write_grader_inputs(by_group):
         for group, examples in by_group.items()
         for key, example in examples.items()
     }
-    text = json.dumps(records, sort_keys=True, ensure_ascii=False, separators=(",", ":")) + "\n"
-    target = BENCHMARK_DIR / "grader-inputs.json.gz"
-    with target.open("wb") as stream, gzip.GzipFile(fileobj=stream, filename="", mode="wb", mtime=0) as out:
-        out.write(text.encode("utf-8"))
+    lines = [
+        f"  {json.dumps(key)}: {json.dumps(records[key], ensure_ascii=False, separators=(',', ':'))}"
+        for key in sorted(records)
+    ]
+    path = BENCHMARK_DIR / "grader-inputs.json"
+    path.write_text("{\n" + ",\n".join(lines) + "\n}\n", encoding="utf-8")
 
 
 def main():

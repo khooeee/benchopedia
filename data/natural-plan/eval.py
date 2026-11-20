@@ -23,7 +23,6 @@ https://github.com/google-deepmind/natural-plan/tree/ca76db336072ff8931db43bc1ca
 import collections
 import datetime
 from functools import lru_cache
-import gzip
 import hashlib
 import json
 from pathlib import Path
@@ -32,15 +31,14 @@ from typing import Any
 
 
 ATTEMPTS = 1
-CAPTURE_FILES = ("grader-inputs.json.gz",)
-GRADER_INPUTS_SHA256 = "8f991a32ab644a55505a1df323e0ee5a1cd69cda8eafe196d9431e18a70b5f44"
+CAPTURE_FILES = ("grader-inputs.json",)
+GRADER_INPUTS_SHA256 = "cd284139f92ceccd2695eea64efe5c05162fcd8fba7443629edc4f62c915ee7c"
 
 
 @lru_cache(maxsize=1)
 def grader_inputs():
     path = Path(__file__).with_name(CAPTURE_FILES[0])
-    with gzip.open(path, "rb") as stream:
-        payload = stream.read()
+    payload = path.read_bytes()
     if hashlib.sha256(payload).hexdigest() != GRADER_INPUTS_SHA256:
         raise ValueError(f"Unexpected revision of {path}")
     return json.loads(payload)

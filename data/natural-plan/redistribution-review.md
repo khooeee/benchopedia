@@ -2,7 +2,7 @@
 
 ## Scope
 
-The snapshot contains all 3,600 test examples in the three data files at commit `ca76db336072ff8931db43bc1ca8d381038cf073` of google-deepmind/natural-plan: 1,600 trip-planning, 1,000 meeting-planning, and 1,000 calendar-scheduling examples. For each example it includes the zero-shot prompt and the golden plan. The five-shot prompts, Gemini 1.5 Pro responses, and structured constraint fields are not included. Both the public repository and the website publish this content. No code or images are copied. [Data folder](https://github.com/google-deepmind/natural-plan/tree/ca76db336072ff8931db43bc1ca8d381038cf073/data)
+The snapshot contains all 3,600 test examples in the three data files at commit `ca76db336072ff8931db43bc1ca8d381038cf073` of google-deepmind/natural-plan: 1,600 trip-planning, 1,000 meeting-planning, and 1,000 calendar-scheduling examples. For each example it includes the zero-shot prompt and the golden plan. The website task snapshot omits the five-shot prompts, Gemini 1.5 Pro responses, and structured constraints. The grader includes separate support data described below. Both the public repository and the website publish this content. No code or images are copied. [Data folder](https://github.com/google-deepmind/natural-plan/tree/ca76db336072ff8931db43bc1ca8d381038cf073/data)
 
 ## Terms
 
