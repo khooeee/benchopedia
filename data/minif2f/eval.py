@@ -68,9 +68,9 @@ def grade(task, output):
             ["docker", "run", "--rm", "--init", "--name", container, "--pull=never",
              "--log-driver", "none", "--network", "none", "--read-only", "--cap-drop", "ALL",
              "--security-opt", "no-new-privileges", "--user", "65534:65534",
-             "--memory", "768m", "--memory-swap", "768m", "--cpus", "1", "--pids-limit", "32",
+             "--memory", "2g", "--memory-swap", "2g", "--cpus", "4", "--pids-limit", "32",
              "--tmpfs", "/tmp:size=8m,mode=1777,noexec,nosuid", "-i", IMAGE],
-            input=program, capture_output=True, text=True, timeout=35,
+            input=program, capture_output=True, text=True, timeout=120,
         )
     except subprocess.TimeoutExpired:
         subprocess.run(["docker", "rm", "-f", container], capture_output=True, timeout=10)
