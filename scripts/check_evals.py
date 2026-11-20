@@ -31,8 +31,11 @@ def load_eval(path, name):
 def check_eval(evaluation, tasks, origin, errors):
     if type(evaluation.ATTEMPTS) is not int or evaluation.ATTEMPTS < 1:
         errors.append(f"{origin}: ATTEMPTS must be a positive integer")
+    eligible = getattr(evaluation, "eligible", None)
     graded = 0
     for task in tasks:
+        if eligible is not None and not eligible(task):
+            continue
         messages = evaluation.messages(task)
         if (not isinstance(messages, list) or not messages
                 or not all(isinstance(m, dict) and isinstance(m.get("role"), str)

@@ -275,6 +275,23 @@ def grade(task, output):
                          {("openrouter", "task-1", "fail"), ("openrouter", "task-2", "pending"),
                           ("ollama", "task-2", "pass")})
 
+    def test_sweep_and_grader_check_skip_unscorable_tasks(self):
+        self.prepare_runner_fixture(("task-3",))
+        self.write_run("first", self.run | {"selected_tasks": ["task-1", "task-2"]}, self.results)
+        with (self.benchmark_dir / "eval.py").open("a") as evaluator:
+            evaluator.write('\ndef eligible(task):\n    return task["key"] != "task-2"\n')
+
+        args = ["fixture", "--dry-run", "--ollama-model", MODEL["id"], "--ollama-profile", "default"]
+        output = io.StringIO()
+        with redirect_stdout(output):
+            sweep.main(args)
+        self.assertEqual(output.getvalue().splitlines(), ["untested\tfixture\ttask-3"])
+
+        output = io.StringIO()
+        with redirect_stdout(output):
+            sweep.main(args + ["--verify-grader"])
+        self.assertEqual(output.getvalue().splitlines(), ["solved\tfixture\ttask-1", "untested\tfixture\ttask-3"])
+
     def test_valid_run_loads_and_reports_task_status(self):
         db, errors = self.build()
         self.assertEqual(errors, [])
