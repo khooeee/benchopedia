@@ -461,6 +461,33 @@ Resume if the publishers replace the Slate articles with text they can license
 under CC BY, or if Slate or the corpus consortium permits publishing those
 articles in a public repository and on a crawlable website.
 
+## SimpleToM
+
+Reviewed 2026-11-19 for all 3,441 questions, three for each of 1,147 stories,
+in the `mental-state-qa`, `behavior-qa`, and `judgment-qa` test files of
+[allenai/SimpleToM at `3b97c11760855c83e033f8fef04f80c7e1f55f15`](https://huggingface.co/datasets/allenai/SimpleToM/tree/3b97c11760855c83e033f8fef04f80c7e1f55f15).
+The files have not changed since they were added on 2024-10-11.
+
+The publishers state two different terms for the same data. The dataset card's
+metadata declares `odc-by`, the Open Data Commons Attribution License, which
+permits redistribution with attribution and says "These rights explicitly
+include commercial use, and do not exclude any field of endeavour." The paper's
+ethics statement, in both its first arXiv version of 2024-10-17 and its ICLR
+2026 version of 2026-03-02, says: "We release our data for research purposes
+only." The card has no license text or prose that reconciles the two. The
+authors' code repository is under Apache 2.0, but it holds the generation and
+inference code; its README points to Hugging Face for the dataset. If the
+research-only statement is a condition, the public repository and the website
+would not carry it.
+[Dataset card](https://huggingface.co/datasets/allenai/SimpleToM/blob/3b97c11760855c83e033f8fef04f80c7e1f55f15/README.md),
+[ODC Attribution License](https://opendatacommons.org/licenses/by/1-0/),
+[paper, first version](https://arxiv.org/abs/2410.13648v1),
+[paper, ICLR 2026 version](https://arxiv.org/abs/2410.13648v2),
+and [code repository](https://github.com/yulinggu-cs/SimpleToM/tree/2031aea8eec3920e3fda46e7a69bfadf238d0620)
+
+Resume if the authors confirm that the ODC Attribution License governs the
+released data without a research-only restriction, or remove the statement.
+
 ## WebArena
 
 Reviewed 2026-11-16 for all 812 tasks in
