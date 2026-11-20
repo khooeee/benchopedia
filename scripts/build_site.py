@@ -453,7 +453,7 @@ def open_tasks(statuses, results_by_task):
             continue
         b = benchmarks[key[0]]
         options[b['id']] = b['name']
-        attempts = ' · '.join(f'<a href="{run_task_url(run, key[1])}">{esc(run_title(run))}</a>'
+        attempts = ' · '.join(f'<a href="{run_task_url(run, key[1])}">{esc(run["id"])}</a>'
                               for run, _ in results_by_task.get(key, ())
                               if run['dataset_revision'] in (None, b['dataset_revision']))
         rows.append(f'''<tr data-open-benchmark="{esc(b['id'])}"><td><a href="{benchmark_url(b)}">{esc(b['name'])}</a></td>
