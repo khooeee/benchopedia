@@ -19,6 +19,17 @@ code. Establish:
 - What input a model receives, what it must produce, and how it is evaluated.
 - Whether reference solutions and task environment instructions are available.
 - Whether the task data can be redistributed under its license and access terms.
+- Whether evaluation requires changes to shared infrastructure.
+
+### Document shared infrastructure changes in the pull request
+
+When a pull request is part of the request, flag the change in a draft as soon
+as there is a branch ready to share. Mention the shared change in the title.
+Start the pull request description with `# WARNING` on the first line. Under
+that heading, explain why the benchmark needs the change, which shared
+components it affects, and any impact on existing benchmarks, sweeps, or
+recorded runs. Include the compatibility checks, remaining risks, and follow-up
+work. Update the draft as the scope or verification results change.
 
 ### Required redistribution review
 
@@ -308,12 +319,18 @@ every command, function, file name and field against the pinned upstream source.
 Where you can, run the code with the reference solution in place of the model
 and confirm that it scores as correct.
 
-## 8. Write eval.py
+## 8. Write eval.py and extend the runner as needed
 
-`data/<id>/eval.py` lets [runner/run.py](../runner/run.py) run models on the
-benchmark: it builds what the model is sent and grades what comes back. See
-[GSM8K's](../data/gsm8k/eval.py) for an example. Use only Python's standard library.
-It defines three things:
+Use the evaluation protocol documented in `how-to-run.md`. If the protocol
+requires capabilities the shared runner lacks, such as a sandboxed harness,
+multiple model calls per attempt, or numeric scoring, include the required
+runner, result format, and validation changes in the benchmark addition. Keep
+existing evaluators and recorded runs compatible.
+
+For benchmarks graded from one text reply per attempt, `data/<id>/eval.py`
+builds the model input for [runner/run.py](../runner/run.py) and grades the
+reply. See [GSM8K's evaluator](../data/gsm8k/eval.py) for an example. Use only
+Python's standard library.
 
 - `ATTEMPTS`: how many times each task is tried. A task passes a run only when
   every attempt passes, so choose enough attempts that guessing cannot pass:
@@ -336,6 +353,8 @@ python3 scripts/check_evals.py
 
 It fails unless `grade()` passes each task's own reference solution. A failure
 means the grader, or the reference, needs a closer look before any model runs.
+For a benchmark that needs a new evaluation path, extend the checks to verify
+results against its scoring rules.
 
 ## 9. Run a model
 
@@ -345,7 +364,7 @@ Its `profiles` hold request settings, such as GSM8K's `thinking` profile for
 [Qwen3.6-35B-A3B](../models/qwen3.6-35b-a3b.json). The runner sends every option
 in the profile with each request, so the recorded requests are complete.
 
-Try the prompt on two tasks first. Scratch runs go to `build/scratch-runs/`,
+Try the evaluation on two tasks first. Scratch runs go to `build/scratch-runs/`,
 allow uncommitted code, and are never published. Two tasks are enough to see
 whether the answers parse: with the `thinking` profile on local hardware, a
 GSM8K task took about four minutes for its two attempts, and the run occupies
@@ -356,11 +375,11 @@ python3 runner/run.py example-benchmark --model qwen3.6-35b-a3b --profile thinki
     --run-id scratch --scratch --limit 2
 ```
 
-Read the outputs, especially any `unparseable` ones, and adjust the instruction
-until the model's answers are read correctly. Then commit `eval.py`. Adding a
-benchmark stops here: its pull request includes `eval.py`, checked by
-`scripts/check_evals.py` and the scratch run, but no published run, because a
-full run takes days on local hardware.
+Check that the scratch run follows the benchmark's evaluation protocol and
+records the scorer's results correctly. For text graders, inspect `unparseable`
+replies and adjust the prompt as needed. Include `eval.py`, any required
+infrastructure changes, and the outcomes of the grader checks and scratch run
+in the benchmark pull request.
 
 A published run is a separate step, started once the benchmark is merged. Name
 it by date, model, and profile:
