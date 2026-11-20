@@ -6,6 +6,19 @@
   "provider_model": "qwen3.6:35b-mlx",
   "weights_digest": "sha256:4a5e082f2bd34ad799f0924d3ab5af135cf2445a17a42f34b1dfa706aa81f1cb",
   "profiles": {
+    "scratch": {
+      "think": false,
+      "options": {
+        "num_predict": 4096,
+        "num_ctx": 98304,
+        "temperature": 1.0,
+        "top_p": 0.95,
+        "top_k": 20,
+        "min_p": 0.0,
+        "presence_penalty": 1.5,
+        "repeat_penalty": 1.0
+      }
+    },
     "thinking": {
       "think": true,
       "options": {
