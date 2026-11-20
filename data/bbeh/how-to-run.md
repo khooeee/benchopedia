@@ -43,7 +43,7 @@ response = generate(example["input"] + "\n\n" + SUFFIX)
 
 ### 4. Score it
 
-`evaluate_correctness` lowercases both sides and accepts simple variants such as a bare choice letter, equal numbers, or removed quotes and brackets. Importing the file also prints its eight built-in examples. It drops a trailing period from the response but not from the target, so 11 Linguini targets that end in a period can never match.
+`evaluate_correctness` lowercases both sides and accepts simple variants such as a bare choice letter, equal numbers, or removed quotes and brackets. Importing the file also prints its eight built-in examples. Eleven Linguini targets end in a period. The evaluator strips a terminal period from the response, so the reference check wraps those targets in single quotes to preserve the period through extraction. The comparator already ignores single quotes.
 
 ```python
 sys.path.insert(0, "bbeh/bbeh")
