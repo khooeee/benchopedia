@@ -149,10 +149,12 @@ def next_messages(task, outputs):
         return None
 
     examples = GRID_BLOCK.findall(demonstrations)
+    if not examples or len(examples) % 2:
+        raise ValueError(f"{task['key']}: expected paired demonstration grids")
     training = "".join(
         f"--Example {number}-- \n\n INPUT: \n\n{json.dumps(grid(before))}\n\n"
         f"OUTPUT: \n\n{json.dumps(grid(after))}\n\n"
-        for number, (before, after) in enumerate(zip(examples[::2], examples[1::2], strict=True))
+        for number, (before, after) in enumerate(zip(examples[::2], examples[1::2]))
     )
     prompt = PROMPT.format(training_examples=training, test_input=json.dumps(grid(test_inputs[index])))
     return [{"role": "user", "content": prompt}]
@@ -169,7 +171,7 @@ def score_responses(task, outputs):
         raise ValueError(f"{task['key']}: incomplete ARC predictions")
     solved = sum(
         target in predictions[index:index + PREDICTIONS_PER_INPUT]
-        for index, target in zip(range(0, len(predictions), PREDICTIONS_PER_INPUT), targets, strict=True)
+        for index, target in zip(range(0, len(predictions), PREDICTIONS_PER_INPUT), targets)
     )
     return {"accuracy": solved / len(targets)}
 
