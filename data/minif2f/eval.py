@@ -16,6 +16,19 @@ PREAMBLES = {
     "valid": "import minif2f_import\nopen_locale big_operators\nopen_locale real\nopen_locale nat\nopen_locale topological_space",
 }
 
+# The pinned test file defines this helper separately from the benchmark theorems.
+# It is Apache 2.0 licensed. See the benchmark's LICENSE.
+# https://github.com/facebookresearch/miniF2F/blob/e4f113090ad82d64f8ce064d2f55b613a9b6bded/lean/src/test.lean#L1613
+TEST_HELPER = """lemma sum_pairs (n : ℕ) (f : ℕ → ℚ) :
+  ∑ k in (finset.range (2 * n)), f k = ∑ k in (finset.range n), (f (2 * k) + f (2 * k + 1)) :=
+begin
+  induction n with pn hpn,
+  { simp only [finset.sum_empty, finset.range_zero, mul_zero] },
+  { have hs: (2 * pn.succ) = (2 * pn).succ.succ := rfl,
+    rw [finset.sum_range_succ, ←hpn, hs, finset.sum_range_succ, finset.sum_range_succ],
+    ring },
+end"""
+
 
 @lru_cache(maxsize=1)
 def check_setup():
@@ -61,7 +74,8 @@ def grade(task, output):
     if NO_PROOF.search(proof):
         return "fail", "incomplete proof"
     split, theorem = task["key"].split("-", 1)
-    program = f"{PREAMBLES[split]}\n\n{statement(task)}\n{proof}\n#print axioms {theorem}\n"
+    helper = TEST_HELPER if split == "test" else ""
+    program = f"{PREAMBLES[split]}\n{helper}\n\n{statement(task)}\n{proof}\n#print axioms {theorem}\n"
     container = f"benchopedia-lean-{uuid4().hex}"
     try:
         result = subprocess.run(
