@@ -80,3 +80,12 @@ from nltk.translate.bleu_score import corpus_bleu
 # all_references holds each question's two token lists; all_candidates holds the answers' tokens.
 bleu1, bleu4 = corpus_bleu(all_references, all_candidates, weights=[(1,), (0.25, 0.25, 0.25, 0.25)])
 ```
+
+### Verify with the Benchopedia sweep
+
+The sweep uses the compiled [Meteor 1.3 release](https://www.cs.cmu.edu/~alavie/METEOR/index.html)
+cited by the paper. Install Java, run `python3 data/narrativeqa/setup_eval.py`,
+and run `python3 runner/sweep.py narrativeqa --verify-grader`. Each task record
+contains METEOR 1.3, ROUGE-L, and sentence-level BLEU-1 and BLEU-4. For a complete
+test split, compute the corpus BLEU described above from the saved raw answers
+and both references.
