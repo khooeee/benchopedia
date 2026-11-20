@@ -68,3 +68,11 @@ python classify_completions_gpt.py
 ```
 
 The paper reports the share of responses in each class for every prompt type and for the 250 safe and 200 unsafe prompts overall, computed in `evaluation/analysis.ipynb`. Each prompt adds one labelled response to its type: a refusal of a safe prompt counts as exaggerated safety, and compliance with an unsafe one as a safety failure for most applications.
+
+### Verify with the Benchopedia sweep
+
+The sweep uses XSTest's published string-matching option. It records compliance
+and full refusal as numeric indicators for each reply, and reports the relevant
+rate separately for safe and contrast prompts. The baseline assigns partially
+refusing replies to one of its two classes. It does not reproduce the paper's
+three-way human or GPT-4 labels.
