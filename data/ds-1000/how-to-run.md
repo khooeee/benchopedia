@@ -60,3 +60,11 @@ Write `data/<model>-answers.jsonl` with one line, `{"code": ...}`, per problem i
 ```sh
 python test_ds1000.py --model <model>
 ```
+
+### Verify with the Benchopedia sweep
+
+Run `python3 data/ds-1000/setup_eval.py` with Docker running, then run
+`python3 runner/sweep.py ds-1000 --verify-grader`. The evaluator uses the pinned
+test contexts and the published dependency versions. It runs each answer in a
+fresh, network-isolated CPU container and records whether the execution and
+any string checks pass. Test data remain under the ignored build directory.
