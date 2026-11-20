@@ -32,6 +32,61 @@ Resume if the lyrics' rights holders permit redistribution, the song is shown to
 be in the public domain in this version, or the publishers replace the exercise
 in a new release.
 
+## BIG-Bench Hard
+
+Reviewed 2026-11-19 for all 6,511 examples in the 27 files of `bbh/` in
+[suzgunmirac/BIG-Bench-Hard at `9ee07bd481feebf959a6b59d61ea57bdcf30964d`](https://github.com/suzgunmirac/BIG-Bench-Hard/tree/9ee07bd481feebf959a6b59d61ea57bdcf30964d/bbh).
+The 23 tasks are taken from
+[google/BIG-bench, read at `092b196c1f8f14a54bbc62f24759d43bde46dd3b`](https://github.com/google/BIG-bench/tree/092b196c1f8f14a54bbc62f24759d43bde46dd3b/bigbench/benchmark_tasks),
+whose task descriptions record where each task's material came from.
+
+The BBH repository carries the MIT license, with the notice "Copyright (c) 2022
+suzgunmirac", and BIG-bench carries the Apache 2.0 license. Either can cover
+only material its contributors could license. Four of the tasks are built from
+material by others, and neither repository records permission for it:
+
+- `movie_recommendation` (250 examples) is derived from the MovieLens ratings
+  dataset. MovieLens may be used "for any research purposes" on conditions that
+  include: "The user may redistribute the data set, including transformations,
+  so long as it is distributed under these same license conditions" and "The
+  user may not use this information for any commercial or revenue-bearing
+  purposes without first obtaining permission". Publishing the questions would
+  carry a research-only, non-commercial condition that neither the repository
+  nor the website carries.
+- `causal_judgement` (187 examples) consists of stories its authors
+  "collected ... from 30 papers published in the span of 1989 to 2021", in
+  psychology and philosophy journals and books from publishers including the
+  American Psychological Association, Elsevier, Springer, and Wiley. Each
+  BIG-bench record names its paper and experiment, such as Experiment 1,
+  Vignette 3 of Icard, Kominsky, and Knobe's 2017 paper "Normality and actual
+  causal strength", and some note a "Small modification".
+- `snarks` (178 examples) starts from Reddit comments: "we scrape sentences
+  from publicly available Reddit data, flagging comments with the “/s” token
+  (indicating sarcasm) as candidates for inclusion", which are then paired with
+  minimally edited versions.
+- `ruin_names` (250 examples) was "curated from tweets associated with the
+  hashtags #RuinAFilmTitle and #RuinABandName".
+
+A fifth task, `salient_translation_error_detection`, translates German
+Wikipedia sentences drawn from the WIT dataset, which its description says is
+available under CC BY-SA 3.0. That condition could be met by sharing those
+examples under the same license, but BBH distributes them under MIT without it.
+
+Together the four tasks hold 865 of the 6,511 examples. Leaving them out would
+publish a reduced set in place of the full benchmark.
+[BBH license](https://github.com/suzgunmirac/BIG-Bench-Hard/blob/9ee07bd481feebf959a6b59d61ea57bdcf30964d/LICENSE),
+[movie_recommendation](https://github.com/google/BIG-bench/blob/092b196c1f8f14a54bbc62f24759d43bde46dd3b/bigbench/benchmark_tasks/movie_recommendation/README.md),
+[MovieLens usage license](https://files.grouplens.org/datasets/movielens/ml-latest-small-README.html),
+[causal_judgment](https://github.com/google/BIG-bench/blob/092b196c1f8f14a54bbc62f24759d43bde46dd3b/bigbench/benchmark_tasks/causal_judgment/README.md),
+[snarks](https://github.com/google/BIG-bench/blob/092b196c1f8f14a54bbc62f24759d43bde46dd3b/bigbench/benchmark_tasks/snarks/README.md),
+[ruin_names](https://github.com/google/BIG-bench/blob/092b196c1f8f14a54bbc62f24759d43bde46dd3b/bigbench/benchmark_tasks/ruin_names/README.md),
+and [salient_translation_error_detection](https://github.com/google/BIG-bench/blob/092b196c1f8f14a54bbc62f24759d43bde46dd3b/bigbench/benchmark_tasks/salient_translation_error_detection/README.md)
+
+Resume if GroupLens permits publishing the movie questions without the
+research-only condition, the rights holders of the papers, comments, and tweets
+behind the other three tasks are shown to permit redistribution, or a new BBH
+release replaces those tasks.
+
 ## CaseHOLD
 
 Reviewed 2026-11-19 for the 5,314-question test split of the `all`
