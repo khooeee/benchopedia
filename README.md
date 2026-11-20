@@ -195,6 +195,25 @@ the prompt source, task environment and solution source.
 
 Run results come only from runs recorded in this repository, never from reported scores.
 
+## Adding Value
+
+- **Add a benchmark.** Expand the catalog with a sourced article and a reproducible
+  snapshot of upstream tasks cleared for redistribution. Explain what the benchmark
+  measures, how it scores answers, and where its results have limitations.
+  [Adding a benchmark](docs/adding-a-benchmark.md)
+- **Run a sweep.** Evaluate eligible tasks across one or more benchmarks. The runner
+  prioritizes untested tasks, then pending evaluations, then open tasks with a
+  completed failure and no verified solve. The saved results show which tasks a
+  model solved and which remain open in the local preview.
+  [Running benchmarks](docs/running-benchmarks.md)
+- **Add or improve a grader.** Make an existing benchmark eligible for sweeps or
+  fix scoring errors by matching the upstream evaluation rules and checking the
+  grader against reference solutions and known failures.
+  [Adding a benchmark](docs/adding-a-benchmark.md)
+- **Improve an existing benchmark page.** Correct source links, clarify the dataset
+  version or scoring rules, or make the instructions for reproducing a task easier
+  to follow. [Adding a benchmark](docs/adding-a-benchmark.md)
+
 ## Licensing
 
 Benchopedia's original code and documentation are available under the
