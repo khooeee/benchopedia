@@ -317,7 +317,7 @@ def main(argv=None):
         if not isinstance(name, str):
             parser.error("CAPTURE_FILES must contain file paths")
         path = Path(name)
-        if name != path.as_posix() or not all(RUN_ID.fullmatch(part) for part in path.parts):
+        if name != path.as_posix() or not all(re.fullmatch(r"[a-z0-9][a-z0-9_.-]*", part) for part in path.parts):
             parser.error(f"invalid evaluator support file: {name}")
         source = eval_file.parent / path if len(path.parts) == 1 else ROOT / path
         if not source.resolve().is_relative_to(ROOT) or source.is_symlink() or not source.is_file():
