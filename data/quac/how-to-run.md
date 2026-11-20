@@ -61,3 +61,12 @@ Write one JSON line per dialogue holding parallel lists `qid`, `best_span_str`, 
 ```sh
 python scorer.py --val_file val_v0.2.json --model_output predictions.jsonl --o scores.json
 ```
+
+### Verify with the Benchopedia sweep
+
+The sweep records one JSON reply per question, with the answer span, the
+yes/no act, and the follow-up act. It records the unfiltered F1 for every
+valid reply and records headline F1 and accuracy metrics for questions with
+human F1 of at least 0.4. For the published HEQ-D, group predictions by
+dialogue and use the full scorer above. A two-question scratch sweep does
+not measure dialogue-level or split-level performance.
