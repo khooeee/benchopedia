@@ -14,6 +14,13 @@ The paper says the authors created the dataset synthetically from tool data. The
 
 Benchopedia puts the upstream example ID above each zero-shot prompt, stores the golden plan as the reference answer, and joins the meeting-planning plan steps with line breaks. It also builds IDs from the task name and upstream example number and adds source links. Prompt and plan text is unchanged.
 
+The grader support archive includes the original five-shot prompts and the
+structured city, duration, constraint, and distance fields needed to run and
+score this same split under the existing CC BY 4.0 terms. It omits the upstream
+model responses. The separate grader module preserves the per-example
+functions from the pinned evaluation scripts under Apache 2.0 with the
+original copyright notice and full license in LICENSE-grader.
+
 ## Notices
 
 NATURAL PLAN is from "NATURAL PLAN: Benchmarking LLMs on Natural Language Planning" by Huaixiu Steven Zheng, Swaroop Mishra, Hugh Zhang, Xinyun Chen, Minmin Chen, Azade Nova, Le Hou, Heng-Tze Cheng, Quoc V. Le, Ed H. Chi, and Denny Zhou. The data is used under the [Creative Commons Attribution 4.0 International license](https://creativecommons.org/licenses/by/4.0/legalcode).

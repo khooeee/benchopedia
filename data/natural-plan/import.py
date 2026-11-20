@@ -4,6 +4,7 @@ Run from the repository root: python3 data/natural-plan/import.py
 Only Python's standard library is required.
 """
 
+import gzip
 import json
 import re
 import sys
@@ -58,6 +59,26 @@ def to_task(task_name, number, example, revision):
     }
 
 
+SCORING_FIELDS = {
+    "trip_planning": ("cities", "durations"),
+    "meeting_planning": ("constraints", "dist_matrix"),
+    "calendar_scheduling": (),
+}
+
+
+def write_grader_inputs(by_group):
+    """Store the original five-shot prompts and structured scoring inputs."""
+    records = {
+        key: [example["prompt_5shot"], *[example[field] for field in SCORING_FIELDS[group]]]
+        for group, examples in by_group.items()
+        for key, example in examples.items()
+    }
+    text = json.dumps(records, sort_keys=True, ensure_ascii=False, separators=(",", ":")) + "\n"
+    target = BENCHMARK_DIR / "grader-inputs.json.gz"
+    with target.open("wb") as stream, gzip.GzipFile(fileobj=stream, filename="", mode="wb", mtime=0) as out:
+        out.write(text.encode("utf-8"))
+
+
 def main():
     benchmark = json.loads((BENCHMARK_DIR / "benchmark.json").read_text(encoding="utf-8"))
     revision = benchmark["dataset_revision"]
@@ -66,8 +87,10 @@ def main():
     if benchmark["task_count"] != EXPECTED_COUNT:
         sys.exit("The declared scope must be all 3,600 NATURAL PLAN test examples.")
     tasks = []
+    by_group = {}
     for task_name, count in TASKS.items():
         examples = fetch_examples(revision, task_name)
+        by_group[task_name] = examples
         if sorted(examples) != sorted(f"{task_name}_example_{number}" for number in range(count)):
             sys.exit(f"{task_name}: expected examples 0 to {count - 1}.")
         tasks.extend(to_task(task_name, number, examples[f"{task_name}_example_{number}"], revision)
@@ -84,6 +107,7 @@ def main():
         temporary.replace(out)
     finally:
         temporary.unlink(missing_ok=True)
+    write_grader_inputs(by_group)
     print(f"Wrote {len(tasks):,} NATURAL PLAN examples to {out}")
 
 
