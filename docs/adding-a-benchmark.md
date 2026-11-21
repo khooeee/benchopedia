@@ -360,8 +360,9 @@ Python's standard library.
   redistribution review.
 
 If a grader needs immutable UTF-8 support files, name them in a tuple
-`CAPTURE_FILES`. Put the files next to `eval.py`. The runner captures them beside
-the grader for recorded-run checks and compares them on resume.
+`CAPTURE_FILES`. A bare filename names a sibling of `eval.py`. Use a path with
+a directory name for files relative to the repository root. The runner preserves
+these paths in the code snapshot and compares the files on resume.
 
 If the upstream scorer omits some imported tasks, define `is_eligible(task)`.
 Return `True` for tasks that can be scored and `False` for tasks to skip. The

@@ -2,7 +2,7 @@
 
 ## Scope
 
-The snapshot contains the 500 test problems, reference programs, and tests with upstream task IDs 11 through 510, from `mbpp/mbpp.jsonl` at revision `bb18d9b0cb460fee1a080fa2eeb4109fe3805275`. Eleven of those problems also include their additional tests. Few-shot, validation, and training problems are not included, and the hand-edited sanitized subset is not substituted. Both the public repository and the website publish this test split. [Dataset file](https://github.com/google-research/google-research/blob/bb18d9b0cb460fee1a080fa2eeb4109fe3805275/mbpp/mbpp.jsonl)
+The snapshot contains the 500 test problems, reference programs, and tests with upstream task IDs 11 through 510, from `mbpp/mbpp.jsonl` at revision `bb18d9b0cb460fee1a080fa2eeb4109fe3805275`. Eleven of those problems also include their additional tests. Few-shot, validation, and training problems are not included in the website task snapshot, and the hand-edited sanitized subset is not substituted. Both the public repository and the website publish this test split. [Dataset file](https://github.com/google-research/google-research/blob/bb18d9b0cb460fee1a080fa2eeb4109fe3805275/mbpp/mbpp.jsonl)
 
 ## Terms
 
@@ -11,6 +11,11 @@ The problems are files in the google-research repository, whose LICENSE at this 
 ## Changes
 
 Benchopedia assigns zero-padded IDs, adds source links, and places the problem text, any test setup, the three tests, and any additional tests into the task prompt. Reference programs are unchanged except that Windows line endings are stored as line feeds. The one non-empty test setup is converted the same way.
+
+The grader's few-shot.json contains the three demonstration problems (IDs 2,
+3, and 4) from this same Apache 2.0 file. It formats each description, the
+three assertions, and the reference program using the authors' prompt
+template. The license and pinned dataset link above cover those records.
 
 ## Notices
 
