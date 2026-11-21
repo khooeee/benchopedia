@@ -27,9 +27,14 @@ DOWNLOADS = {
         "https://getsamplefiles.com/download/zip/sample-5.zip",
         "af8cc44e12134ec50a3587b0e4367a4fca393c8d1f5212b3b00274e6e3ffd8c4",
     ),
+    "bigcodebench-wikibooks-4606125.html": (
+        "https://en.wikibooks.org/w/rest.php/v1/revision/4606125/html",
+        "bd3b8497ed28eb2c497edd201bb2b89632c6ad5a91b781d000a62bb451189c3f",
+    ),
 }
 TLS_FIXTURES = {
     "bigcodebench-0314": ("www.example.com", {}),
+    "bigcodebench-0590": ("en.wikibooks.org", {"/wiki/Main_Page": "bigcodebench-wikibooks-4606125.html"}),
     "bigcodebench-1005": ("getsamplefiles.com", {
         "/download/zip/sample-1.zip": "bigcodebench-sample-1.zip",
         "/download/zip/sample-5.zip": "bigcodebench-sample-5.zip",
@@ -49,6 +54,7 @@ PREFIX = "Please provide a self-contained Python script that solves the followin
 WORKER = """
 import http.server
 import json
+import mimetypes
 import os
 from pathlib import Path
 import socketserver
@@ -81,19 +87,23 @@ if request.get("tls_fixture"):
     host, downloads = request["tls_fixture"]
     handler = socketserver.BaseRequestHandler
     if downloads:
-        archives = {path: (Path("/opt/downloads") / name).read_bytes() for path, name in downloads.items()}
+        files = {
+            path: ((Path("/opt/downloads") / name).read_bytes(), mimetypes.guess_type(name)[0])
+            for path, name in downloads.items()
+        }
 
         class ExampleDownload(http.server.BaseHTTPRequestHandler):
             def do_GET(self):
-                archive = archives.get(self.path)
-                if archive is None:
+                response = files.get(self.path)
+                if response is None:
                     self.send_error(404)
                     return
+                data, content_type = response
                 self.send_response(200)
-                self.send_header("Content-Type", "application/zip")
-                self.send_header("Content-Length", str(len(archive)))
+                self.send_header("Content-Type", content_type or "application/octet-stream")
+                self.send_header("Content-Length", str(len(data)))
                 self.end_headers()
-                self.wfile.write(archive)
+                self.wfile.write(data)
 
         handler = ExampleDownload
     key = "/tmp/example-key.pem"
@@ -148,7 +158,7 @@ def check_setup():
     if not matches_checksum(boston_path(), BOSTON_SHA256):
         return "Run python3 data/bigcodebench/setup_eval.py to install the pinned Boston housing data"
     if not all(matches_checksum(inputs_path().with_name(name), digest) for name, (_, digest) in DOWNLOADS.items()):
-        return "Run python3 data/bigcodebench/setup_eval.py to install the pinned sample ZIPs"
+        return "Run python3 data/bigcodebench/setup_eval.py to install the pinned download fixtures"
     nltk_root = nltk_path()
     if not (nltk_root / "tokenizers/punkt/PY3/english.pickle").is_file() or not all(
             matches_checksum(nltk_root / name, digest) for name, digest in NLTK_FIXTURES.items()):
@@ -207,6 +217,9 @@ def grade(task, output):
                         f"type=bind,src={boston_path()},dst=/opt/boston,readonly"])
     if task["key"] == "bigcodebench-0176":
         fixture.extend(["--add-host", "dns.google:8.8.8.8", "--add-host", "dns.google:8.8.4.4"])
+    if task["key"] == "bigcodebench-0917":
+        # Pin the BLAS kernel for this ARIMA fit across native and emulated x86.
+        fixture.extend(["-e", "OPENBLAS_CORETYPE=Sandybridge"])
     tls_fixture = TLS_FIXTURES.get(task["key"])
     if tls_fixture:
         host, downloads = tls_fixture
