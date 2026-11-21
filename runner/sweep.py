@@ -63,12 +63,12 @@ def work(db, model, profile, limit, *, verify_grader=False):
                     WHERE rt.benchmark_id = s.benchmark_id AND rt.task_key = s.task_key
                       AND (r.dataset_revision IS NULL OR r.dataset_revision = b.dataset_revision)
                       AND m.provider = :provider AND m.provider_model = :model
-                      AND m.weights_digest IS :digest AND r.profile = :profile
+                      AND r.profile = :profile
                  ) THEN 1 ELSE 0 END,
                  s.benchmark_id, s.task_key
         LIMIT :limit
     """, {"provider": model["provider"], "model": model["provider_model"],
-           "digest": model.get("weights_digest"), "profile": profile, "limit": limit,
+           "profile": profile, "limit": limit,
            "verify_grader": verify_grader})
 
 

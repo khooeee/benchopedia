@@ -196,13 +196,12 @@ def local_model(db, run_dir, run, errors):
     model = json.loads(source.read_text(encoding="utf-8"))
     provider = model["provider"]
     name = model["provider_model"]
-    digest = model.get("weights_digest")
-    identity = json.dumps([provider, name, digest])
+    identity = json.dumps([provider, name])
     model_id = "local-" + hashlib.sha256(identity.encode()).hexdigest()
     if db.execute("SELECT 1 FROM model WHERE id = ?", (model_id,)).fetchone() is None:
         insert(db, "model", {"id": model_id, "name": model.get("name", name),
                              "homepage_url": model.get("homepage_url", "https://openrouter.ai/" + name),
-                             "provider": provider, "provider_model": name, "weights_digest": digest},
+                             "provider": provider, "provider_model": name},
                source.relative_to(ROOT), errors)
     return {"model_id": model_id, "model_file": path.as_posix()}
 

@@ -22,11 +22,10 @@ import run  # noqa: E402
 import sweep  # noqa: E402
 
 STOPPED = {"finished_at": None, "stopped_at": "2026-11-19T00:30:00Z", "stop_reason": "Too slow."}
-DIGEST = "sha256:" + "0" * 64
 MODEL = {
     "id": "fixture-model", "name": "Fixture Model", "homepage_url": "https://example.org/model",
-    "provider": "ollama", "provider_model": "fixture:1", "weights_digest": DIGEST,
-    "profiles": {"default": {"think": True, "options": {"temperature": 1.0}}},
+    "provider": "openrouter", "provider_model": "example/fixture",
+    "profiles": {"default": {"options": {"temperature": 1.0}}},
 }
 
 
@@ -36,7 +35,7 @@ def attempt(number, verdict="pass", answer="4"):
         "number": number, "verdict": verdict, "output": output, "answer": answer,
         "started_at": "2026-11-19T00:00:00Z",
         "model_calls": [{"number": 1, "request": {"messages": []},
-                         "response": {"message": {"content": output}}, "latency_ms": 10}],
+                         "response": {"choices": [{"message": {"content": output}}]}, "latency_ms": 10}],
     }
 
 
@@ -56,7 +55,7 @@ class RunChecks(unittest.TestCase):
         self.run = {
             "model_id": "fixture-model", "profile": "default",
             "settings": MODEL["profiles"]["default"], "attempts_per_task": 2, "after_runs": [],
-            "commit_sha": "a" * 40, "environment": {"weights_digest": DIGEST},
+            "commit_sha": "a" * 40, "environment": {"provider": MODEL["provider"], "endpoint": run.openrouter_api.CHAT_URL},
             "commands": [{"command": "python3 runner/run.py fixture", "purpose": "Run it."}],
             "started_at": "2026-11-19T00:00:00Z", "finished_at": "2026-11-19T01:00:00Z",
         }
@@ -154,8 +153,9 @@ def grade(task, output):
         return ({"model": model, "messages": messages, "seed": seed},
                 {"choices": [{"message": {"content": output}}]}, 10, output)
 
-    def test_direct_runner_rejects_historical_model(self):
+    def test_direct_runner_rejects_unsupported_provider(self):
         self.prepare_runner_fixture()
+        self.write_model(MODEL | {"provider": "unsupported"})
         args = ["fixture", "--scratch", "--run-id", "unsupported", "--profile", "default"]
         for selection in (["--model", MODEL["id"]],
                           ["--scratch-model", str(self.models / f"{MODEL['id']}.json")]):
@@ -177,17 +177,23 @@ def grade(task, output):
 
         args = ["fixture", "--scratch", "--run-id", "selected", "--scratch-model", str(self.hosted_model),
                 "--profile", "scratch", "--task-key", "task-3", "--task-key", "task-1"]
+        directory = self.root / "build" / "scratch-runs" / "fixture" / "selected"
+        code = directory / "code"
         with patch.object(run.openrouter_api, "chat", side_effect=chat), redirect_stdout(io.StringIO()):
             with self.assertRaisesRegex(RuntimeError, "fixture interruption"):
                 run.main(args)
+            snapshot = code / "runner" / "run.py"
+            original_code = snapshot.read_bytes()
+            snapshot.unlink()
+            with self.assertRaisesRegex(SystemExit, "changed since it started: runner/run.py"):
+                run.main(args)
+            snapshot.write_bytes(original_code)
             with self.assertRaisesRegex(SystemExit, "selected_tasks"):
                 run.main(args[:-1] + ["task-2"])
             run.main(args)
         self.assertEqual(seen, [("task-3", 1), ("task-3", 2), ("task-3", 2), ("task-1", 1), ("task-1", 2)])
-        directory = self.root / "build" / "scratch-runs" / "fixture" / "selected"
         self.assertEqual(json.loads((directory / "run.json").read_text())["selected_tasks"], ["task-3", "task-1"])
         self.assertEqual([r["key"] for r in build_sqlite.read_results(directory)], ["task-1", "task-3"])
-        code = directory / "code"
         self.assertEqual({p.relative_to(code).as_posix() for p in code.rglob("*") if p.is_file()},
                          {"runner/run.py", "runner/openrouter_api.py", "runner/hosted.json", "data/fixture/eval.py"})
         with self.assertRaisesRegex(SystemExit, "Unknown"):
@@ -460,10 +466,6 @@ def score_responses(task, outputs):
         run_dir = self.write_run("first", self.run, self.results)
         (run_dir / "code/data/fixture/eval.py").unlink()
         self.assertFails("checks/run_code.sql")
-
-    def test_run_weights_match_the_model(self):
-        self.write_run("first", self.run | {"environment": {"weights_digest": "sha256:" + "1" * 64}}, self.results)
-        self.assertFails("checks/run_weights.sql")
 
     def test_attempt_records_its_model_calls(self):
         self.results[0]["attempts"][0]["model_calls"] = []

@@ -178,10 +178,7 @@ def next_messages(evaluation, task, outputs):
 
 
 def response_output(response):
-    message = response.get("message")
-    if message is None:
-        message = response["choices"][0]["message"]
-    return message.get("content") or ""
+    return response["choices"][0]["message"].get("content") or ""
 
 
 def grade_responses(task, evaluation, outputs):
@@ -302,8 +299,10 @@ def main(argv=None):
             raise SystemExit(f"{run_dir} was stopped: {run['stop_reason']}\n"
                              f"To try the tasks it did not pass, start a new run with --after {args.run_id}")
         changed = [k for k, v in settings.items() if run.get(k) != v]
-        changed += [str(path) for path, source in sources.items()
-                    if (run_dir / "code" / path).read_bytes() != source.read_bytes()]
+        for path, source in sources.items():
+            snapshot = run_dir / "code" / path
+            if not snapshot.is_file() or snapshot.read_bytes() != source.read_bytes():
+                changed.append(str(path))
         changed += [k for k in ("provider", "endpoint") if run["environment"].get(k) != env[k]]
         if changed:
             raise SystemExit(f"Cannot resume {run_dir}: changed since it started: {', '.join(changed)}")

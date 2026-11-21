@@ -47,15 +47,13 @@ CREATE TABLE task (
 -- Runs: models attempting a benchmark's tasks. models/<id>.json defines a model;
 -- data/<benchmark>/runs/<run>/ holds one run, written by runner/run.py.
 
--- A model as served. Historical Ollama records include a weights digest.
+-- A model as served on OpenRouter.
 CREATE TABLE model (
     id             TEXT PRIMARY KEY CHECK (id <> '' AND id NOT GLOB '*[^a-z0-9.-]*'),
     name           TEXT NOT NULL CHECK (trim(name) <> ''),
     homepage_url   TEXT NOT NULL CHECK (homepage_url LIKE 'https://%'),
-    provider       TEXT NOT NULL CHECK (provider IN ('ollama', 'openrouter')),
-    provider_model TEXT NOT NULL CHECK (trim(provider_model) <> ''),
-    weights_digest TEXT CHECK (weights_digest GLOB 'sha256:*'),
-    CHECK ((weights_digest IS NOT NULL) = (provider = 'ollama'))
+    provider       TEXT NOT NULL CHECK (provider = 'openrouter'),
+    provider_model TEXT NOT NULL CHECK (trim(provider_model) <> '')
 ) STRICT;
 
 -- One pass of one model over one benchmark's tasks, with fixed settings and code.
@@ -77,7 +75,7 @@ CREATE TABLE run (
     model_file        TEXT,
     -- The Benchopedia commit the run's code and model definition came from.
     commit_sha        TEXT NOT NULL CHECK (length(commit_sha) = 40 AND commit_sha NOT GLOB '*[^0-9a-f]*'),
-    -- Software and hardware versions, including the weights digest the provider reported.
+    -- Software and hardware versions and the endpoint used for this run.
     environment       TEXT NOT NULL CHECK (json_valid(environment) AND json_type(environment) = 'object'),
     started_at        TEXT NOT NULL CHECK (started_at GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T*Z'),
     -- Set once every selected task has a result; NULL while running or if the run was stopped.

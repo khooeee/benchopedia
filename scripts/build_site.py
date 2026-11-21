@@ -367,7 +367,6 @@ def run_page(b, r, tasks_by_key):
         progress, ended = ' so far; the run is still in progress', [('Finished', 'in progress')]
     facts = [('Model', f'<a href="{esc(model["homepage_url"])}">{esc(model["name"])}</a>'),
              ('Served as', f'<code>{esc(model["provider_model"])}</code> on {esc(model["provider"])}'),
-             *([('Weights digest', f'<code>{esc(model["weights_digest"])}</code>')] if model["weights_digest"] else []),
              ('Profile', esc(r['profile'])),
              ('Attempts per task', str(r['attempts_per_task'])),
              ('Tasks selected', selection),

@@ -84,7 +84,6 @@ erDiagram
         TEXT id PK "its file name under models/"
         TEXT provider "the provider recorded for the model"
         TEXT provider_model
-        TEXT weights_digest "pins the weights"
     }
     run {
         TEXT benchmark_id PK, FK
