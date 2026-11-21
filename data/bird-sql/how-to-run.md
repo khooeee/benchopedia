@@ -66,3 +66,18 @@ The script reads two files from directories given with trailing slashes, and pai
 python evaluation.py --predicted_sql_path predictions/ --ground_truth_path gold/ --data_mode dev \
   --db_root_path dev_databases/ --diff_json_path dev_20251106-00000-of-00001.json --num_cpus 16 --meta_time_out 30.0
 ```
+
+### Verify with the Benchopedia sweep
+
+With Docker running, use `python3 data/bird-sql/setup_eval.py` to install the
+eleven pinned databases and the SQLite 3.40.1 worker. Then run
+`python3 runner/sweep.py bird-sql --verify-grader`. The model sees the schema,
+evidence, and question. The evaluator accepts complete queries or a
+continuation after SELECT. A network-isolated, read-only worker compares the
+two result sets within the official 30-second limit. The worker disables
+automatic indexes on `european_football_2` so SQLite uses the existing player
+index for the football queries. Database rows stay local.
+
+Date expressions such as `julianday('now')` see the pinned split's release
+date, 2025-11-06 at midnight UTC, in both queries. The 30-second limit uses
+elapsed time on the monotonic clock.
