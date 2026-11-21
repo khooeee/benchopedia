@@ -28,6 +28,38 @@ An evaluator with local prerequisites can define `check_setup()`. It returns
 `None` when setup is ready, or a message explaining how to fix the setup. The
 sweep reports the message before making model calls for that benchmark.
 
+## Run a repository-wide sweep
+
+Start with `python3 runner/sweep.py --all --dry-run`. Check the scope and task
+order, and record each skipped benchmark with its blocker. Run with `--all`
+when the discovered evaluators support their protocols. If an evaluator is
+present but lacks a capability its protocol requires, leave that benchmark out
+and pass the eligible benchmark IDs explicitly.
+
+A sweep is one pass through the eligible tasks. Complete at most one new
+evaluation per task over that pass, including across restarts. Monitor the run
+until the pass finishes, OpenRouter's daily quota runs out, the user asks you
+to stop, or no eligible work can proceed.
+
+Retry transient failures and resume an interrupted batch using its saved
+command and checkpoints. Keep track of the run IDs and completed benchmark and
+task pairs. The runner deduplicates within an invocation. If you restart the
+sweep, use the saved results to exclude pairs already completed in this pass.
+Use exact `--task-key` selections with `runner/run.py --scratch` when needed to
+continue a saved queue. For a benchmark-specific blocker, preserve its work,
+record the blocker, and continue the other benchmarks in priority order. If a
+blocker prevents further progress, report what would let the sweep resume.
+
+Keep results and checkpoints in scratch runs. At the end, rebuild the local
+preview with `python3 scripts/build_site.py --local-runs` and report why the
+sweep stopped, which benchmarks it covered, completed evaluations, new verified
+solves, remaining open or pending tasks, and skipped benchmarks with their
+reasons. Include the run IDs and the `build/local-site/` preview path.
+
+For a goal that also includes adding benchmarks, finish the sweep report when
+quota runs out or the pass completes, then continue with the
+[benchmark addition workflow](adding-a-benchmark.md#add-benchmarks-continuously).
+
 ## Task and model priorities
 
 Evaluate eligible untested tasks first, then pending tasks, then open tasks
@@ -48,9 +80,6 @@ NVIDIA Nemotron 3 Ultra `:free`. Copy `.env.template` to `.env` and set
 when the daily quota is exhausted. If quota runs out during a batch, the
 completed results and partial calls stay in the scratch run. Resume that run
 using its recorded command when quota is available again.
-
-For a goal that also includes adding a benchmark, rebuild the local preview
-with the saved results and continue with [Adding a benchmark](adding-a-benchmark.md).
 
 ## Verify a grader
 

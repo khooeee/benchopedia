@@ -9,6 +9,37 @@ Use [HumanEval](../data/humaneval/) as a working example, and
 the import to the new dataset; its identifiers, answers, and environment setup
 may differ from HumanEval's.
 
+## Add benchmarks continuously
+
+For ongoing catalog expansion, work on one benchmark at a time and repeat the
+workflow below until the user asks you to stop.
+
+1. Before choosing a candidate, check the latest default branch's `data/`, open
+   and closed benchmark PRs, existing worktrees, and the
+   [declined benchmark log](research/declined-benchmarks.md). Read the same log
+   on the local `benchmark-declines` branch if it exists. Skip candidates already
+   imported or in progress. Revisit declined candidates when relevant evidence or
+   capabilities change. If a candidate depends on an unmerged PR, record the
+   dependency in the progress report and move on.
+2. Start each benchmark from the latest default branch in its own worktree.
+   Follow the import and redistribution steps below. Each benchmark needs a
+   working `eval.py` that follows the upstream scoring protocol and makes it
+   eligible for sweeps.
+3. Run the required checks, verify the grader in a small scratch run, and review
+   the generated pages locally. Keep each deferred candidate's blocker and next
+   step with its worktree or draft PR, when available. As blockers clear, finish
+   deferred verification before starting another candidate.
+4. When PRs are requested, open one per benchmark. Open a regular PR after
+   verification passes. For shared infrastructure changes, follow the
+   [draft PR procedure](#document-shared-infrastructure-changes-in-the-pull-request)
+   and mark the PR ready only after verification passes. Summarize the split,
+   revision, task count, redistribution review, and verification results in every
+   PR. Leave every PR unmerged.
+5. Pick the next candidate once the current PR is ready for review or the
+   candidate is declined or deferred. If no candidate can proceed, report the
+   blocker and what would let work resume. Check again when a temporary blocker
+   such as quota exhaustion is expected to clear.
+
 ## 1. Choose the source and scope
 
 Start with the official dataset, project documentation, paper, and evaluation
@@ -51,6 +82,14 @@ upstream links may be an alternative, but an article without tasks requires an
 explicit scope change and an [exclusion](#excluding-tasks). If a published
 benchmark's permission turns out to be missing or unclear, exclude its tasks
 the same way.
+
+For a declined candidate, record the revision, split, source links, reason, and
+what would allow the import to resume in
+[the declined benchmark log](research/declined-benchmarks.md). Commit each
+decline to the same dedicated local branch, `benchmark-declines`, before moving
+on. Create the branch from the latest default branch if it does not exist. Later
+worktrees and goal runs can read it with
+`git show benchmark-declines:docs/research/declined-benchmarks.md`.
 
 For an allowed import, record the license, immutable source links, access terms,
 reviewed scope, and redistribution obligations in the benchmark's
@@ -388,11 +427,16 @@ uses the [shared provider policy](running-benchmarks.md#task-and-model-prioritie
 python3 runner/sweep.py example-benchmark --verify-grader
 ```
 
-Check that the scratch run follows the benchmark's evaluation protocol and
-records the scorer's results correctly. For text graders, inspect `unparseable`
-replies and adjust the prompt as needed. Include `eval.py`, any required
-infrastructure changes, and the outcomes of the grader checks and scratch run
-in the benchmark pull request.
+Confirm that the scratch run recorded a complete evaluation for each selected
+task, followed the benchmark's protocol, and recorded the scorer's results
+correctly. For text graders, inspect `unparseable` replies and adjust the prompt
+as needed. Include `eval.py`, any required infrastructure changes, and the
+outcomes of the grader checks and scratch run in the benchmark pull request.
+
+If the daily OpenRouter quota is exhausted, complete the local checks and
+preview review. Record the hosted grader check as pending, including the scratch
+run ID if one exists, and continue with other candidates. When quota returns,
+finish the pending check before opening a regular PR or marking a draft ready.
 
 ## 10. Build and check
 
