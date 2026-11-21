@@ -47,7 +47,7 @@ CREATE TABLE task (
 -- Runs: models attempting a benchmark's tasks. models/<id>.json defines a model;
 -- data/<benchmark>/runs/<run>/ holds one run, written by runner/run.py.
 
--- A model as served. Ollama supplies a weights digest.
+-- A model as served. Historical Ollama records include a weights digest.
 CREATE TABLE model (
     id             TEXT PRIMARY KEY CHECK (id <> '' AND id NOT GLOB '*[^a-z0-9.-]*'),
     name           TEXT NOT NULL CHECK (trim(name) <> ''),

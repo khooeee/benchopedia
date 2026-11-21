@@ -1,6 +1,6 @@
 """Build build/benchopedia.db from data/ and models/ and run every check against it.
 
-Runs written by runner/run.py under data/<benchmark>/runs/ load with their benchmark.
+Published runs under data/<benchmark>/runs/ load with their benchmark.
 
 Two layers of checking:
   1. db/schema.sql constraints, enforced as each row is inserted.

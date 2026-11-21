@@ -82,7 +82,7 @@ erDiagram
     }
     model {
         TEXT id PK "its file name under models/"
-        TEXT provider "ollama or openrouter"
+        TEXT provider "the provider recorded for the model"
         TEXT provider_model
         TEXT weights_digest "pins the weights"
     }

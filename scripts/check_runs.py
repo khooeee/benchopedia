@@ -137,16 +137,13 @@ def grade(task, output):
         schema = self.root / "db" / "schema.sql"
         schema.parent.mkdir()
         schema.write_bytes((ROOT / "db" / "schema.sql").read_bytes())
-        hosted = runner.parent / "hosted.json"
-        hosted.write_bytes(sweep.OPENROUTER_MODEL.read_bytes())
+        self.hosted_model = runner.parent / "hosted.json"
+        self.hosted_model.write_bytes(sweep.OPENROUTER_MODEL.read_bytes())
         patches = [
             patch.multiple(run, ROOT=self.root, __file__=str(runner),
                            git=lambda *args: "a" * 40 if args[0] == "rev-parse" else "https://example.org/repo.git"),
-            patch.object(run.platform, "system", return_value="Fixture OS"),
-            patch.multiple(sweep, ROOT=self.root, OPENROUTER_MODEL=hosted),
-            patch.object(run.ollama_api, "version", return_value="fixture"),
-            patch.object(run.ollama_api, "digest", return_value=DIGEST),
-            patch.object(sweep.openrouter_api, "api_key", return_value="fixture"),
+            patch.multiple(sweep, ROOT=self.root, OPENROUTER_MODEL=self.hosted_model),
+            patch.object(run.openrouter_api, "api_key", return_value="fixture"),
         ]
         for setting in patches:
             setting.start()
@@ -155,7 +152,18 @@ def grade(task, output):
     @staticmethod
     def reply(model, messages, profile, seed, output="#### 4"):
         return ({"model": model, "messages": messages, "seed": seed},
-                {"message": {"content": output}}, 10, output)
+                {"choices": [{"message": {"content": output}}]}, 10, output)
+
+    def test_direct_runner_rejects_historical_model(self):
+        self.prepare_runner_fixture()
+        args = ["fixture", "--scratch", "--run-id", "unsupported", "--profile", "default"]
+        for selection in (["--model", MODEL["id"]],
+                          ["--scratch-model", str(self.models / f"{MODEL['id']}.json")]):
+            error = io.StringIO()
+            with redirect_stderr(error), self.assertRaises(SystemExit):
+                run.main(args + selection)
+            self.assertIn("only OpenRouter model configurations are supported", error.getvalue())
+        self.assertFalse((self.root / "build" / "scratch-runs").exists())
 
     def test_exact_selection_resumes_at_saved_attempt(self):
         self.prepare_runner_fixture(("task-3",))
@@ -167,9 +175,9 @@ def grade(task, output):
                 raise RuntimeError("fixture interruption")
             return self.reply(model, messages, profile, seed)
 
-        args = ["fixture", "--scratch", "--run-id", "selected", "--model", MODEL["id"],
-                "--profile", "default", "--task-key", "task-3", "--task-key", "task-1"]
-        with patch.object(run.ollama_api, "chat", side_effect=chat), redirect_stdout(io.StringIO()):
+        args = ["fixture", "--scratch", "--run-id", "selected", "--scratch-model", str(self.hosted_model),
+                "--profile", "scratch", "--task-key", "task-3", "--task-key", "task-1"]
+        with patch.object(run.openrouter_api, "chat", side_effect=chat), redirect_stdout(io.StringIO()):
             with self.assertRaisesRegex(RuntimeError, "fixture interruption"):
                 run.main(args)
             with self.assertRaisesRegex(SystemExit, "selected_tasks"):
@@ -179,6 +187,9 @@ def grade(task, output):
         directory = self.root / "build" / "scratch-runs" / "fixture" / "selected"
         self.assertEqual(json.loads((directory / "run.json").read_text())["selected_tasks"], ["task-3", "task-1"])
         self.assertEqual([r["key"] for r in build_sqlite.read_results(directory)], ["task-1", "task-3"])
+        code = directory / "code"
+        self.assertEqual({p.relative_to(code).as_posix() for p in code.rglob("*") if p.is_file()},
+                         {"runner/run.py", "runner/openrouter_api.py", "runner/hosted.json", "data/fixture/eval.py"})
         with self.assertRaisesRegex(SystemExit, "Unknown"):
             run.main(args[:-1] + ["missing"])
         with self.assertRaisesRegex(SystemExit, "at most once"):
@@ -205,9 +216,9 @@ def score_responses(task, outputs):
             output = "#### 4" if seed == 1 else "other answer"
             return self.reply(model, messages, profile, seed, output=output)
 
-        args = ["fixture", "--scratch", "--run-id", "multi", "--model", MODEL["id"],
-                "--profile", "default", "--task-key", "task-1"]
-        with patch.object(run.ollama_api, "chat", side_effect=chat), redirect_stdout(io.StringIO()):
+        args = ["fixture", "--scratch", "--run-id", "multi", "--scratch-model", str(self.hosted_model),
+                "--profile", "scratch", "--task-key", "task-1"]
+        with patch.object(run.openrouter_api, "chat", side_effect=chat), redirect_stdout(io.StringIO()):
             with self.assertRaisesRegex(RuntimeError, "fixture interruption"):
                 run.main(args)
             run.main(args)
@@ -237,11 +248,9 @@ def score_responses(task, outputs):
 
         output = io.StringIO()
         with (patch.object(sweep.openrouter_api, "free_requests_remaining", return_value=1),
-              patch.object(sweep.openrouter_api, "chat", side_effect=openrouter_chat),
-              patch.object(run.ollama_api, "chat") as local, redirect_stdout(output)):
+              patch.object(sweep.openrouter_api, "chat", side_effect=openrouter_chat), redirect_stdout(output)):
             sweep.main(["fixture", "--limit", "3"])
         self.assertEqual(hosted, [("task-3", 1), ("task-3", 2), ("task-4", 1), ("task-4", 2)])
-        local.assert_not_called()
         run_file, = (self.root / "build" / "scratch-runs" / "fixture").glob("*/run.json")
         self.assertIn(str(run_file), output.getvalue())
         self.assertIn("1 task evaluations completed.", output.getvalue())

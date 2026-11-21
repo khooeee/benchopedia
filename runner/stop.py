@@ -1,6 +1,6 @@
 """Record that a run was ended early, and why.
 
-    python3 runner/stop.py gsm8k 2026-11-19-qwen3.6-35b-a3b-thinking \\
+    python3 runner/stop.py gsm8k example --scratch \\
         --reason "Stopped after 135 of 1,319 tasks because ..."
 
 Stop the runner first (Ctrl-C, or kill its process). This drops a last line the

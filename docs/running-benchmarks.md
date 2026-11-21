@@ -41,9 +41,9 @@ For benchmarks with numeric metrics, a task is **scored** once all its attempts
 have valid scores. A regular sweep then moves on. The local preview shows
 per-attempt scores and the mean over scored tasks in the run.
 
-Sweeps and grader checks use NVIDIA Nemotron 3 Ultra `:free` on
-OpenRouter. Copy `.env.template` to `.env` and set `OPENROUTER_API_KEY` there
-or in the process environment.
+OpenRouter is the only provider for new runs. Sweeps and grader checks use
+NVIDIA Nemotron 3 Ultra `:free`. Copy `.env.template` to `.env` and set
+`OPENROUTER_API_KEY` there or in the process environment.
 `make openrouter-quota` reports the daily allowance remaining. The sweep ends
 when the daily quota is exhausted. If quota runs out during a batch, the
 completed results and partial calls stay in the scratch run. Resume that run
@@ -65,13 +65,15 @@ python3 runner/sweep.py gsm8k --verify-grader
 ## Resume a recorded run
 
 The run's `run.json` records the exact task keys and the command to resume with
-the same run ID and provider.
+the same run ID. Resuming requires the original runner, grader, model
+configuration, and settings captured by the run.
 
 Local runs live in `build/scratch-runs/<benchmark>/<run-id>/`. Each completed
 task has one line in `results.jsonl` with its grades and raw model exchanges.
 The `partial/` directory saves returned calls for unfinished tasks so they
-can be graded or resumed. Each provider gets its own run record. Historical
-published results live in `data/<benchmark>/runs/<run-id>/`.
+can be graded or resumed. Historical published results live in
+`data/<benchmark>/runs/<run-id>/`, with their original model metadata and code
+snapshots.
 
 ## Browse the evidence
 
