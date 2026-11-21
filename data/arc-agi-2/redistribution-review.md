@@ -14,6 +14,8 @@ The technical report describes ARC-AGI-2 tasks as, to the authors' knowledge, en
 
 Benchopedia renders each task's JSON grids as text: demonstration pairs and test inputs as the prompt, and test outputs as the reference answer, each grid as one line of digits per row with its size. It uses upstream task IDs and adds source links. No cell value is changed.
 
+The grader includes the pinned harness prompt template and its grid parser under the [ARC Prize Foundation's MIT license](https://github.com/arcprize/arc-agi-benchmarking/blob/a4e7c997a2015a3209d4bc7c778aab18faef1cdb/LICENSE.md). The parser's functions and the template text are unchanged. Benchopedia adds the adapter, retry bookkeeping, and exact-match scoring. LICENSE-grader reproduces the full license and copyright notice.
+
 ## Notices
 
 The upstream license accompanies this snapshot as LICENSE. Its copyright notice is reproduced below.

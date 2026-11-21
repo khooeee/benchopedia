@@ -175,6 +175,10 @@ def grade_output(task, evaluation, output, *, enforce_output_limit=True):
 
     limit = getattr(evaluation, "MAX_OUTPUT_CHARS", None)
     scores = None if enforce_output_limit and limit is not None and len(output) > limit else score(task, output)
+    return numeric_result(task, scores)
+
+
+def numeric_result(task, scores):
     if scores is None:
         return {"verdict": "unparseable", "answer": None}
     if not isinstance(scores, dict) or not scores or not all(
@@ -185,25 +189,54 @@ def grade_output(task, evaluation, output, *, enforce_output_limit=True):
     return {"verdict": "scored", "answer": None, "scores": scores}
 
 
+def next_messages(evaluation, task, outputs):
+    plan = getattr(evaluation, "next_messages", None)
+    if plan is not None:
+        return plan(task, outputs)
+    return None if outputs else evaluation.messages(task)
+
+
+def response_output(response):
+    message = response.get("message")
+    if message is None:
+        message = response["choices"][0]["message"]
+    return message.get("content") or ""
+
+
+def grade_responses(task, evaluation, outputs):
+    score_responses = getattr(evaluation, "score_responses", None)
+    if score_responses is not None:
+        return numeric_result(task, score_responses(task, outputs))
+    return grade_output(task, evaluation, outputs[-1])
+
+
 def attempt_task(task, evaluation, model, profile, backend, checkpoint=None):
     attempts = (json.loads(checkpoint.read_text(encoding="utf-8"))["attempts"]
                 if checkpoint and checkpoint.is_file() else [])
+    seeds_used = 0
     for number in range(1, evaluation.ATTEMPTS + 1):
         if number > len(attempts):
-            started_at = now()
-            request, response, latency_ms, output = backend.chat(
-                model["provider_model"], evaluation.messages(task), profile, seed=number)
-            attempts.append({
-                "number": number, "output": output, "started_at": started_at,
-                "model_calls": [{"number": 1, "request": request, "response": response, "latency_ms": latency_ms}],
-            })
-            if checkpoint:
-                write_json(checkpoint, {"key": task["key"], "attempts": attempts})
+            attempts.append({"number": number, "started_at": now(), "model_calls": []})
         attempt = attempts[number - 1]
+        calls = attempt["model_calls"]
         if "verdict" not in attempt:
-            attempt.update(grade_output(task, evaluation, attempt["output"]))
+            outputs = [response_output(call["response"]) for call in calls]
+            while (messages := next_messages(evaluation, task, outputs)) is not None:
+                call_number = len(calls) + 1
+                request, response, latency_ms, output = backend.chat(
+                    model["provider_model"], messages, profile, seed=seeds_used + call_number)
+                calls.append({"number": call_number, "request": request,
+                              "response": response, "latency_ms": latency_ms})
+                outputs.append(output)
+                attempt["output"] = output
+                if checkpoint:
+                    write_json(checkpoint, {"key": task["key"], "attempts": attempts})
+            if not outputs:
+                raise ValueError(f"{task['key']}: evaluator requested no model calls")
+            attempt.update(grade_responses(task, evaluation, outputs))
             if checkpoint:
                 write_json(checkpoint, {"key": task["key"], "attempts": attempts})
+        seeds_used += len(calls)
     verdicts = {a["verdict"] for a in attempts}
     if verdicts == {"scored"}:
         result = "scored"
@@ -378,7 +411,7 @@ def main(argv=None):
     write_json(run_file, run)
     passed = sum(r["result"] == "pass" for r in records)
     scored = sum(r["result"] == "scored" for r in records)
-    if getattr(evaluation, "score", None) is not None:
+    if any(getattr(evaluation, name, None) is not None for name in ("score", "score_responses")):
         print(f"Finished {run_dir}: {scored} of {len(records)} tasks scored")
     else:
         print(f"Finished {run_dir}: {passed} of {len(records)} tasks passed")

@@ -39,7 +39,7 @@ responses = [[generate(convert_task_pairs_to_prompt(task.train, pair)) for _ in 
 
 ### 4. Score it
 
-`parse_and_validate_json` is the parser the harness applies to each response: it takes a grid inside `\boxed{...}`, or else the JSON that ends at the response's last closing bracket, if that is a list of lists. A test input is solved if either attempt equals its output grid exactly, and the task scores the share of its test inputs solved, as `ARCScorer.score_task` computes. The harness retries a call whose response it cannot parse; here that attempt simply fails.
+`parse_and_validate_json` is the parser the harness applies to each response: it takes a grid inside `\boxed{...}`, or else the JSON that ends at the response's last closing bracket, if that is a list of lists. A test input is solved if either attempt equals its output grid exactly, and the task scores the share of its test inputs solved, as `ARCScorer.score_task` computes. The harness allows two calls per prediction slot when the first reply cannot be parsed. Benchopedia uses the same retry limit and keeps every returned reply in the run record. An empty slot after both calls counts as a miss. The short example below treats an unparseable reply as a miss without retrying.
 
 ```python
 from arc_agi_benchmarking.utils.parsing import parse_and_validate_json
