@@ -8,8 +8,8 @@ from urllib.request import urlopen
 from uuid import uuid4
 from zipfile import ZipFile
 
-from eval import (BOSTON_SHA256, IMAGE, INPUTS_SHA256, NLTK_FIXTURES, boston_path,
-                  inputs_path, matches_checksum, nltk_path)
+from eval import (BOSTON_SHA256, DOWNLOADS, IMAGE, INPUTS_SHA256, NLTK_FIXTURES,
+                  boston_path, inputs_path, matches_checksum, nltk_path)
 
 
 URL = ("https://huggingface.co/datasets/bigcode/bigcodebench/resolve/"
@@ -52,6 +52,8 @@ def main():
     subprocess.run(["docker", "build", "--platform", "linux/amd64", "-f", str(directory / "dockerfile.eval"),
                     "-t", IMAGE, str(directory)], check=True)
     install_fixture(boston_path(), BOSTON_URL, BOSTON_SHA256)
+    for name, (url, digest) in DOWNLOADS.items():
+        install_fixture(inputs_path().with_name(name), url, digest)
     for name, digest in NLTK_FIXTURES.items():
         archive = nltk_path() / name
         install_fixture(archive, NLTK_URL + name, digest)

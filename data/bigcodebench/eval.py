@@ -14,6 +14,30 @@ CAPTURE_FILES = ("dockerfile.eval",)
 INPUTS_SHA256 = "81c918f4462d251f23d4f90a76dc3386b7cf3254a11bf2c05b2b81ae00b772d0"
 BOSTON_SHA256 = "1df1f5ccfcd1cb9e8f9eaa2c871bb3355eafdde755267bcd593f817b21b92a7b"
 BOSTON_TASK = "bigcodebench-0101"
+DOWNLOADS = {
+    "bigcodebench-sample-download.zip": (
+        "https://drive.usercontent.google.com/download?id=1MRyf-bpPYb7hT3Oj4ZK35O-fzM2_HZ7A&export=download&confirm=t",
+        "c73b145ed1f8ba7bd5a215b9fab8fc0bae496882673a741ed10a24ba5f427f7d",
+    ),
+    "bigcodebench-sample-1.zip": (
+        "https://getsamplefiles.com/download/zip/sample-1.zip",
+        "aacc269929eb3813429f4d15fb45ade9c7d0276b55421817f052a3ecb366b2e6",
+    ),
+    "bigcodebench-sample-5.zip": (
+        "https://getsamplefiles.com/download/zip/sample-5.zip",
+        "af8cc44e12134ec50a3587b0e4367a4fca393c8d1f5212b3b00274e6e3ffd8c4",
+    ),
+}
+TLS_FIXTURES = {
+    "bigcodebench-0314": ("www.example.com", {}),
+    "bigcodebench-1005": ("getsamplefiles.com", {
+        "/download/zip/sample-1.zip": "bigcodebench-sample-1.zip",
+        "/download/zip/sample-5.zip": "bigcodebench-sample-5.zip",
+    }),
+    "bigcodebench-1012": ("drive.google.com", {
+        "/uc?export=download&id=1MRyf-bpPYb7hT3Oj4ZK35O-fzM2_HZ7A": "bigcodebench-sample-download.zip",
+    }),
+}
 NLTK_FIXTURES = {
     "corpora/stopwords.zip": "4491a6e09fee59f5f674edac3444305c9bfd2eb62b6873c835ce8f3805d95150",
     "corpora/words.zip": "54ed02917d6771dcc3e8141218960d020947f7f2ccfd9ac9b320979349746015",
@@ -53,18 +77,37 @@ if fixture.is_file():
 
 request = json.load(sys.stdin)
 record = request["problem"]
-if record["task_id"] == "BigCodeBench/314":
-    # The test mocks the HTTP client, but the preparatory TLS socket is real.
+if request.get("tls_fixture"):
+    host, downloads = request["tls_fixture"]
+    handler = socketserver.BaseRequestHandler
+    if downloads:
+        archives = {path: (Path("/opt/downloads") / name).read_bytes() for path, name in downloads.items()}
+
+        class ExampleDownload(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                archive = archives.get(self.path)
+                if archive is None:
+                    self.send_error(404)
+                    return
+                self.send_response(200)
+                self.send_header("Content-Type", "application/zip")
+                self.send_header("Content-Length", str(len(archive)))
+                self.end_headers()
+                self.wfile.write(archive)
+
+        handler = ExampleDownload
     key = "/tmp/example-key.pem"
     cert = "/tmp/example-cert.pem"
     subprocess.run(["openssl", "req", "-x509", "-newkey", "ec", "-pkeyopt", "ec_paramgen_curve:P-256",
                     "-nodes", "-keyout", key, "-out", cert, "-days", "1",
-                    "-subj", "/CN=www.example.com", "-addext", "subjectAltName=DNS:www.example.com"],
+                    "-subj", f"/CN={host}", "-addext", f"subjectAltName=DNS:{host}"],
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True, timeout=5)
     os.environ["SSL_CERT_FILE"] = cert
+    if downloads:
+        os.environ["REQUESTS_CA_BUNDLE"] = cert
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     context.load_cert_chain(cert, key)
-    tls = socketserver.TCPServer(("127.0.0.1", 443), socketserver.BaseRequestHandler)
+    tls = socketserver.TCPServer(("127.0.0.1", 443), handler)
     tls.socket = context.wrap_socket(tls.socket, server_side=True)
     Thread(target=tls.serve_forever, daemon=True).start()
 
@@ -104,6 +147,8 @@ def check_setup():
         return "Run python3 data/bigcodebench/setup_eval.py to install the pinned scoring inputs"
     if not matches_checksum(boston_path(), BOSTON_SHA256):
         return "Run python3 data/bigcodebench/setup_eval.py to install the pinned Boston housing data"
+    if not all(matches_checksum(inputs_path().with_name(name), digest) for name, (_, digest) in DOWNLOADS.items()):
+        return "Run python3 data/bigcodebench/setup_eval.py to install the pinned sample ZIPs"
     nltk_root = nltk_path()
     if not (nltk_root / "tokenizers/punkt/PY3/english.pickle").is_file() or not all(
             matches_checksum(nltk_root / name, digest) for name, digest in NLTK_FIXTURES.items()):
@@ -162,8 +207,12 @@ def grade(task, output):
                         f"type=bind,src={boston_path()},dst=/opt/boston,readonly"])
     if task["key"] == "bigcodebench-0176":
         fixture.extend(["--add-host", "dns.google:8.8.8.8", "--add-host", "dns.google:8.8.4.4"])
-    if task["key"] == "bigcodebench-0314":
-        fixture.extend(["--add-host", "www.example.com:127.0.0.1"])
+    tls_fixture = TLS_FIXTURES.get(task["key"])
+    if tls_fixture:
+        host, downloads = tls_fixture
+        fixture.extend(["--add-host", f"{host}:127.0.0.1"])
+        for archive in downloads.values():
+            fixture.extend(["--mount", f"type=bind,src={inputs_path().with_name(archive)},dst=/opt/downloads/{archive},readonly"])
     try:
         result = subprocess.run(
             ["docker", "run", "--rm", "--init", "--platform", "linux/amd64", "--name", name,
@@ -175,7 +224,8 @@ def grade(task, output):
              "-e", "MPLBACKEND=Agg", "-e", "MPLCONFIGDIR=/tmp/matplotlib", "-e", "XDG_CACHE_HOME=/tmp/cache",
              "-e", "OPENBLAS_NUM_THREADS=1", "--entrypoint", "python3",
              "-i", IMAGE, "-B", "-c", WORKER],
-            input=json.dumps({"output": output, "problem": problem, "code_prompt": code_prompt}),
+            input=json.dumps({"output": output, "problem": problem, "code_prompt": code_prompt,
+                              "tls_fixture": tls_fixture}),
             capture_output=True, text=True, timeout=255,
         )
     except subprocess.TimeoutExpired:
