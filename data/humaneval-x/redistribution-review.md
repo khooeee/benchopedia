@@ -14,6 +14,8 @@ The paper says the authors manually rewrote each HumanEval prompt, canonical sol
 
 Benchopedia puts the upstream task ID and function name above each prompt and wraps the prompt in a fenced block. It assembles each solution from the prompt, canonical solution, and test program, builds IDs from the language and problem number, and adds source and environment links. Prompt, solution, and test text is unchanged.
 
+The grader preserves the CodeGeeX prompt assembly, standard imports and generated-code cleanup from the pinned evaluator under the same Apache 2.0 license. The small per-problem context needed to reconstruct test programs is downloaded from the pinned files into the user's local build directory.
+
 ## Notices
 
 HumanEval-X is from "CodeGeeX: A Pre-Trained Model for Code Generation with Multilingual Benchmarking on HumanEval-X" by Qinkai Zheng, Xiao Xia, Xu Zou, Yuxiao Dong, Shan Wang, Yufei Xue, Zihan Wang, Lei Shen, Andi Wang, Yang Li, Teng Su, Zhilin Yang, and Jie Tang. It is used under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0), kept in full beside this review as LICENSE.
