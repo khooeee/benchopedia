@@ -20,6 +20,8 @@ Benchopedia assembles each task prompt from the question followed by the ten par
 
 The reference solution is the answer, then the supporting facts in the order upstream lists them, one per line as the article title, the sentence number, and that sentence. Sentence numbers are the upstream indices, which count from zero. One supporting fact in this split names a sentence number that does not exist in its paragraph, so its line gives the recorded title and number with no sentence text. The `yes` and `no` answers are written as upstream stores them. Keys are the upstream question identifiers. Prompt and solution links point at the pinned split file, which has no per-question addresses, and the environment link is omitted.
 
+The grader adds a generated table of sentence end offsets for the same pinned split. It contains task IDs and integer positions only, is covered by the same attribution and share-alike terms, and preserves the source sentence numbering without adding article text to the catalog.
+
 ## Notices
 
 HotpotQA is from "HotpotQA: A Dataset for Diverse, Explainable Multi-hop Question Answering" by Zhilin Yang, Peng Qi, Saizheng Zhang, Yoshua Bengio, William W. Cohen, Ruslan Salakhutdinov, and Christopher D. Manning, EMNLP 2018, a collaboration of Carnegie Mellon University, Stanford University, and Université de Montréal. The questions, answers, and supporting-fact annotations were written by crowdworkers.

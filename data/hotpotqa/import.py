@@ -8,6 +8,7 @@ Internet Archive's copy of their download link and checked against its digest.
 """
 
 import hashlib
+from itertools import accumulate
 import json
 import re
 import sys
@@ -106,6 +107,22 @@ def to_task(record):
     }, set(found), unresolved
 
 
+def write_sentence_boundaries(records):
+    """Record each paragraph's sentence end offsets in its rendered, stripped text."""
+    offsets = {}
+    for row in records:
+        paragraphs = []
+        for _, sentences in row["context"]:
+            joined = "".join(sentences)
+            start = len(joined) - len(joined.lstrip())
+            width = len(joined.strip())
+            ends = accumulate(map(len, sentences[:-1]))
+            paragraphs.append([min(width, max(0, end - start)) for end in ends])
+        offsets[row["_id"]] = paragraphs
+    target = BENCHMARK_DIR / "sentence-boundaries.json"
+    target.write_text(json.dumps(offsets, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
+
+
 def write_attribution(titles):
     lines = []
     for title in sorted(titles):
@@ -171,6 +188,7 @@ def main():
     finally:
         temporary.unlink(missing_ok=True)
     write_attribution(titles)
+    write_sentence_boundaries(records)
     print(f"Wrote {len(tasks):,} HotpotQA development questions over "
           f"{len(titles):,} Wikipedia articles to {out}")
 
