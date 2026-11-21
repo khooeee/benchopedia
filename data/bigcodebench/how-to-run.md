@@ -73,4 +73,6 @@ BigCodeBench evaluator on each task's tests in a network-isolated container.
 Setup verifies the Boston housing and NLTK fixtures against pinned checksums.
 Tasks that rely on DNS or live sockets get local host mappings and loopback
 services for the inputs their tests use.
+The image also fixes worker teardown in the upstream harness so it can stop
+its own multiprocessing children inside the task container.
 The Complete setting and multi-sample metrics use the workflows above.

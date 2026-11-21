@@ -48,7 +48,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--archive", type=Path)
     args = parser.parse_args()
-    subprocess.run(["docker", "pull", "--platform", "linux/amd64", IMAGE], check=True)
+    directory = Path(__file__).resolve().parent
+    subprocess.run(["docker", "build", "--platform", "linux/amd64", "-f", str(directory / "dockerfile.eval"),
+                    "-t", IMAGE, str(directory)], check=True)
     install_fixture(boston_path(), BOSTON_URL, BOSTON_SHA256)
     for name, digest in NLTK_FIXTURES.items():
         archive = nltk_path() / name

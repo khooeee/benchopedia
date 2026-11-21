@@ -9,7 +9,8 @@ from uuid import uuid4
 
 
 ATTEMPTS = 1
-IMAGE = "bigcodebench/bigcodebench-evaluate@sha256:1327bddf60be9bc241648c59e6060cac4ca50248a0588ab735cd0200b17cc8c2"
+IMAGE = "benchopedia-bigcodebench:v0.2.4-pool-cleanup-1"
+CAPTURE_FILES = ("dockerfile.eval",)
 INPUTS_SHA256 = "81c918f4462d251f23d4f90a76dc3386b7cf3254a11bf2c05b2b81ae00b772d0"
 BOSTON_SHA256 = "1df1f5ccfcd1cb9e8f9eaa2c871bb3355eafdde755267bcd593f817b21b92a7b"
 BOSTON_TASK = "bigcodebench-0101"
@@ -108,12 +109,15 @@ def check_setup():
             matches_checksum(nltk_root / name, digest) for name, digest in NLTK_FIXTURES.items()):
         return "Run python3 data/bigcodebench/setup_eval.py to install the pinned NLTK data"
     try:
-        state = subprocess.run(["docker", "image", "inspect", IMAGE], capture_output=True, timeout=10)
-        if state.returncode == 0:
+        state = subprocess.run(
+            ["docker", "image", "inspect", "--format", '{{index .Config.Labels "org.benchopedia.bigcodebench-eval"}}', IMAGE],
+            capture_output=True, text=True, timeout=10,
+        )
+        if state.returncode == 0 and state.stdout.strip() == IMAGE.split(":", 1)[1]:
             return None
     except (OSError, subprocess.TimeoutExpired):
         pass
-    return "Start Docker and run python3 data/bigcodebench/setup_eval.py to pull the evaluation image"
+    return "Start Docker and run python3 data/bigcodebench/setup_eval.py to build the evaluation image"
 
 
 @lru_cache(maxsize=1)

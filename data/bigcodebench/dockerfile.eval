@@ -1,0 +1,24 @@
+FROM bigcodebench/bigcodebench-evaluate@sha256:1327bddf60be9bc241648c59e6060cac4ca50248a0588ab735cd0200b17cc8c2
+
+USER root
+RUN python3 - <<'PY'
+from hashlib import sha256
+from pathlib import Path
+
+path = Path("/usr/local/lib/python3.10/site-packages/bigcodebench/eval/utils.py")
+source = path.read_bytes()
+assert sha256(source).hexdigest() == "9061f74fe937c4eb7a1b2bc423f7acab547ae01804d5e25933e2aa8a3cc2d685"
+original = b"if pid == current_pid or pid in child_pids:"
+replacement = """if (pid == current_pid or pid in child_pids or (
+                sig == signal.SIGTERM
+                and os.getpid() == current_pid
+                and any(child.pid == pid and child is not manager._process
+                        for child in multiprocessing.active_children())
+            )):"""
+newline = b"\r\n" if b"\r\n" in source else b"\n"
+assert source.count(original) == 1
+path.write_bytes(source.replace(original, replacement.encode().replace(b"\n", newline)))
+PY
+
+USER bigcodebenchuser
+LABEL org.benchopedia.bigcodebench-eval="v0.2.4-pool-cleanup-1"
