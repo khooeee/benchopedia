@@ -19,7 +19,8 @@ from uuid import uuid4
 
 ATTEMPTS = 1
 TIMEOUT = 30
-IMAGE = "python@sha256:a02e9c5406c416c504d6c9a1a306ff4080c3173f1008d192f953bd20382a2d5c"
+IMAGE = "benchopedia-bird:sqlite-3.40.1-clock-2"
+CAPTURE_FILES = ("dockerfile.eval", "sqlite_clock.c")
 DATABASE_SHA256 = {
     "california_schools": "c0903eec662e63068fd1d14403d3d6c1d473287fc10c4356333ea58f878db983",
     "card_games": "c98bdb57fe7474da798b407785544b9af0daaad5d61fd21e2a73309493bc1227",
@@ -65,8 +66,11 @@ def check_setup():
     if not databases_ready():
         return "Run python3 data/bird-sql/setup_eval.py to install the pinned development databases"
     try:
-        result = subprocess.run(["docker", "image", "inspect", IMAGE], capture_output=True, timeout=10)
-        if result.returncode == 0:
+        result = subprocess.run(
+            ["docker", "image", "inspect", "--format", '{{index .Config.Labels "org.benchopedia.bird-eval"}}', IMAGE],
+            capture_output=True, text=True, timeout=10,
+        )
+        if result.returncode == 0 and result.stdout.strip() == IMAGE.split(":", 1)[1]:
             return None
     except (OSError, subprocess.TimeoutExpired):
         pass

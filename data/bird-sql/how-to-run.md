@@ -77,3 +77,7 @@ continuation after SELECT. A network-isolated, read-only worker compares the
 two result sets within the official 30-second limit. The worker disables
 automatic indexes on `european_football_2` so SQLite uses the existing player
 index for the football queries. Database rows stay local.
+
+Date expressions such as `julianday('now')` see the pinned split's release
+date, 2025-11-06 at midnight UTC, in both queries. The 30-second limit uses
+elapsed time on the monotonic clock.

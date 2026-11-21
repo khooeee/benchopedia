@@ -50,7 +50,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--archive", type=Path)
     args = parser.parse_args()
-    subprocess.run(["docker", "pull", IMAGE], check=True)
+    directory = Path(__file__).resolve().parent
+    subprocess.run(["docker", "build", "-f", str(directory / "dockerfile.eval"), "-t", IMAGE, str(directory)], check=True)
     if not databases_ready():
         prepare_databases(args.archive)
 
