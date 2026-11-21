@@ -14,10 +14,12 @@ import sqlite3
 import subprocess
 import sys
 import time
+from uuid import uuid4
 
 
 ATTEMPTS = 1
 TIMEOUT = 30
+IMAGE = "python@sha256:a02e9c5406c416c504d6c9a1a306ff4080c3173f1008d192f953bd20382a2d5c"
 DATABASE_SHA256 = {
     "california_schools": "c0903eec662e63068fd1d14403d3d6c1d473287fc10c4356333ea58f878db983",
     "card_games": "c98bdb57fe7474da798b407785544b9af0daaad5d61fd21e2a73309493bc1227",
@@ -52,13 +54,23 @@ def sha256(path):
     return h.hexdigest()
 
 
+def databases_ready():
+    root = data_dir()
+    paths = ((root / (name + ".sqlite"), digest) for name, digest in DATABASE_SHA256.items())
+    return all(path.is_file() and sha256(path) == digest for path, digest in paths)
+
+
 @lru_cache(maxsize=1)
 def check_setup():
-    for database, digest in DATABASE_SHA256.items():
-        path = data_dir() / (database + ".sqlite")
-        if not path.is_file() or sha256(path) != digest:
-            return "Run python3 data/bird-sql/setup_eval.py to install the pinned development databases"
-    return None
+    if not databases_ready():
+        return "Run python3 data/bird-sql/setup_eval.py to install the pinned development databases"
+    try:
+        result = subprocess.run(["docker", "image", "inspect", IMAGE], capture_output=True, timeout=10)
+        if result.returncode == 0:
+            return None
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    return "Start Docker and run python3 data/bird-sql/setup_eval.py to install the pinned SQLite runtime"
 
 
 def fields(task):
@@ -71,8 +83,8 @@ def fields(task):
     return question, database, evidence
 
 
-def read_only(database):
-    path = data_dir() / (database + ".sqlite")
+def read_only(database, root=None):
+    path = (data_dir() if root is None else root) / (database + ".sqlite")
     return sqlite3.connect(path.as_uri() + "?mode=ro&immutable=1", uri=True)
 
 
@@ -103,16 +115,26 @@ def grade(task, output):
     if not ANSWER_START.match(query):
         query = "SELECT " + query
     _, database, _ = fields(task)
+    database_file = database + ".sqlite"
+    name = f"benchopedia-bird-{uuid4().hex}"
     try:
         result = subprocess.run(
-            [sys.executable, "-I", str(Path(__file__).resolve()), database],
+            ["docker", "run", "--rm", "--init", "--name", name, "--pull=never",
+             "--log-driver", "none", "--network", "none", "--read-only", "--cap-drop", "ALL",
+             "--security-opt", "no-new-privileges", "--user", "65534:65534",
+             "--memory", "2g", "--memory-swap", "2g", "--pids-limit", "32",
+             "--tmpfs", "/tmp:size=1g,mode=1777,nosuid,nodev,noexec",
+             "--mount", f"type=bind,src={Path(__file__).resolve()},dst=/grader.py,readonly",
+             "--mount", f"type=bind,src={data_dir() / database_file},dst=/databases/{database_file},readonly",
+             "-i", IMAGE, "python", "-I", "/grader.py", database],
             input=json.dumps({"prediction": query, "gold": task["solution"]}), text=True,
-            capture_output=True, timeout=TIMEOUT + 2,
+            capture_output=True, timeout=TIMEOUT + 10,
         )
     except subprocess.TimeoutExpired:
+        subprocess.run(["docker", "rm", "-f", name], capture_output=True, timeout=10)
         return "fail", query
     if result.returncode or result.stdout.strip() not in ("0", "1"):
-        raise RuntimeError(f"{task['key']}: SQL grader worker failed")
+        raise RuntimeError(f"{task['key']}: SQL grader worker failed ({result.stderr.strip()})")
     return ("pass" if result.stdout.strip() == "1" else "fail"), query
 
 
@@ -134,12 +156,15 @@ def query_rows(connection, sql):
     return unique
 
 
-def compare(database, queries):
+def compare(database, queries, root):
     deadline = time.monotonic() + TIMEOUT
-    with closing(read_only(database)) as connection:
+    with closing(read_only(database, root)) as connection:
         connection.execute("PRAGMA hard_heap_limit=268435456")
         connection.execute("PRAGMA trusted_schema=OFF")
-        connection.execute("PRAGMA temp_store=MEMORY")
+        connection.execute("PRAGMA temp_store=FILE")
+        if database == "european_football_2":
+            # The persistent player_api_id index avoids a scan of Player for each match.
+            connection.execute("PRAGMA automatic_index=OFF")
         connection.set_authorizer(authorize)
         connection.set_progress_handler(lambda: time.monotonic() >= deadline, 10_000)
         try:
@@ -151,4 +176,4 @@ def compare(database, queries):
 
 
 if __name__ == "__main__":
-    print(int(compare(sys.argv[1], json.load(sys.stdin))))
+    print(int(compare(sys.argv[1], json.load(sys.stdin), Path("/databases"))))

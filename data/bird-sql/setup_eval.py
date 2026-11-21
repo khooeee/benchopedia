@@ -3,11 +3,12 @@
 import argparse
 from pathlib import Path
 import shutil
+import subprocess
 import tempfile
 from urllib.request import urlopen
 from zipfile import ZipFile
 
-from eval import DATABASE_SHA256, check_setup, data_dir, sha256
+from eval import DATABASE_SHA256, IMAGE, data_dir, databases_ready, sha256
 
 
 RELEASE_URL = ("https://drive.usercontent.google.com/download"
@@ -33,22 +34,25 @@ def install(archive, staging, destination):
         (staging / name).replace(destination / name)
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--archive", type=Path)
-    args = parser.parse_args()
-    if check_setup() is None:
-        return
+def prepare_databases(archive):
     destination = data_dir()
     destination.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=destination.parent) as tmp:
         staging = Path(tmp)
-        archive = args.archive
         if archive is None:
             archive = staging / "bird-db-package.zip"
             with urlopen(RELEASE_URL, timeout=120) as response, archive.open("wb") as output:
                 shutil.copyfileobj(response, output)
         install(archive, staging, destination)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--archive", type=Path)
+    args = parser.parse_args()
+    subprocess.run(["docker", "pull", IMAGE], check=True)
+    if not databases_ready():
+        prepare_databases(args.archive)
 
 
 if __name__ == "__main__":

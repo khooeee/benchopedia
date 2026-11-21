@@ -69,8 +69,11 @@ python evaluation.py --predicted_sql_path predictions/ --ground_truth_path gold/
 
 ### Verify with the Benchopedia sweep
 
-Run `python3 data/bird-sql/setup_eval.py` to install the eleven pinned databases,
-then run `python3 runner/sweep.py bird-sql --verify-grader`. The model sees
-the SQLite schema, evidence, and question. The evaluator accepts complete
-queries or a continuation after SELECT. It compares both result sets in a
-read-only worker with a 30-second SQL budget. Database rows stay local.
+With Docker running, use `python3 data/bird-sql/setup_eval.py` to install the
+eleven pinned databases and the SQLite 3.40.1 worker. Then run
+`python3 runner/sweep.py bird-sql --verify-grader`. The model sees the schema,
+evidence, and question. The evaluator accepts complete queries or a
+continuation after SELECT. A network-isolated, read-only worker compares the
+two result sets within the official 30-second limit. The worker disables
+automatic indexes on `european_football_2` so SQLite uses the existing player
+index for the football queries. Database rows stay local.
