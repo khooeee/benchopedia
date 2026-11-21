@@ -20,6 +20,7 @@ from uuid import uuid4
 ATTEMPTS = 1
 TIMEOUT = 30
 IMAGE = "benchopedia-bird:sqlite-3.40.1-clock-2"
+VOLUME = "benchopedia-bird-dev-3c11fb1"
 CAPTURE_FILES = ("dockerfile.eval", "sqlite_clock.c")
 DATABASE_SHA256 = {
     "california_schools": "c0903eec662e63068fd1d14403d3d6c1d473287fc10c4356333ea58f878db983",
@@ -61,6 +62,18 @@ def databases_ready():
     return all(path.is_file() and sha256(path) == digest for path, digest in paths)
 
 
+def volume_ready():
+    if subprocess.run(["docker", "volume", "inspect", VOLUME], capture_output=True, timeout=10).returncode:
+        return False
+    state = subprocess.run(
+        ["docker", "run", "--rm", "--pull=never", "--network", "none", "--read-only",
+         "--user", "65534:65534", "--mount", f"type=volume,src={VOLUME},dst=/databases,readonly",
+         "--entrypoint", "cat", IMAGE, "/databases/.checksums.json"],
+        capture_output=True, text=True, timeout=10,
+    )
+    return state.returncode == 0 and state.stdout == json.dumps(DATABASE_SHA256, sort_keys=True)
+
+
 @lru_cache(maxsize=1)
 def check_setup():
     if not databases_ready():
@@ -71,7 +84,9 @@ def check_setup():
             capture_output=True, text=True, timeout=10,
         )
         if result.returncode == 0 and result.stdout.strip() == IMAGE.split(":", 1)[1]:
-            return None
+            if volume_ready():
+                return None
+            return "Run python3 data/bird-sql/setup_eval.py to prepare the read-only database volume"
     except (OSError, subprocess.TimeoutExpired):
         pass
     return "Start Docker and run python3 data/bird-sql/setup_eval.py to install the pinned SQLite runtime"
@@ -119,7 +134,6 @@ def grade(task, output):
     if not ANSWER_START.match(query):
         query = "SELECT " + query
     _, database, _ = fields(task)
-    database_file = database + ".sqlite"
     name = f"benchopedia-bird-{uuid4().hex}"
     try:
         result = subprocess.run(
@@ -129,7 +143,7 @@ def grade(task, output):
              "--memory", "2g", "--memory-swap", "2g", "--pids-limit", "32",
              "--tmpfs", "/tmp:size=1g,mode=1777,nosuid,nodev,noexec",
              "--mount", f"type=bind,src={Path(__file__).resolve()},dst=/grader.py,readonly",
-             "--mount", f"type=bind,src={data_dir() / database_file},dst=/databases/{database_file},readonly",
+             "--mount", f"type=volume,src={VOLUME},dst=/databases,readonly",
              "-i", IMAGE, "python", "-I", "/grader.py", database],
             input=json.dumps({"prediction": query, "gold": task["solution"]}), text=True,
             capture_output=True, timeout=TIMEOUT + 10,
