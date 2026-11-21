@@ -375,6 +375,11 @@ Then check the grader against every eligible reference solution:
 python3 scripts/check_evals.py
 ```
 
+Install any local resources required by `check_setup()` before running this
+command. CI uses `--skip-missing-setup` to print which current reference checks
+need local data and run the remaining checks. Historical run re-grading still
+requires the resources used by the recorded grader.
+
 It fails unless `grade()` passes each eligible task's own reference solution. A failure
 means the grader, or the reference, needs a closer look before any model runs.
 For a benchmark that needs a new evaluation path, extend the checks to verify
