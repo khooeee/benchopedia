@@ -31,6 +31,8 @@ jobs:
         run: python3 scripts/check_exclusions.py
       - name: Check run rules
         run: python3 scripts/check_runs.py
+      - name: Set up the HumanEval grading sandbox
+        run: python3 data/humaneval/setup_eval.py
       - name: Check graders and re-grade runs
         run: python3 scripts/check_evals.py
       - name: Check local-root build
