@@ -1,4 +1,4 @@
-# Running benchmarks
+# Running a sweep
 
 Use the sweep runner for benchmark evaluations and grader checks. It can cover
 one benchmark, a list of benchmarks, or all eligible benchmarks. The work list

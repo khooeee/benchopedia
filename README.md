@@ -27,7 +27,7 @@ and zero verified solves.
 
 ## Evaluate tasks by priority
 
-Follow [Running benchmarks](docs/running-benchmarks.md) to configure OpenRouter.
+Follow [Running a sweep](docs/running-a-sweep.md) to configure OpenRouter.
 Preview the selection and then run a bounded sweep.
 
 ```sh
@@ -183,7 +183,7 @@ Run results come only from runs recorded in this repository, never from reported
   prioritizes untested tasks, then pending evaluations, then open tasks with a
   completed failure and no verified solve. The saved results show which tasks a
   model solved and which remain open in the local preview.
-  [Running benchmarks](docs/running-benchmarks.md)
+  [Running a sweep](docs/running-a-sweep.md)
 - **Add or improve a grader.** Make an existing benchmark eligible for sweeps or
   fix scoring errors by matching the upstream evaluation rules and checking the
   grader against reference solutions and known failures.

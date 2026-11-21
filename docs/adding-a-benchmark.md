@@ -421,7 +421,7 @@ reference check.
 ## 9. Verify the grader in a sweep
 
 When adding or changing a grader, run a two-task scratch check. The sweep
-uses the [shared provider policy](running-benchmarks.md#task-and-model-priorities).
+uses the [shared provider policy](running-a-sweep.md#task-and-model-priorities).
 
 ```sh
 python3 runner/sweep.py example-benchmark --verify-grader
