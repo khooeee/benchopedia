@@ -12,6 +12,8 @@ The official dataset is publicly downloadable without an access gate. Its README
 
 Benchopedia converts the JSON example arrays to JSONL, assigns stable positional keys, and adds source links. Input and target text are unchanged.
 
+Benchopedia's grader reuses the six comparison functions from the [pinned upstream evaluator](https://github.com/google-deepmind/bbeh/blob/80d12ca916b7158f22293fcf3144f4d3d854d4be/bbeh/evaluate.py) under Apache 2.0. The functions are unchanged. The adapter adds Benchopedia's prompt and reference-check interfaces and omits the upstream demonstration calls. The grader retains the upstream copyright header, and LICENSE-grader contains the full license.
+
 ## Notices
 
 Copyright 2025 Google LLC. BBEH data and other non-software materials are distributed under [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/); upstream software is Apache 2.0. The materials are provided on an AS IS basis, without warranties or conditions of any kind. This is not an official Google product.
