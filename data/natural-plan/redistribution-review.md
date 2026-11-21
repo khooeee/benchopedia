@@ -2,7 +2,7 @@
 
 ## Scope
 
-The snapshot contains all 3,600 test examples in the three data files at commit `ca76db336072ff8931db43bc1ca8d381038cf073` of google-deepmind/natural-plan: 1,600 trip-planning, 1,000 meeting-planning, and 1,000 calendar-scheduling examples. For each example it includes the zero-shot prompt and the golden plan. The five-shot prompts, Gemini 1.5 Pro responses, and structured constraint fields are not included. Both the public repository and the website publish this content. No code or images are copied. [Data folder](https://github.com/google-deepmind/natural-plan/tree/ca76db336072ff8931db43bc1ca8d381038cf073/data)
+The snapshot contains all 3,600 test examples in the three data files at commit `ca76db336072ff8931db43bc1ca8d381038cf073` of google-deepmind/natural-plan: 1,600 trip-planning, 1,000 meeting-planning, and 1,000 calendar-scheduling examples. For each example it includes the zero-shot prompt and the golden plan. The website task snapshot omits the five-shot prompts, Gemini 1.5 Pro responses, and structured constraints. The grader includes separate support data described below. Both the public repository and the website publish this content. No code or images are copied. [Data folder](https://github.com/google-deepmind/natural-plan/tree/ca76db336072ff8931db43bc1ca8d381038cf073/data)
 
 ## Terms
 
@@ -13,6 +13,13 @@ The paper says the authors created the dataset synthetically from tool data. The
 ## Changes
 
 Benchopedia puts the upstream example ID above each zero-shot prompt, stores the golden plan as the reference answer, and joins the meeting-planning plan steps with line breaks. It also builds IDs from the task name and upstream example number and adds source links. Prompt and plan text is unchanged.
+
+The grader support archive includes the original five-shot prompts and the
+structured city, duration, constraint, and distance fields needed to run and
+score this same split under the existing CC BY 4.0 terms. It omits the upstream
+model responses. The separate grader module preserves the per-example
+functions from the pinned evaluation scripts under Apache 2.0 with the
+original copyright notice and full license in LICENSE-grader.
 
 ## Notices
 
