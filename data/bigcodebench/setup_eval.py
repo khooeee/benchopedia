@@ -4,7 +4,7 @@ import argparse
 import hashlib
 from pathlib import Path
 import subprocess
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 from uuid import uuid4
 from zipfile import ZipFile
 
@@ -31,7 +31,8 @@ print(json.dumps(records, sort_keys=True, ensure_ascii=False, separators=(",",":
 def install_fixture(target, url, digest):
     if matches_checksum(target, digest):
         return
-    with urlopen(url, timeout=45) as response:
+    request = Request(url, headers={"User-Agent": "Benchopedia grader setup/1.0 (https://github.com/khooeee/benchopedia)"})
+    with urlopen(request, timeout=45) as response:
         payload = response.read()
     if hashlib.sha256(payload).hexdigest() != digest:
         raise SystemExit(f"{target.name}: checksum differs from the pinned fixture")
