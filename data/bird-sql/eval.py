@@ -4,6 +4,7 @@ Prompt and execution-accuracy semantics follow the authors' baseline:
 https://github.com/AlibabaResearch/DAMO-ConvAI/tree/7635e3f7fd7136cddc462d7f184fd497d5bd5e4c/bird/llm/src
 """
 
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
 from functools import lru_cache
 import hashlib
@@ -174,10 +175,9 @@ def query_rows(connection, sql):
     return unique
 
 
-def compare(database, queries, root):
-    deadline = time.monotonic() + TIMEOUT
+def evaluate_query(database, query, root, deadline):
     with closing(read_only(database, root)) as connection:
-        connection.execute("PRAGMA hard_heap_limit=268435456")
+        connection.execute("PRAGMA hard_heap_limit=536870912")
         connection.execute("PRAGMA trusted_schema=OFF")
         connection.execute("PRAGMA temp_store=FILE")
         if database == "european_football_2":
@@ -185,12 +185,19 @@ def compare(database, queries, root):
             connection.execute("PRAGMA automatic_index=OFF")
         connection.set_authorizer(authorize)
         connection.set_progress_handler(lambda: time.monotonic() >= deadline, 10_000)
+        return query_rows(connection, query)
+
+
+def compare(database, queries, root):
+    deadline = time.monotonic() + TIMEOUT
+    # Both reads share the deadline and snapshot clock, without waiting on each other.
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        prediction = pool.submit(evaluate_query, database, queries["prediction"], root, deadline)
+        reference = pool.submit(evaluate_query, database, queries["gold"], root, deadline)
         try:
-            predicted = query_rows(connection, queries["prediction"])
-            expected = query_rows(connection, queries["gold"])
+            return prediction.result() == reference.result() and time.monotonic() <= deadline
         except (sqlite3.Error, MemoryError):
             return False
-    return predicted == expected
 
 
 if __name__ == "__main__":
