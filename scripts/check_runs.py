@@ -3,6 +3,7 @@
 import copy
 import io
 import json
+import shlex
 import sqlite3
 import sys
 import tempfile
@@ -141,6 +142,7 @@ def grade(task, output):
         patches = [
             patch.multiple(run, ROOT=self.root, __file__=str(runner),
                            git=lambda *args: "a" * 40 if args[0] == "rev-parse" else "https://example.org/repo.git"),
+            patch.object(run.platform, "system", return_value="Fixture OS"),
             patch.multiple(sweep, ROOT=self.root, OPENROUTER_MODEL=hosted),
             patch.object(run.ollama_api, "version", return_value="fixture"),
             patch.object(run.ollama_api, "digest", return_value=DIGEST),
@@ -219,36 +221,44 @@ def score_responses(task, outputs):
         self.assertEqual(attempt["model_calls"][1]["request"]["messages"],
                          [{"role": "user", "content": "Verify: #### 4"}])
 
-    def test_daily_quota_handoff_uses_latest_status_and_preserves_partial_calls(self):
+    def test_daily_quota_ends_sweep_and_preserves_resumable_calls(self):
         self.prepare_runner_fixture(("task-3", "task-4"))
         self.write_run("first", self.run | STOPPED, self.results)
         hosted = []
-        local = []
 
         def openrouter_chat(model, messages, profile, seed):
-            hosted.append((messages[0]["content"], seed))
-            if seed == 2:
+            task = messages[0]["content"]
+            hosted.append((task, seed))
+            if task == "task-4" and seed == 2:
                 body = b'{"error":{"metadata":{"limit_source":"openrouter_free_tier_daily"}}}'
                 error = HTTPError("https://example.org", 429, "quota", {}, io.BytesIO(body))
                 raise sweep.openrouter_api.RateLimited(error)
             return self.reply(model, messages, profile, seed, "#### 5")
 
-        def ollama_chat(model, messages, profile, seed):
-            local.append((messages[0]["content"], seed))
-            return self.reply(model, messages, profile, seed)
-
-        with patch.object(sweep.openrouter_api, "free_requests_remaining", return_value=1):
-            with patch.object(sweep.openrouter_api, "chat", side_effect=openrouter_chat):
-                with patch.object(run.ollama_api, "chat", side_effect=ollama_chat), redirect_stdout(io.StringIO()):
-                    sweep.main(["fixture", "--limit", "3", "--ollama-model", MODEL["id"], "--ollama-profile", "default"])
-        self.assertEqual(hosted, [("task-3", 1), ("task-3", 2)])
-        self.assertEqual(local, [(task, seed) for task in ("task-4", "task-3", "task-2") for seed in (1, 2)])
+        output = io.StringIO()
+        with (patch.object(sweep.openrouter_api, "free_requests_remaining", return_value=1),
+              patch.object(sweep.openrouter_api, "chat", side_effect=openrouter_chat),
+              patch.object(run.ollama_api, "chat") as local, redirect_stdout(output)):
+            sweep.main(["fixture", "--limit", "3"])
+        self.assertEqual(hosted, [("task-3", 1), ("task-3", 2), ("task-4", 1), ("task-4", 2)])
+        local.assert_not_called()
+        run_file, = (self.root / "build" / "scratch-runs" / "fixture").glob("*/run.json")
+        self.assertIn(str(run_file), output.getvalue())
+        self.assertIn("1 task evaluations completed.", output.getvalue())
         db = sqlite3.connect(":memory:")
         self.addCleanup(db.close)
         build_sqlite.build_database(db, include_local=True)
         rows = db.execute("SELECT result, count(*) FROM run_task GROUP BY result")
-        self.assertEqual({row[0]: row[1] for row in rows}, {"pass": 4, "fail": 1, "pending": 1})
-        self.assertEqual(db.execute("SELECT count(*) FROM task_status WHERE status = 'solved'").fetchone()[0], 4)
+        self.assertEqual(dict(rows.fetchall()), {"pass": 1, "fail": 2, "pending": 1})
+
+        metadata = json.loads(run_file.read_text())
+        command, = (step["command"] for step in metadata["commands"]
+                    if step["command"].startswith("python3 runner/run.py "))
+        with patch.object(sweep.openrouter_api, "chat", side_effect=self.reply) as resumed, redirect_stdout(io.StringIO()):
+            run.main(shlex.split(command)[2:])
+        self.assertEqual([(call.args[1][0]["content"], call.kwargs["seed"]) for call in resumed.call_args_list],
+                         [("task-4", 2), ("task-2", 1), ("task-2", 2)])
+        self.assertIsNotNone(json.loads(run_file.read_text())["finished_at"])
 
     def test_unparseable_attempt_in_completed_evaluation_leaves_task_open(self):
         for first in [attempt(1), attempt(1, "unparseable", None)]:
@@ -260,24 +270,22 @@ def score_responses(task, outputs):
                 status = db.execute("SELECT status FROM task_status WHERE task_key = 'task-2'").fetchone()[0]
                 self.assertEqual(status, "open")
 
-    def test_handoff_when_last_hosted_call_uses_the_quota(self):
-        self.prepare_runner_fixture()
+    def test_sweep_ends_when_last_call_in_batch_uses_the_quota(self):
+        self.prepare_runner_fixture(("task-3",))
+        self.write_run("first", self.run | {"selected_tasks": ["task-1", "task-2"]}, self.results)
 
         def wrong(model, messages, profile, seed):
             return self.reply(model, messages, profile, seed, "#### 5")
 
-        with patch.object(sweep.openrouter_api, "free_requests_remaining", side_effect=[2, 0]):
-            with patch.object(sweep.openrouter_api, "chat", side_effect=wrong) as hosted:
-                with patch.object(run.ollama_api, "chat", side_effect=self.reply) as local:
-                    with redirect_stdout(io.StringIO()):
-                        sweep.main(["fixture", "--limit", "2", "--ollama-model", MODEL["id"],
-                                    "--ollama-profile", "default"])
-        self.assertEqual(hosted.call_count, 2)
-        self.assertEqual(local.call_count, 2)
-        for call in [*hosted.call_args_list, *local.call_args_list]:
-            self.assertEqual(call.args[1][0]["content"], "task-2")
+        output = io.StringIO()
+        with (patch.object(sweep, "BATCH_SIZE", 1),
+              patch.object(sweep.openrouter_api, "free_requests_remaining", side_effect=[2, 0]),
+              patch.object(sweep.openrouter_api, "chat", side_effect=wrong) as hosted, redirect_stdout(output)):
+            sweep.main(["fixture", "--limit", "2"])
+        self.assertEqual([call.args[1][0]["content"] for call in hosted.call_args_list], ["task-3", "task-3"])
+        self.assertIn("OpenRouter daily quota exhausted. Ending the sweep.", output.getvalue())
 
-    def test_grader_check_includes_solved_tasks_and_uses_quota_handoff(self):
+    def test_grader_check_includes_solved_tasks_and_ends_at_daily_quota(self):
         self.prepare_runner_fixture(("task-3",))
         self.write_run("first", self.run | {"selected_tasks": ["task-1", "task-2"]}, self.results)
 
@@ -288,16 +296,12 @@ def score_responses(task, outputs):
                 raise sweep.openrouter_api.RateLimited(error)
             return self.reply(model, messages, profile, seed, "#### 5")
 
-        with patch.object(sweep.openrouter_api, "free_requests_remaining", return_value=1):
-            with patch.object(sweep.openrouter_api, "chat", side_effect=openrouter_chat) as hosted:
-                with patch.object(run.ollama_api, "chat", side_effect=self.reply) as local:
-                    with redirect_stdout(io.StringIO()):
-                        sweep.main(["fixture", "--verify-grader", "--ollama-model", MODEL["id"],
-                                    "--ollama-profile", "default"])
+        with (patch.object(sweep.openrouter_api, "free_requests_remaining", return_value=1),
+              patch.object(sweep.openrouter_api, "chat", side_effect=openrouter_chat) as hosted,
+              redirect_stdout(io.StringIO())):
+            sweep.main(["fixture", "--verify-grader"])
         self.assertEqual([call.args[1][0]["content"] for call in hosted.call_args_list],
                          ["task-1", "task-1", "task-2", "task-2"])
-        self.assertEqual([call.args[1][0]["content"] for call in local.call_args_list],
-                         ["task-2", "task-2"])
 
         db = sqlite3.connect(":memory:")
         self.addCleanup(db.close)
@@ -309,8 +313,7 @@ def score_responses(task, outputs):
             WHERE r.local = 1
         """)
         self.assertEqual({tuple(row) for row in results},
-                         {("openrouter", "task-1", "fail"), ("openrouter", "task-2", "pending"),
-                          ("ollama", "task-2", "pass")})
+                         {("openrouter", "task-1", "fail"), ("openrouter", "task-2", "pending")})
 
     def test_sweep_and_grader_check_skip_unscorable_tasks(self):
         self.prepare_runner_fixture(("task-3",))
@@ -318,7 +321,7 @@ def score_responses(task, outputs):
         with (self.benchmark_dir / "eval.py").open("a") as evaluator:
             evaluator.write('\ndef is_eligible(task):\n    return task["key"] != "task-2"\n')
 
-        args = ["fixture", "--dry-run", "--ollama-model", MODEL["id"], "--ollama-profile", "default"]
+        args = ["fixture", "--dry-run"]
         output = io.StringIO()
         with redirect_stdout(output):
             sweep.main(args)
@@ -341,7 +344,7 @@ def score_responses(task, outputs):
         with (self.benchmark_dir / "eval.py").open("a") as evaluator:
             evaluator.write('\ndef check_setup():\n    return "install the fixture harness"\n')
 
-        args = ["--dry-run", "--ollama-model", MODEL["id"], "--ollama-profile", "default"]
+        args = ["--dry-run"]
         error_output = io.StringIO()
         with redirect_stderr(error_output), self.assertRaises(SystemExit):
             sweep.main(args + ["fixture"])
@@ -471,11 +474,10 @@ def score_responses(task, outputs):
         self.prepare_runner_fixture()
         with (self.benchmark_dir / "eval.py").open("a") as evaluator:
             evaluator.write('\nMAX_OUTPUT_CHARS = 10\ndef score(task, output):\n    return {"overlap": 0.75}\n')
-        args = ["fixture", "--ollama-model", MODEL["id"], "--ollama-profile", "default"]
-        with patch.object(sweep.openrouter_api, "free_requests_remaining", return_value=0):
-            with patch.object(run.ollama_api, "chat", side_effect=self.reply):
-                with redirect_stdout(io.StringIO()):
-                    sweep.main(args + ["--verify-grader"])
+        args = ["fixture"]
+        with (patch.object(sweep.openrouter_api, "free_requests_remaining", return_value=4),
+              patch.object(sweep.openrouter_api, "chat", side_effect=self.reply), redirect_stdout(io.StringIO())):
+            sweep.main(args + ["--verify-grader"])
 
         db = sqlite3.connect(":memory:")
         self.addCleanup(db.close)

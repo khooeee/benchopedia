@@ -30,24 +30,27 @@ sweep reports the message before making model calls for that benchmark.
 
 ## Task and model priorities
 
-Evaluate eligible tasks awaiting a first attempt before tasks with a
-completed failed evaluation. Every required attempt must be correct to pass.
+Evaluate eligible untested tasks first, then pending tasks, then open tasks
+with a completed failed evaluation. Every required attempt must be correct to pass.
 A wrong or unparseable reply counts as a failed attempt. A recorded
 evaluation stays pending while the required attempts or grading are
 incomplete. A task stays retired once it has a verified solve for the
-imported revision. For retries, prefer an available model the task has yet to face.
+imported revision. Among open tasks, the sweep prioritizes those that have yet
+to face the configured model and profile.
 For benchmarks with numeric metrics, a task is **scored** once all its attempts
 have valid scores. A regular sweep then moves on. The local preview shows
 per-attempt scores and the mean over scored tasks in the run.
 
-Sweeps and grader checks start with NVIDIA Nemotron 3 Ultra `:free` on
+Sweeps and grader checks use NVIDIA Nemotron 3 Ultra `:free` on
 OpenRouter. Copy `.env.template` to `.env` and set `OPENROUTER_API_KEY` there
 or in the process environment.
-`make openrouter-quota` reports the daily allowance remaining. When OpenRouter
-reports that the daily quota is exhausted, the sweep refreshes task status
-from the saved results and starts an Ollama run with the next eligible tasks.
-The Ollama defaults are `qwen3.6-35b-a3b` and its `scratch` profile. Set
-`--ollama-model` and `--ollama-profile` to use another local configuration.
+`make openrouter-quota` reports the daily allowance remaining. The sweep ends
+when the daily quota is exhausted. If quota runs out during a batch, the
+completed results and partial calls stay in the scratch run. Resume that run
+using its recorded command when quota is available again.
+
+For a goal that also includes adding a benchmark, rebuild the local preview
+with the saved results and continue with [Adding a benchmark](adding-a-benchmark.md).
 
 ## Verify a grader
 

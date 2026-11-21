@@ -1,8 +1,7 @@
-"""Select and evaluate unresolved benchmark tasks using OpenRouter, then Ollama."""
+"""Select and evaluate unresolved benchmark tasks using OpenRouter."""
 
 import argparse
 from contextlib import closing
-from functools import partial
 from itertools import takewhile
 import json
 import sqlite3
@@ -12,7 +11,6 @@ from uuid import uuid4
 
 import openrouter_api
 import run
-from stop import stop_run
 
 ROOT = run.ROOT
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -53,7 +51,7 @@ def work(db, model, profile, limit, *, verify_grader=False):
           )
           AND NOT EXISTS (
             SELECT 1 FROM sweep_done d WHERE d.benchmark_id = s.benchmark_id
-              AND d.task_key = s.task_key AND (:verify_grader OR d.provider = :provider)
+              AND d.task_key = s.task_key
           )
         ORDER BY CASE WHEN :verify_grader OR s.status = 'untested' THEN 0
                       WHEN s.status = 'pending' THEN 1 ELSE 2 END,
@@ -87,49 +85,37 @@ def run_openrouter(arguments):
             time.sleep(error.retry_after if error.retry_after is not None else openrouter_api.FREE_INTERVAL)
 
 
-def evaluate(db, hosted, local, local_profile, limit, *, verify_grader=False):
-    select_work = partial(work, db, verify_grader=verify_grader)
-    on_openrouter = True
+def evaluate(db, hosted, limit, *, verify_grader=False):
     completed = 0
     while limit is None or completed < limit:
-        model, profile = (hosted, OPENROUTER_PROFILE) if on_openrouter else (local, local_profile)
         size = BATCH_SIZE if limit is None else min(BATCH_SIZE, limit - completed)
-        selected = iter(select_work(model, profile, size))
+        selected = iter(work(db, hosted, OPENROUTER_PROFILE, size, verify_grader=verify_grader))
         first = next(selected, None)
-        if (on_openrouter and (first is not None or select_work(local, local_profile, 1).fetchone() is not None)
-                and openrouter_api.free_requests_remaining() == 0):
-            print("OpenRouter daily quota exhausted. Continuing on Ollama.", flush=True)
-            on_openrouter = False
-            continue
         if first is None:
+            break
+        if openrouter_api.free_requests_remaining() == 0:
+            print("OpenRouter daily quota exhausted. Ending the sweep.", flush=True)
             break
         benchmark_id = first["benchmark_id"]
         rows = [first, *takewhile(lambda row: row["benchmark_id"] == benchmark_id, selected)]
-        run_id = f"sweep-{model['provider']}-{uuid4().hex[:12]}"
-        arguments = [benchmark_id, "--scratch", "--run-id", run_id, "--profile", profile]
-        if on_openrouter:
-            arguments.extend(["--scratch-model", str(OPENROUTER_MODEL)])
-        else:
-            arguments.extend(["--model", local["id"]])
+        run_id = f"sweep-openrouter-{uuid4().hex[:12]}"
+        arguments = [benchmark_id, "--scratch", "--run-id", run_id, "--profile", OPENROUTER_PROFILE,
+                     "--scratch-model", str(OPENROUTER_MODEL)]
         for row in rows:
             arguments.extend(["--task-key", row["task_key"]])
         directory = ROOT / "build" / "scratch-runs" / benchmark_id / run_id
-        if on_openrouter:
-            if not run_openrouter(arguments):
-                stop_run(directory, "OpenRouter daily free-model quota exhausted")
-                print("Continuing on Ollama from the latest task status.", flush=True)
-                on_openrouter = False
-        else:
-            run.main(arguments)
-
+        finished = run_openrouter(arguments)
+        results = read_results(directory)
+        completed += len(results)
+        if not finished:
+            print(f"OpenRouter daily quota exhausted. Resume from the command in {directory / 'run.json'}.",
+                  flush=True)
+            break
         errors = []
         load_run(db, benchmark_id, directory, errors, local=True)
         if errors:
             raise SystemExit("\n".join(errors))
-        results = read_results(directory)
-        db.executemany("INSERT INTO sweep_done VALUES (?, ?, ?)",
-                       [(benchmark_id, row["key"], model["provider"]) for row in results])
-        completed += len(results)
+        db.executemany("INSERT INTO sweep_done VALUES (?, ?)", [(benchmark_id, row["key"]) for row in results])
     print(f"{completed:,} task evaluations completed.")
 
 
@@ -141,8 +127,6 @@ def main(argv=None):
     parser.add_argument("--verify-grader", action="store_true",
                         help="try tasks from one benchmark, including solved tasks (default: two)")
     parser.add_argument("--dry-run", action="store_true", help="show the priority order without model calls")
-    parser.add_argument("--ollama-model", default="qwen3.6-35b-a3b")
-    parser.add_argument("--ollama-profile", default="scratch")
     args = parser.parse_args(argv)
     if bool(args.benchmarks) == args.all:
         parser.error("choose benchmark IDs or --all")
@@ -180,23 +164,16 @@ def main(argv=None):
             print(f"Skipping {name} ({error})", file=sys.stderr)
             scope.remove(name)
     hosted = json.loads(OPENROUTER_MODEL.read_text(encoding="utf-8"))
-    local_path = ROOT / "models" / f"{args.ollama_model}.json"
-    if not run.RUN_ID.fullmatch(args.ollama_model) or not local_path.is_file():
-        parser.error("unknown Ollama model: " + args.ollama_model)
-    local = json.loads(local_path.read_text(encoding="utf-8"))
-    if args.ollama_profile not in local["profiles"]:
-        parser.error("unknown Ollama profile: " + args.ollama_profile)
     with closing(sqlite3.connect(":memory:")) as db:
         build_database(db, include_local=True, benchmarks=scope)
         exclude_ineligible_tasks(db, scope)
         db.execute("""CREATE TEMP TABLE sweep_done (
-            benchmark_id TEXT, task_key TEXT, provider TEXT,
-            PRIMARY KEY (benchmark_id, task_key, provider))""")
+            benchmark_id TEXT, task_key TEXT, PRIMARY KEY (benchmark_id, task_key))""")
         if args.dry_run:
             for row in work(db, hosted, OPENROUTER_PROFILE, limit or -1, verify_grader=args.verify_grader):
                 print(f"{row['status']}\t{row['benchmark_id']}\t{row['task_key']}")
         else:
-            evaluate(db, hosted, local, args.ollama_profile, limit, verify_grader=args.verify_grader)
+            evaluate(db, hosted, limit, verify_grader=args.verify_grader)
 
 
 if __name__ == "__main__":

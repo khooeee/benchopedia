@@ -27,8 +27,8 @@ and zero verified solves.
 
 ## Evaluate tasks by priority
 
-Follow [Running benchmarks](docs/running-benchmarks.md) to configure the model
-providers. Preview the selection and then run a bounded sweep.
+Follow [Running benchmarks](docs/running-benchmarks.md) to configure OpenRouter.
+Preview the selection and then run a bounded sweep.
 
 ```sh
 python3 runner/sweep.py gsm8k --dry-run --limit 10
