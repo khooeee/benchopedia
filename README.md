@@ -35,8 +35,6 @@ python3 runner/sweep.py gsm8k --dry-run --limit 10
 python3 runner/sweep.py gsm8k --limit 10
 ```
 
-See [Future goals](docs/future-goals.md) for planned work.
-
 ## Schema
 
 `db/schema.sql` is authoritative, including the `CHECK` constraints not shown here.
