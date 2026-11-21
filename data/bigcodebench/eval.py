@@ -170,7 +170,7 @@ def grade(task, output):
              "--pull=never", "--log-driver", "none", "--network", "none", "--read-only",
              "--cap-drop", "ALL", "--security-opt", "no-new-privileges", "--user", "65534:65534",
              "--memory", "4g", "--memory-swap", "4g", "--cpus", "2", "--pids-limit", "128",
-             "--tmpfs", "/tmp:size=512m,mode=1777,nosuid",
+             "--tmpfs", "/tmp:size=512m,mode=1777,exec,nosuid,nodev",
              "--tmpfs", "/nonexistent:size=128m,mode=1777,nosuid,noexec", *fixture, "--workdir", "/tmp",
              "-e", "MPLBACKEND=Agg", "-e", "MPLCONFIGDIR=/tmp/matplotlib", "-e", "XDG_CACHE_HOME=/tmp/cache",
              "-e", "OPENBLAS_NUM_THREADS=1", "--entrypoint", "python3",
