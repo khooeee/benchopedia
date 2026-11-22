@@ -54,7 +54,9 @@ Keep results and checkpoints in scratch runs. At the end, rebuild the local
 preview with `python3 scripts/build_site.py --local-runs` and report why the
 sweep stopped, which benchmarks it covered, completed evaluations, new verified
 solves, remaining open or pending tasks, and skipped benchmarks with their
-reasons. Include the run IDs and the `build/local-site/` preview path.
+reasons. Include the run IDs and the `build/local-site/` preview path. When the
+daily quota runs out before the pass finishes, save the halfway runs and open
+the checkpoint pull request described below.
 
 For a goal that also includes adding benchmarks, finish the sweep report when
 quota runs out or the pass completes, then continue with the
@@ -81,17 +83,24 @@ when the daily quota is exhausted. If quota runs out during a batch, the
 completed results and partial calls stay in the scratch run. Resume that run
 using its recorded command when quota is available again.
 
-`build/` is not committed, so those files disappear with the machine. Before
-leaving an interrupted sweep, copy its runs into the repository:
+`build/` is not committed, so those files disappear with the machine. When the
+daily quota runs out, copy the halfway runs into the repository:
 
 ```sh
 python3 runner/checkpoint.py
 ```
 
 That writes `sweep-runs/<benchmark>/<run-id>/`, including `results.jsonl` and
-any `partial/` calls. Commit that directory. A later `runner/sweep.py` or the
-recorded resume command copies a missing scratch run back from `sweep-runs/`
+any `partial/` calls. Commit that directory, push the branch, and open one pull
+request for the checkpoint. If a sweep-checkpoint pull request is already open,
+push the new runs onto it instead of opening another. Keep this pull request
+separate from a benchmark-addition pull request. A later `runner/sweep.py` or
+the recorded resume command copies a missing scratch run back from `sweep-runs/`
 before it calls the model, so committed evaluations are not repeated.
+
+An unmerged pull request is not on `main`. A new checkout of `main` does not
+see those runs until the pull request is merged, or until the next sweep checks
+out that branch.
 
 ## Verify a grader
 
