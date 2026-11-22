@@ -1,0 +1,17 @@
+{
+  "id": "nemotron-3-ultra-550b-a55b-free",
+  "provider": "openrouter",
+  "provider_model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "profiles": {
+    "scratch": {
+      "options": {
+        "max_tokens": 8192,
+        "reasoning": {"effort": "low"},
+        "provider": {
+          "only": ["nvidia"],
+          "allow_fallbacks": false
+        }
+      }
+    }
+  }
+}

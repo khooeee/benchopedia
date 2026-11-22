@@ -1,0 +1,52 @@
+{
+  "model_id": "nemotron-3-ultra-550b-a55b-free",
+  "profile": "scratch",
+  "settings": {
+    "options": {
+      "max_tokens": 8192,
+      "reasoning": {
+        "effort": "low"
+      },
+      "provider": {
+        "only": [
+          "nvidia"
+        ],
+        "allow_fallbacks": false
+      }
+    }
+  },
+  "attempts_per_task": 1,
+  "after_runs": [],
+  "scratch_model": "runner/models/nemotron-3-ultra-550b-a55b-free.json",
+  "dataset_revision": "e89865bfe1b4dd054e03dd57d7241a6fde24862905f31117cf0cd719f7c78df7",
+  "selected_tasks": [
+    "100030",
+    "100038"
+  ],
+  "commit_sha": "58ab1401ef7307a1f255abe07147d4b004ac269c",
+  "environment": {
+    "system": "macOS 27.2.1",
+    "machine": "Apple M5, 32 GB",
+    "python": "3.9.6",
+    "provider": "openrouter",
+    "endpoint": "https://openrouter.ai/api/v1/chat/completions"
+  },
+  "commands": [
+    {
+      "command": "git clone https://github.com/khooeee/benchopedia.git benchopedia && cd benchopedia && git checkout 58ab1401ef7307a1f255abe07147d4b004ac269c",
+      "purpose": "Get the exact code and model definition this run used."
+    },
+    {
+      "command": "test -n \"$OPENROUTER_API_KEY\" || test -f .env",
+      "purpose": "Configure an OpenRouter key outside the recorded run data."
+    },
+    {
+      "command": "python3 runner/run.py fever --scratch --run-id sweep-openrouter-7a2454739fa0 --profile scratch --scratch-model /Users/ckhoo/code/benchopedia-worktrees/grader-fever/runner/models/nemotron-3-ultra-550b-a55b-free.json --task-key 100030 --task-key 100038",
+      "purpose": "Send every selected task to the model 1 times and grade each answer. Running the same command again resumes an interrupted run."
+    }
+  ],
+  "started_at": "2026-11-20T18:56:33Z",
+  "finished_at": "2026-11-20T18:56:53Z",
+  "stopped_at": null,
+  "stop_reason": null
+}

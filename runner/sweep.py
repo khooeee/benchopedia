@@ -9,6 +9,7 @@ import sys
 import time
 from uuid import uuid4
 
+import checkpoint
 import openrouter_api
 import run
 
@@ -163,6 +164,9 @@ def main(argv=None):
                 parser.error(f"cannot evaluate {name} ({error})")
             print(f"Skipping {name} ({error})", file=sys.stderr)
             scope.remove(name)
+    restored = checkpoint.restore_sweep_runs()
+    if restored:
+        print(f"Restored {restored} committed sweep run(s) into build/scratch-runs/.", file=sys.stderr)
     hosted = json.loads(OPENROUTER_MODEL.read_text(encoding="utf-8"))
     with closing(sqlite3.connect(":memory:")) as db:
         build_database(db, include_local=True, benchmarks=scope)

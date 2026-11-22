@@ -81,6 +81,18 @@ when the daily quota is exhausted. If quota runs out during a batch, the
 completed results and partial calls stay in the scratch run. Resume that run
 using its recorded command when quota is available again.
 
+`build/` is not committed, so those files disappear with the machine. Before
+leaving an interrupted sweep, copy its runs into the repository:
+
+```sh
+python3 runner/checkpoint.py
+```
+
+That writes `sweep-runs/<benchmark>/<run-id>/`, including `results.jsonl` and
+any `partial/` calls. Commit that directory. A later `runner/sweep.py` or the
+recorded resume command copies a missing scratch run back from `sweep-runs/`
+before it calls the model, so committed evaluations are not repeated.
+
 ## Verify a grader
 
 Use `--verify-grader` with one benchmark when adding or changing its evaluator.
@@ -100,7 +112,9 @@ configuration, and settings captured by the run.
 Local runs live in `build/scratch-runs/<benchmark>/<run-id>/`. Each completed
 task has one line in `results.jsonl` with its grades and raw model exchanges.
 The `partial/` directory saves returned calls for unfinished tasks so they
-can be graded or resumed. Historical published results live in
+can be graded or resumed. Committed copies of sweep runs live in
+`sweep-runs/` and are restored into `build/scratch-runs/` when the scratch
+copy is missing. Historical published results live in
 `data/<benchmark>/runs/<run-id>/`, with their original model metadata and code
 snapshots.
 

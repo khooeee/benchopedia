@@ -17,6 +17,7 @@ Only Python's standard library is required.
 """
 
 import argparse
+import checkpoint
 import hashlib
 import importlib.util
 import json
@@ -249,6 +250,8 @@ def main(argv=None):
         parser.error("--run-id must use lowercase letters, digits, dots and hyphens")
 
     benchmark_dir = ROOT / "data" / args.benchmark
+    if checkpoint.restore_run(args.benchmark, args.run_id):
+        print(f"Restored {args.benchmark}/{args.run_id} from sweep-runs/", flush=True)
     runs_dir = ROOT / "build" / "scratch-runs" / args.benchmark
     tasks = select_tasks(runs_dir, read_jsonl(benchmark_dir / "tasks.jsonl"), args.after, args.task_key)
     if args.limit is not None:

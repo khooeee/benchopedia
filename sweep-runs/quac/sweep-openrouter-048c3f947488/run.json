@@ -1,0 +1,52 @@
+{
+  "model_id": "nemotron-3-ultra-550b-a55b-free",
+  "profile": "scratch",
+  "settings": {
+    "options": {
+      "max_tokens": 8192,
+      "reasoning": {
+        "effort": "low"
+      },
+      "provider": {
+        "only": [
+          "nvidia"
+        ],
+        "allow_fallbacks": false
+      }
+    }
+  },
+  "attempts_per_task": 1,
+  "after_runs": [],
+  "scratch_model": "runner/models/nemotron-3-ultra-550b-a55b-free.json",
+  "dataset_revision": "09e622916280ba04c9352acb1bc5bbe80f11a2598f6f34e934c51d9e6570f378",
+  "selected_tasks": [
+    "C_0010955f5148430081e67b941dc3b885_1_q#0",
+    "C_0010955f5148430081e67b941dc3b885_1_q#1"
+  ],
+  "commit_sha": "b831a75f9ff62c2c57c2ad7ac7d3c03e238f56b5",
+  "environment": {
+    "system": "macOS 27.2.1",
+    "machine": "Apple M5, 32 GB",
+    "python": "3.9.6",
+    "provider": "openrouter",
+    "endpoint": "https://openrouter.ai/api/v1/chat/completions"
+  },
+  "commands": [
+    {
+      "command": "git clone https://github.com/khooeee/benchopedia.git benchopedia && cd benchopedia && git checkout b831a75f9ff62c2c57c2ad7ac7d3c03e238f56b5",
+      "purpose": "Get the exact code and model definition this run used."
+    },
+    {
+      "command": "test -n \"$OPENROUTER_API_KEY\" || test -f .env",
+      "purpose": "Configure an OpenRouter key outside the recorded run data."
+    },
+    {
+      "command": "python3 runner/run.py quac --scratch --run-id sweep-openrouter-048c3f947488 --profile scratch --scratch-model /Users/ckhoo/code/benchopedia-worktrees/grader-quac/runner/models/nemotron-3-ultra-550b-a55b-free.json --task-key 'C_0010955f5148430081e67b941dc3b885_1_q#0' --task-key 'C_0010955f5148430081e67b941dc3b885_1_q#1'",
+      "purpose": "Send every selected task to the model 1 times and grade each answer. Running the same command again resumes an interrupted run."
+    }
+  ],
+  "started_at": "2026-11-20T18:04:08Z",
+  "finished_at": "2026-11-20T18:04:38Z",
+  "stopped_at": null,
+  "stop_reason": null
+}
