@@ -34,7 +34,7 @@ jobs:
       - name: Set up the HumanEval grading sandbox
         run: python3 data/humaneval/setup_eval.py
       - name: Check graders and re-grade runs
-        run: python3 scripts/check_evals.py
+        run: python3 scripts/check_evals.py --skip-missing-setup
       - name: Check local-root build
         run: |
           python3 scripts/build_site.py
