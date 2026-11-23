@@ -28,6 +28,7 @@ import shlex
 import subprocess
 import sys
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
@@ -189,17 +190,48 @@ def grade_responses(task, evaluation, outputs):
     return grade_output(task, evaluation, outputs[-1])
 
 
+def score_with_calls(task, evaluation, calls, exchange=None):
+    """Replay checkpointed scorer requests before allowing new requests."""
+    saved = iter(calls[1:])
+
+    def request(body):
+        call = next(saved, None)
+        if call is None:
+            if exchange is None:
+                raise ValueError(f"{task['key']}: missing recorded scoring call")
+            return exchange(body)
+        if call["request"] != body:
+            raise ValueError(f"{task['key']}: recorded scoring request changed at call {call['number']}")
+        return call["response"]
+
+    scores = evaluation.score_with_calls(task, response_output(calls[0]["response"]), request)
+    if next(saved, None) is not None:
+        raise ValueError(f"{task['key']}: unused recorded scoring calls")
+    return numeric_result(task, scores)
+
+
 def attempt_task(task, evaluation, model, profile, checkpoint):
     attempts = (json.loads(checkpoint.read_text(encoding="utf-8"))["attempts"]
                 if checkpoint.is_file() else [])
     seeds_used = 0
+    has_scorer = getattr(evaluation, "score_with_calls", None) is not None
+
+    def exchange(body):
+        started = time.monotonic()
+        response = evaluation.scorer_request(body)
+        calls.append({"number": len(calls) + 1, "request": body, "response": response,
+                      "latency_ms": round((time.monotonic() - started) * 1000)})
+        write_json(checkpoint, {"key": task["key"], "attempts": attempts})
+        return response
+
     for number in range(1, evaluation.ATTEMPTS + 1):
         if number > len(attempts):
             attempts.append({"number": number, "started_at": now(), "model_calls": []})
         attempt = attempts[number - 1]
         calls = attempt["model_calls"]
         if "verdict" not in attempt:
-            outputs = [response_output(call["response"]) for call in calls]
+            candidate_calls = calls[:1] if has_scorer else calls
+            outputs = [response_output(call["response"]) for call in candidate_calls]
             while (messages := next_messages(evaluation, task, outputs)) is not None:
                 call_number = len(calls) + 1
                 request, response, latency_ms, output = openrouter_api.chat(
@@ -211,9 +243,12 @@ def attempt_task(task, evaluation, model, profile, checkpoint):
                 write_json(checkpoint, {"key": task["key"], "attempts": attempts})
             if not outputs:
                 raise ValueError(f"{task['key']}: evaluator requested no model calls")
-            attempt.update(grade_responses(task, evaluation, outputs))
+            if has_scorer:
+                attempt.update(score_with_calls(task, evaluation, calls, exchange))
+            else:
+                attempt.update(grade_responses(task, evaluation, outputs))
             write_json(checkpoint, {"key": task["key"], "attempts": attempts})
-        seeds_used += len(calls)
+        seeds_used += 1 if has_scorer else len(calls)
     verdicts = {a["verdict"] for a in attempts}
     if verdicts == {"scored"}:
         result = "scored"
@@ -274,6 +309,13 @@ def main(argv=None):
         if not eval_file.is_relative_to(ROOT) or not eval_file.is_file():
             parser.error("--scratch-eval must name a file within this repository")
     evaluation = load_eval(eval_file)
+    if getattr(evaluation, "score_with_calls", None) is not None:
+        error = evaluation.check_setup()
+        if error:
+            parser.error(f"cannot evaluate {args.benchmark} ({error})")
+    options = getattr(evaluation, "MODEL_OPTIONS", None)
+    if options is not None:
+        profile = profile | {"options": profile["options"] | options}
     sources = {
         Path(__file__).resolve().relative_to(ROOT): Path(__file__).resolve(),
         Path("runner/openrouter_api.py"): Path(openrouter_api.__file__).resolve(),
@@ -379,7 +421,7 @@ def main(argv=None):
     write_json(run_file, run)
     passed = sum(r["result"] == "pass" for r in records)
     scored = sum(r["result"] == "scored" for r in records)
-    if any(getattr(evaluation, name, None) is not None for name in ("score", "score_responses")):
+    if any(getattr(evaluation, name, None) is not None for name in ("score", "score_responses", "score_with_calls")):
         print(f"Finished {run_dir}: {scored} of {len(records)} tasks scored")
     else:
         print(f"Finished {run_dir}: {passed} of {len(records)} tasks passed")
