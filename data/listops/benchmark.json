@@ -1,0 +1,33 @@
+{
+  "id": "listops",
+  "name": "ListOps",
+  "summary": "10,000 nested arithmetic expressions from the original ListOps test split.",
+  "homepage_url": "https://aclanthology.org/N18-4013/",
+  "dataset_url": "https://github.com/NYU-MLL/spinn/blob/1e2805c7b0b327db5d9d78e9b7792ad31678edfa/python/spinn/data/listops/test_d20s.tsv",
+  "dataset_revision": "1e2805c7b0b327db5d9d78e9b7792ad31678edfa",
+  "released_on": "2018-04-17",
+  "task_count": 10000,
+  "has_solutions": true,
+  "overview": "ListOps is a synthetic diagnostic for learning to parse nested lists. Each list applies minimum, maximum, median, or sum modulo ten to digits and the results of inner lists. Evaluating the whole expression produces one digit. [Original paper](https://aclanthology.org/N18-4013/)",
+  "methodology": "This snapshot imports all 10,000 rows of the original `test_d20s.tsv` split. The loader drops the binary-tree parentheses from the source representation and keeps the square brackets that delimit the operations. The prompt explains the operators and presents the resulting token sequence. Keys are one-based row numbers. The original loader evaluates 9,999 nested expressions. The catalog retains its one bare-digit row, listops-04259. [Published test file](https://github.com/NYU-MLL/spinn/blob/1e2805c7b0b327db5d9d78e9b7792ad31678edfa/python/spinn/data/listops/test_d20s.tsv), [Original loader](https://github.com/NYU-MLL/spinn/blob/1e2805c7b0b327db5d9d78e9b7792ad31678edfa/python/spinn/data/listops/load_listops_data.py)",
+  "scoring": "The prediction is correct if its digit matches the stored class. Report the fraction of correct predictions over the 9,999 eligible test rows. The generator truncates the median toward zero and reduces sums modulo ten. [Original paper](https://aclanthology.org/N18-4013/), [Label generator](https://github.com/NYU-MLL/spinn/blob/1e2805c7b0b327db5d9d78e9b7792ad31678edfa/python/spinn/data/listops/make_data.py)",
+  "limitations": "The small synthetic grammar makes expression structure central to the task. Numerical accuracy measures the final computation. The authors studied parse behavior separately. The original paper reports separately trained classifiers. [Original paper](https://aclanthology.org/N18-4013/)",
+  "sources": [
+    {
+      "title": "ListOps: A Diagnostic Dataset for Latent Tree Learning",
+      "url": "https://aclanthology.org/N18-4013/"
+    },
+    {
+      "title": "First public paper version",
+      "url": "https://arxiv.org/abs/1804.06028v1"
+    },
+    {
+      "title": "Original ListOps test file",
+      "url": "https://github.com/NYU-MLL/spinn/blob/1e2805c7b0b327db5d9d78e9b7792ad31678edfa/python/spinn/data/listops/test_d20s.tsv"
+    },
+    {
+      "title": "Original ListOps label generator",
+      "url": "https://github.com/NYU-MLL/spinn/blob/1e2805c7b0b327db5d9d78e9b7792ad31678edfa/python/spinn/data/listops/make_data.py"
+    }
+  ]
+}
