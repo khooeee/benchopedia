@@ -63,3 +63,16 @@ Write one JSON line per sample, `{"task_id": ..., "solution": ...}`, with saniti
 ```sh
 docker run -v "$(pwd)":/app bigcodebench/bigcodebench-evaluate:v0.2.4 --execution local --split instruct --subset full --samples samples.jsonl
 ```
+
+### Verify with the Benchopedia sweep
+
+With Docker running, use `python3 data/bigcodebench/setup_eval.py` and
+`python3 runner/sweep.py bigcodebench --verify-grader`. The sweep uses the
+calibrated Instruct setting. It sanitizes model replies and runs the pinned
+BigCodeBench evaluator on each task's tests in a network-isolated container.
+Setup verifies the Boston housing and NLTK fixtures against pinned checksums.
+Tasks that rely on DNS or live sockets get local host mappings and loopback
+services for the inputs their tests use.
+The image also fixes worker teardown in the upstream harness so it can stop
+its own multiprocessing children inside the task container.
+The Complete setting and multi-sample metrics use the workflows above.
