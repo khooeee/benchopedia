@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "runner"))
 import stop  # noqa: E402
 import run  # noqa: E402
+import simple_evals_judge  # noqa: E402
 import sweep  # noqa: E402
 
 STOPPED = {"finished_at": None, "stopped_at": "2026-11-19T00:30:00Z", "stop_reason": "Too slow."}
@@ -245,15 +246,15 @@ def score_responses(task, outputs):
             self.assertEqual(model, expected_model)
             self.assertEqual(messages, [{"role": "user", "content": "Judge: #### 4"}])
             response = {"model": model, "choices": [{"message": {"content": "A"}}]}
-            return run.simple_evals_judge.request_body(model, messages), response, 20, "A"
+            return simple_evals_judge.request_body(model, messages), response, 20, "A"
 
-        with patch.object(run.simple_evals_judge, "setup_error", return_value=None), \
+        with patch.object(simple_evals_judge, "setup_error", return_value=None), \
              patch.object(run.openrouter_api, "chat", side_effect=self.reply) as candidate, \
-             patch.object(run.simple_evals_judge, "chat", side_effect=RuntimeError("interrupted")), \
+             patch.object(simple_evals_judge, "chat", side_effect=RuntimeError("interrupted")), \
              redirect_stdout(io.StringIO()):
             with self.assertRaisesRegex(RuntimeError, "interrupted"):
                 run.main(args)
-            with patch.object(run.simple_evals_judge, "chat", side_effect=judge):
+            with patch.object(simple_evals_judge, "chat", side_effect=judge):
                 run.main(args)
         candidate.assert_called_once()
         result = build_sqlite.read_results(work)[0]["attempts"][0]
@@ -261,6 +262,8 @@ def score_responses(task, outputs):
         self.assertEqual(result["scores"], {"correct": 1})
         self.assertEqual(result["model_calls"][1]["request"]["model"], expected_model)
         self.assertTrue((work / "code/runner/simple_evals_judge.py").is_file())
+        commands = json.loads((work / "run.json").read_text())["commands"]
+        self.assertTrue(any("OPENAI_API_KEY" in step["command"] for step in commands))
 
     def test_multiple_calls_resume_and_score_saved_replies(self):
         self.prepare_runner_fixture()

@@ -15,7 +15,8 @@ from helpers.build_sqlite import read_results
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "runner"))
-from run import attempt_output, grade_output, grade_responses, next_messages, response_output, simple_evals_judge
+from run import attempt_output, grade_output, grade_responses, next_messages, response_output
+import simple_evals_judge
 
 
 def read_jsonl(path):
@@ -98,8 +99,10 @@ def check_run(run_dir, tasks, errors):
                 if call["request"].get("messages") != expected or expected is None:
                     errors.append(f"{where}: call {call['number']} does not carry the prompt eval.py builds")
                 judge = getattr(evaluation, "JUDGE_MODEL", None)
-                if outputs and judge is not None and call["request"] != simple_evals_judge.request_body(judge, expected):
-                    errors.append(f"{where}: call {call['number']} does not use the pinned judge request")
+                if outputs and judge is not None:
+                    if (call["request"] != simple_evals_judge.request_body(judge, expected)
+                            or call["response"].get("model") != judge):
+                        errors.append(f"{where}: call {call['number']} does not use the pinned judge")
                 try:
                     outputs.append(response_output(call["response"]))
                 except (IndexError, KeyError, TypeError, AttributeError):

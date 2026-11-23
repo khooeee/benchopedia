@@ -33,7 +33,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import openrouter_api
-import simple_evals_judge
 
 ROOT = Path(__file__).resolve().parent.parent
 RUN_ID = re.compile(r"[a-z0-9][a-z0-9.-]*")
@@ -94,16 +93,20 @@ def repository_url():
     return f"https://github.com/{match[1]}.git" if match else url
 
 
-def commands(commit, argv, attempts):
-    return [
+def commands(commit, argv, attempts, judge_model=None):
+    steps = [
         {"command": f"git clone {repository_url()} benchopedia && cd benchopedia && git checkout {commit}",
          "purpose": "Get the exact code and model definition this run used."},
         {"command": 'test -n "$OPENROUTER_API_KEY" || test -f .env',
          "purpose": "Configure an OpenRouter key outside the recorded run data."},
-        {"command": "python3 runner/run.py " + shlex.join(argv),
-         "purpose": f"Send every selected task to the model {attempts} times and grade each answer. "
-                    "Running the same command again resumes an interrupted run."},
     ]
+    if judge_model is not None:
+        steps.append({"command": 'test -n "$OPENAI_API_KEY"',
+                      "purpose": f"Configure API access to the pinned {judge_model} judge."})
+    steps.append({"command": "python3 runner/run.py " + shlex.join(argv),
+         "purpose": f"Send every selected task to the model {attempts} times and grade each answer. "
+                    "Running the same command again resumes an interrupted run."})
+    return steps
 
 
 def select_tasks(runs_dir, tasks, after_runs, task_keys=()):
@@ -192,6 +195,7 @@ def check_eval_setup(evaluation):
     error = check_setup() if check_setup is not None else None
     if error or getattr(evaluation, "JUDGE_MODEL", None) is None:
         return error
+    import simple_evals_judge
     return simple_evals_judge.setup_error()
 
 
@@ -207,6 +211,8 @@ def attempt_task(task, evaluation, model, profile, checkpoint):
                 if checkpoint.is_file() else [])
     seeds_used = 0
     judge_model = getattr(evaluation, "JUDGE_MODEL", None)
+    if judge_model is not None:
+        import simple_evals_judge
     for number in range(1, evaluation.ATTEMPTS + 1):
         if number > len(attempts):
             attempts.append({"number": number, "started_at": now(), "model_calls": []})
@@ -301,6 +307,7 @@ def main(argv=None):
         model_file.relative_to(ROOT): model_file,
     }
     if judge_model is not None:
+        import simple_evals_judge
         sources[Path("runner/simple_evals_judge.py")] = Path(simple_evals_judge.__file__).resolve()
     for name in getattr(evaluation, "CAPTURE_FILES", ()):
         if not isinstance(name, str):
@@ -359,7 +366,7 @@ def main(argv=None):
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(source.read_bytes())
         run = settings | {"commit_sha": commit, "environment": env,
-                          "commands": commands(commit, argv, evaluation.ATTEMPTS),
+                          "commands": commands(commit, argv, evaluation.ATTEMPTS, judge_model),
                           "started_at": now(), "finished_at": None, "stopped_at": None, "stop_reason": None}
         write_json(run_file, run)
 
