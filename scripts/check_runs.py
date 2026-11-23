@@ -212,7 +212,7 @@ def grade(task, output):
         shared.write_text("# shared evaluator helper")
         args = ["fixture", "--scratch", "--run-id", "capture", "--model", MODEL["id"],
                 "--profile", "default", "--task-key", "task-1"]
-        with patch.object(run.ollama_api, "chat", side_effect=RuntimeError("interrupted")):
+        with patch.object(run.openrouter_api, "chat", side_effect=RuntimeError("interrupted")):
             with self.assertRaisesRegex(RuntimeError, "interrupted"):
                 run.main(args)
         capture = self.root / "build/scratch-runs/fixture/capture/code/data/fixture/offsets.json"
