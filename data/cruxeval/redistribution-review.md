@@ -12,6 +12,8 @@ The repository carries the MIT license with a 2023 copyright notice for Meta, an
 
 Benchopedia places each function in the output-prediction and input-prediction assertions used by the authors' prompts, stores the completed assertion as the answer, assigns zero-padded IDs from the upstream sample numbers, and adds source links. Function, input, and output text is unchanged.
 
+The grader also reproduces the two direct prompt functions from the pinned [prompts.py](https://github.com/facebookresearch/cruxeval/blob/190faf16d175b5847b0af05d937872b1fb395942/prompts.py), including their solved demonstration examples. The upstream MIT license and copyright notice accompany them.
+
 ## Notices
 
 CRUXEval is from "CRUXEval: A Benchmark for Code Reasoning, Understanding and Execution" by Alex Gu, Baptiste Rozière, Hugh Leather, Armando Solar-Lezama, Gabriel Synnaeve, and Sida I. Wang.
