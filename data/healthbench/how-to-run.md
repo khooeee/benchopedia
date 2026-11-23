@@ -67,4 +67,13 @@ The harness's command runs a model from its built-in list on all 5,000 conversat
 python -m simple_evals.simple_evals --eval=healthbench --model=gpt-4.1
 ```
 
-The HealthBench score is the mean of the per-conversation scores, clipped to the range 0 to 1 and reported with a bootstrap standard deviation. Scores for each theme and each rubric axis are averaged the same way.
+The HealthBench score is the mean of the per-conversation scores, with the mean clipped to the range 0 to 1 and reported with a bootstrap standard deviation. Scores for each theme and each rubric axis are averaged the same way.
+
+### Verify with the Benchopedia sweep
+
+Run `python3 data/healthbench/setup_eval.py` to fetch the checksum-pinned
+rubrics into the local build directory. Set `OPENAI_API_KEY` in the process
+environment for the dated judge. The sweep records the OpenRouter response
+and the judge's reply for every criterion. It retries replies that lack a
+boolean decision. The run records the raw scores so they can be averaged
+before applying the benchmark's clipping and bootstrap procedure.
