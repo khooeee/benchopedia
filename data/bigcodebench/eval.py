@@ -29,7 +29,7 @@ DOWNLOADS = {
     ),
     "bigcodebench-wikibooks-4606125.html": (
         "https://en.wikibooks.org/w/rest.php/v1/revision/4606125/html",
-        "bd3b8497ed28eb2c497edd201bb2b89632c6ad5a91b781d000a62bb451189c3f",
+        "4bc800cfd0b3872ce3bd4fa6bf5298ac7ee0bf1664ddb28083ae6065a072b403",
     ),
 }
 TLS_FIXTURES = {
