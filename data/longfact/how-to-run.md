@@ -73,3 +73,19 @@ cd long-form-factuality
 python -m main.pipeline
 python -m eval.run_eval --result_path=path/to/results.json --max_claim=64
 ```
+
+### Verify with the Benchopedia sweep
+
+Run `python3 data/longfact/setup_eval.py` with uv installed to prepare the
+checksum-pinned SAFE source and its Python 3.10 runtime. Set `OPENAI_API_KEY`
+with access to `gpt-3.5-turbo-0125` and `SERPER_API_KEY` in the process
+environment. SAFE uses those services when you run the sweep.
+
+```sh
+python3 runner/sweep.py longfact --verify-grader
+```
+
+The sweep sends the paper's prompt to the OpenRouter candidate. It saves the
+candidate reply and each SAFE judge and search exchange before requesting the
+next one. Resume with the command in the scratch run metadata to replay the
+saved exchanges. The grader records the fact counts and F1@64 and F1@178.
