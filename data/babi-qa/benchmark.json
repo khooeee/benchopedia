@@ -1,0 +1,37 @@
+{
+  "id": "babi-qa",
+  "name": "bAbI QA",
+  "summary": "20,000 questions about synthetic stories, covering 20 text understanding and reasoning tasks.",
+  "homepage_url": "https://arxiv.org/abs/1502.05698v10",
+  "dataset_url": "https://huggingface.co/datasets/facebook/babi_qa/tree/021d7aeb7307b7856dd0632f92827bc607dc2f1b",
+  "dataset_revision": "sha256:f7f0bee187efca0d81c3daac1b162cda4eb7f9505dee5ad6846eabbed3dbf92e",
+  "released_on": "2016-12-12",
+  "task_count": 20000,
+  "has_solutions": true,
+  "overview": "bAbI QA uses short stories generated from a simulation to test distinct skills, including finding supporting facts, resolving references, counting objects, and following spatial relations. The authors designed the 20 categories to show which skills a system struggles with. [Original paper](https://arxiv.org/abs/1502.05698v10)",
+  "methodology": "This snapshot contains the complete English `en-10k` test split from version 1.2, with 1,000 questions per category. A task shows the preceding statements in its story followed by the current question. The upstream supporting-fact IDs and previous questions are omitted from the prompt. The reference answer keeps the original label, including commas in multi-part answers. Keys pair the upstream category with the one-based question ordinal in its test file. [Archive and checksum](https://github.com/facebookresearch/ParlAI/blob/a29567f7ce76992fd1f03c51ba9e3b155a37ea51/parlai/tasks/babi/build.py) The date is the earliest dated source located for the v1.2 10k setting. [Henaff et al.](https://arxiv.org/abs/1612.03969v1)",
+  "scoring": "A prediction earns one point when it matches the answer label. The scorer lowercases labels and preserves the order of comma-separated parts. Report accuracy for each category, mean category accuracy, and the number of categories below 95% accuracy. [Original paper](https://arxiv.org/abs/1502.05698v10), [Facebook's answer parser](https://github.com/facebookarchive/MemNN/blob/d7c5f6d5e1a4af6417ffff98535a96bb0947a6a8/MemN2N-babi-matlab/parseBabiTask.m)",
+  "limitations": "The short, templated stories isolate particular skills and use a small vocabulary. Results on these generated questions give limited evidence about reasoning over natural conversations or documents. The original models trained on the task data, so compare chat evaluations and trained systems with their settings in view. [Original paper](https://arxiv.org/abs/1502.05698v10)",
+  "sources": [
+    {
+      "title": "Towards AI-Complete Question Answering",
+      "url": "https://arxiv.org/abs/1502.05698v10"
+    },
+    {
+      "title": "Facebook bAbI QA dataset card",
+      "url": "https://huggingface.co/datasets/facebook/babi_qa/blob/021d7aeb7307b7856dd0632f92827bc607dc2f1b/README.md"
+    },
+    {
+      "title": "ParlAI archive and checksum",
+      "url": "https://github.com/facebookresearch/ParlAI/blob/a29567f7ce76992fd1f03c51ba9e3b155a37ea51/parlai/tasks/babi/build.py"
+    },
+    {
+      "title": "Facebook MemN2N test scorer",
+      "url": "https://github.com/facebookarchive/MemNN/blob/d7c5f6d5e1a4af6417ffff98535a96bb0947a6a8/MemN2N-babi-matlab/test.m"
+    },
+    {
+      "title": "First dated description located for the v1.2 10k setting",
+      "url": "https://arxiv.org/abs/1612.03969v1"
+    }
+  ]
+}
