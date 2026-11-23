@@ -2,7 +2,7 @@
 
 ## Scope
 
-The snapshot contains all 2,280 prompts in the LongFact-Concepts and LongFact-Objects folders under longfact/ at commit `9d27158d198ced0a9d8271a80147cae580614601` of google-deepmind/long-form-factuality: 30 prompts for each of 38 topics in each task. LongFact has no reference answers. The SAFE evaluator, experiment code, and model responses in the repository are not included. Both the public repository and the website publish the prompts. No code or images are copied. [LongFact folder](https://github.com/google-deepmind/long-form-factuality/tree/9d27158d198ced0a9d8271a80147cae580614601/longfact)
+The snapshot contains all 2,280 prompts in the LongFact-Concepts and LongFact-Objects folders under longfact/ at commit `9d27158d198ced0a9d8271a80147cae580614601` of google-deepmind/long-form-factuality: 30 prompts for each of 38 topics in each task. LongFact has no reference answers. The SAFE evaluator, experiment code, and model responses in the repository are not included. Both the public repository and the website publish the prompts. The grader copies the authors’ prompt postamble and the SAFE runtime dependency pins. No images are copied. [LongFact folder](https://github.com/google-deepmind/long-form-factuality/tree/9d27158d198ced0a9d8271a80147cae580614601/longfact)
 
 ## Terms
 
@@ -12,7 +12,7 @@ The paper says the authors generated the prompts by asking GPT-4 for questions a
 
 ## Changes
 
-Benchopedia stores each prompt as a task, builds IDs from the task, topic, and line number, and adds source links. The canary field is checked by the importer and kept in the notices below rather than in each task. Prompt text is unchanged.
+Benchopedia stores each prompt as a task, builds IDs from the task, topic, and line number, and adds source links. The canary field is checked by the importer and kept in the notices below rather than in each task. Prompt text is unchanged. The sweep reads the evaluation harness from its pinned upstream archive at setup. The copied settings retain the upstream Apache 2.0 notice in LICENSE-SAFE.
 
 ## Notices
 

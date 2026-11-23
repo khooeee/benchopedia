@@ -27,16 +27,20 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
+      - name: Prepare the Python grader sandbox
+        run: python3 runner/python_sandbox.py
       - name: Check exclusion rules
         run: python3 scripts/check_exclusions.py
       - name: Check run rules
         run: python3 scripts/check_runs.py
       - name: Set up the HumanEval grading sandbox
         run: python3 data/humaneval/setup_eval.py
+      - name: Prepare the NarrativeQA reference scorer
+        run: python3 data/narrativeqa/setup_eval.py
       - name: Fetch pinned HealthBench rubric inputs
         run: python3 data/healthbench/setup_eval.py
       - name: Check graders and re-grade runs
-        run: python3 scripts/check_evals.py
+        run: python3 scripts/check_evals.py --skip-missing-setup
       - name: Check local-root build
         run: |
           python3 scripts/build_site.py

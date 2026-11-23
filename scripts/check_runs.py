@@ -302,6 +302,51 @@ def score_responses(task, outputs):
         self.assertEqual(attempt["model_calls"][1]["request"]["messages"],
                          [{"role": "user", "content": "Verify: #### 4"}])
 
+    def test_scorer_requests_are_checkpointed_and_replayed(self):
+        self.prepare_runner_fixture()
+        (self.benchmark_dir / "eval.py").write_text("""
+ATTEMPTS = 1
+MODEL_OPTIONS = {"temperature": 0, "max_tokens": 1024}
+def messages(task):
+    return [{"role": "user", "content": task["prompt"]}]
+def check_setup():
+    return None
+def score_with_calls(task, output, request):
+    evidence = request({"service": "search", "query": output})
+    verdict = request({"service": "judge", "evidence": evidence["snippet"]})
+    return {"correct": int(verdict["label"] == task["solution"])}
+def scorer_request(body):
+    raise AssertionError("fixture transport must be replaced")
+""")
+        args = ["fixture", "--scratch", "--run-id", "scorer", "--scratch-model", str(self.hosted_model),
+                "--profile", "scratch", "--task-key", "task-1"]
+        directory = self.root / "build/scratch-runs/fixture/scorer"
+        evaluation = run.load_eval(self.benchmark_dir / "eval.py")
+        with patch.object(run, "load_eval", return_value=evaluation), \
+             patch.object(run.openrouter_api, "chat", side_effect=self.reply) as candidate, \
+             patch.object(evaluation, "scorer_request", side_effect=[
+                 {"snippet": "four"}, RuntimeError("fixture interruption"), {"label": "#### 4"},
+             ]) as scorer, redirect_stdout(io.StringIO()):
+            with self.assertRaisesRegex(RuntimeError, "fixture interruption"):
+                run.main(args)
+            run.main(args)
+        candidate.assert_called_once()
+        self.assertEqual(candidate.call_args.args[2]["options"]["max_tokens"], 1024)
+        self.assertEqual([call.args[0]["service"] for call in scorer.call_args_list],
+                         ["search", "judge", "judge"])
+        record, = build_sqlite.read_results(directory)
+        attempt, = record["attempts"]
+        task = {"key": "task-1", "solution": "#### 4"}
+        self.assertEqual(attempt["output"], "#### 4")
+        self.assertEqual(run.score_with_calls(task, evaluation, attempt["model_calls"])["scores"], {"correct": 1})
+        self.assertEqual([call["number"] for call in attempt["model_calls"]], [1, 2, 3])
+        with self.assertRaisesRegex(ValueError, "missing recorded scoring call"):
+            run.score_with_calls(task, evaluation, attempt["model_calls"][:-1])
+        changed = attempt["model_calls"]
+        changed[1]["request"]["query"] = "changed"
+        with self.assertRaisesRegex(ValueError, "recorded scoring request changed"):
+            run.score_with_calls(task, evaluation, changed)
+
     def test_daily_quota_ends_sweep_and_preserves_resumable_calls(self):
         self.prepare_runner_fixture(("task-3", "task-4"))
         self.write_run("first", self.run | STOPPED, self.results)

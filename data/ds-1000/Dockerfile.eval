@@ -1,0 +1,19 @@
+FROM python@sha256:5be5aaecb962a41567bc8041f1e9e3432cb085b037fe057f9a562630b2e4b370
+RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+RUN python -m pip install --no-cache-dir --only-binary=:all: \
+      gensim==4.3.2 matplotlib==3.8.4 numpy==1.26.4 pandas==1.5.3 \
+      seaborn==0.13.2 scikit-learn==1.4.0 scipy==1.12.0 statsmodels==0.14.1 \
+      xgboost==2.0.3 tensorflow-cpu==2.16.1 \
+      sympy==1.12 mpmath==1.3.0 networkx==3.2.1 filelock==3.13.1 jinja2==3.1.3 fsspec==2024.2.0
+RUN python -m pip install --no-cache-dir --no-deps torch==2.2.0+cpu \
+    --index-url https://download.pytorch.org/whl/cpu
+RUN python -m pip install --no-cache-dir --only-binary=:all: PyYAML==6.0.1
+ENV TF_CPP_MIN_LOG_LEVEL=3 CUDA_VISIBLE_DEVICES=-1 MPLBACKEND=Agg OMP_NUM_THREADS=1 \
+    OPENBLAS_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 TF_NUM_INTEROP_THREADS=1 TF_NUM_INTRAOP_THREADS=1 \
+    MPLCONFIGDIR=/tmp/matplotlib SEABORN_DATA=/opt/ds1000-fixtures/seaborn \
+    SCIKIT_LEARN_DATA=/opt/ds1000-fixtures/sklearn
+COPY setup_fixtures.py /tmp/setup_fixtures.py
+RUN python /tmp/setup_fixtures.py
+LABEL org.benchopedia.ds1000="b39aab71da6d23ef8d3cac59a7c5f834516ab334"
+ENTRYPOINT ["python3", "-I", "-B"]
