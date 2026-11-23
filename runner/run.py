@@ -280,6 +280,23 @@ def main(argv=None):
         default_eval.relative_to(ROOT): eval_file,
         model_file.relative_to(ROOT): model_file,
     }
+    for name in getattr(evaluation, "CAPTURE_FILES", ()):
+        if not isinstance(name, str):
+            parser.error("CAPTURE_FILES must contain file paths")
+        path = Path(name)
+        if name != path.as_posix() or not all(re.fullmatch(r"[a-z0-9][a-z0-9_.-]*", part) for part in path.parts):
+            parser.error(f"invalid evaluator support file: {name}")
+        source = eval_file.parent / path if len(path.parts) == 1 else ROOT / path
+        if not source.resolve().is_relative_to(ROOT) or source.is_symlink() or not source.is_file():
+            parser.error(f"evaluator support file missing or not a regular file: {name}")
+        capture = (benchmark_dir / path).relative_to(ROOT) if len(path.parts) == 1 else path
+        if capture in sources:
+            parser.error(f"evaluator support file is already captured: {name}")
+        try:
+            source.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            parser.error(f"evaluator support files must be UTF-8 text: {name}")
+        sources[capture] = source
     commit = git("rev-parse", "HEAD").strip()
     env = environment()
 
