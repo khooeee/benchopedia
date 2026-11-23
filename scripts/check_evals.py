@@ -6,6 +6,7 @@ eval.py the run kept must reproduce each attempt's prompt and verdict from the
 recorded model output, and that output must be what the model returned.
 """
 
+import argparse
 import importlib.util
 import json
 from pathlib import Path
@@ -15,7 +16,8 @@ from helpers.build_sqlite import read_results
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "runner"))
-from run import grade_output, grade_responses, next_messages, response_output, score_with_calls
+from run import attempt_output, grade_output, grade_responses, next_messages, response_output, score_with_calls
+import simple_evals_judge
 
 
 def read_jsonl(path):
@@ -114,6 +116,11 @@ def check_run(run_dir, tasks, errors):
                 expected = next_messages(evaluation, task, outputs)
                 if call["request"].get("messages") != expected or expected is None:
                     errors.append(f"{where}: call {call['number']} does not carry the prompt eval.py builds")
+                judge = getattr(evaluation, "JUDGE_MODEL", None)
+                if outputs and judge is not None:
+                    if (call["request"] != simple_evals_judge.request_body(judge, expected)
+                            or call["response"].get("model") != judge):
+                        errors.append(f"{where}: call {call['number']} does not use the pinned judge")
                 try:
                     outputs.append(response_output(call["response"]))
                 except (IndexError, KeyError, TypeError, AttributeError):
@@ -121,8 +128,8 @@ def check_run(run_dir, tasks, errors):
                     break
             if not outputs or len(outputs) != len(calls):
                 continue
-            if outputs[-1] != attempt["output"]:
-                errors.append(f"{where}: output differs from the model's final response")
+            if attempt_output(evaluation, outputs) != attempt["output"]:
+                errors.append(f"{where}: output differs from the recorded candidate response")
             if next_messages(evaluation, task, outputs) is not None:
                 errors.append(f"{where}: recorded attempt is missing model calls")
                 continue
@@ -137,13 +144,27 @@ def check_grade(where, attempt, regraded, errors):
         errors.append(f"{where}: recorded grade {recorded!r} differs from {regraded!r}")
 
 
-def main():
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--skip-missing-setup", action="store_true",
+                        help="report and skip benchmark reference checks whose local setup is absent")
+    args = parser.parse_args(argv)
     errors = []
     summary = []
     for eval_file in sorted((ROOT / "data").glob("*/eval.py")):
         benchmark_dir = eval_file.parent
         tasks = read_jsonl(benchmark_dir / "tasks.jsonl")
         evaluation = load_eval(eval_file, f"eval_{benchmark_dir.name}".replace("-", "_"))
+        setup_check = getattr(evaluation, "check_setup", None)
+        if setup_check is not None and any(task.get("solution") is not None for task in tasks):
+            setup_error = setup_check()
+            if setup_error:
+                message = f"{benchmark_dir.name}: reference checks need setup ({setup_error})"
+                if args.skip_missing_setup:
+                    print("Skipping " + message, file=sys.stderr)
+                else:
+                    errors.append(message)
+                continue
         graded = check_eval(evaluation, tasks, eval_file.relative_to(ROOT), errors)
         numeric = any(getattr(evaluation, name, None) is not None for name in ("score", "score_responses", "score_with_calls"))
         outcome = "scored" if numeric else "pass"

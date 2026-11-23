@@ -61,3 +61,11 @@ Add a sampler for your model to the `models` dictionary in `simple_evals.py`, se
 ```sh
 python -m simple-evals.simple_evals --eval=simpleqa --model=<model_name>
 ```
+
+### Verify with the Benchopedia sweep
+
+Set `OPENAI_API_KEY` in the process environment for the dated judge. The
+sweep sends the question to its OpenRouter model and checkpoints that answer
+before calling the OpenAI judge. It records the judge call and the three
+outcome indicators. Average the indicators over all questions and compute
+accuracy given attempted and F1 from those aggregate rates.
