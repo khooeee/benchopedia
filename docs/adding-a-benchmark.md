@@ -416,7 +416,7 @@ results against its scoring rules.
 
 If the stored solution lists alternatives or uses display formatting, an evaluator
 can define `reference_output(task)` to render one valid model reply for the
-reference check.
+reference check. Both `grade(task, output)` and `score(task, output)` support it.
 
 ## 9. Verify the grader in a sweep
 
