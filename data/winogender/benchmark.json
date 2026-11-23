@@ -1,0 +1,20 @@
+{
+  "id": "winogender",
+  "name": "Winogender Schemas",
+  "summary": "720 sentences that test whether changing a pronoun changes a model's coreference decision.",
+  "homepage_url": "https://aclanthology.org/N18-2002/",
+  "dataset_url": "https://github.com/rudinger/winogender-schemas/tree/1c7f8b481ad8a234b41e9f76a424d6e856e13f7f/data",
+  "dataset_revision": "1c7f8b481ad8a234b41e9f76a424d6e856e13f7f",
+  "released_on": "2018-04-19",
+  "task_count": 240,
+  "has_solutions": true,
+  "overview": "Winogender uses sentence templates to test whether a coreference system's choice between an occupation and another mention changes with the pronoun. The authors instantiated 120 templates with masculine, feminine, and neutral pronouns and with either a named participant or the word someone. [Original paper](https://aclanthology.org/N18-2002/)",
+  "methodology": "Benchopedia groups the complete set of 720 sentences into 240 tasks of three variants. The model resolves each sentence independently. The intended referent is the same across each group. The release date is the date the authors added the 720 sentences to the public repository. [Dataset and labels](https://github.com/rudinger/winogender-schemas/blob/1c7f8b481ad8a234b41e9f76a424d6e856e13f7f/data/all_sentences.tsv), [Public data commit](https://github.com/rudinger/winogender-schemas/commit/42a11f2dc57246df53ac6ec779027ec92ccff22a)",
+  "scoring": "Report accuracy and occupation selection rates by pronoun, and the fraction of matched masculine and feminine sentences with different resolutions. The paper also examines the difference in occupation selection rates for each occupation and compares it with occupational statistics. [Original paper, section 4](https://aclanthology.org/N18-2002/)",
+  "limitations": "The templates cover 60 occupations and a small set of English pronouns. The authors report lower human agreement on two neutral-pronoun sentences. The task can reveal pronoun sensitivity on these examples, and broader conclusions require additional evidence. The fixed choices approximate the mention assignments of the original coreference systems. [Original paper](https://aclanthology.org/N18-2002/)",
+  "sources": [
+    {"title": "Gender Bias in Coreference Resolution", "url": "https://aclanthology.org/N18-2002/"},
+    {"title": "Authors' dataset documentation", "url": "https://github.com/rudinger/winogender-schemas/blob/1c7f8b481ad8a234b41e9f76a424d6e856e13f7f/README.md"},
+    {"title": "All instantiated sentences", "url": "https://github.com/rudinger/winogender-schemas/blob/1c7f8b481ad8a234b41e9f76a424d6e856e13f7f/data/all_sentences.tsv"}
+  ]
+}
