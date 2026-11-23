@@ -16,7 +16,7 @@ from helpers.build_sqlite import read_results
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "runner"))
-from run import attempt_output, grade_output, grade_responses, next_messages, response_output
+from run import attempt_output, grade_output, grade_responses, next_messages, response_output, score_with_calls
 import simple_evals_judge
 
 
@@ -34,7 +34,8 @@ def load_eval(path, name):
 
 def check_eval(evaluation, tasks, origin, errors):
     score_responses = getattr(evaluation, "score_responses", None)
-    scores_only = score_responses is not None or getattr(evaluation, "score", None) is not None
+    has_scorer = getattr(evaluation, "score_with_calls", None) is not None
+    scores_only = has_scorer or score_responses is not None or getattr(evaluation, "score", None) is not None
     if type(evaluation.ATTEMPTS) is not int or evaluation.ATTEMPTS < 1:
         errors.append(f"{origin}: ATTEMPTS must be a positive integer")
     is_eligible = getattr(evaluation, "is_eligible", None)
@@ -51,7 +52,9 @@ def check_eval(evaluation, tasks, origin, errors):
         if scores_only:
             if task.get("solution") is not None:
                 graded += 1
-                if score_responses is not None:
+                if has_scorer:
+                    result = score_with_calls(task, evaluation, evaluation.reference_calls(task))
+                elif score_responses is not None:
                     outputs = evaluation.reference_responses(task)
                     if not outputs or any(next_messages(evaluation, task, outputs[:i]) is None
                                           for i in range(len(outputs))) or next_messages(evaluation, task, outputs) is not None:
@@ -94,6 +97,20 @@ def check_run(run_dir, tasks, errors):
             where = f"{results_file.relative_to(ROOT)}: {record['key']} attempt {attempt['number']}"
             attempts += 1
             calls = attempt["model_calls"]
+            if getattr(evaluation, "score_with_calls", None) is not None:
+                if not calls or calls[0]["request"].get("messages") != next_messages(evaluation, task, []):
+                    errors.append(f"{where}: missing candidate prompt from eval.py")
+                    continue
+                try:
+                    output = response_output(calls[0]["response"])
+                    if output != attempt["output"]:
+                        errors.append(f"{where}: output differs from the model's response")
+                    regraded = score_with_calls(task, evaluation, calls)
+                except (IndexError, KeyError, TypeError, ValueError) as error:
+                    errors.append(f"{where}: scorer replay failed ({error})")
+                    continue
+                check_grade(where, attempt, regraded, errors)
+                continue
             outputs = []
             for call in calls:
                 expected = next_messages(evaluation, task, outputs)
@@ -117,10 +134,14 @@ def check_run(run_dir, tasks, errors):
                 errors.append(f"{where}: recorded attempt is missing model calls")
                 continue
             regraded = grade_responses(task, evaluation, outputs)
-            recorded = {key: attempt[key] for key in ("verdict", "answer", "scores") if key in attempt}
-            if regraded != recorded:
-                errors.append(f"{where}: recorded grade {recorded!r} differs from {regraded!r}")
+            check_grade(where, attempt, regraded, errors)
     return attempts
+
+
+def check_grade(where, attempt, regraded, errors):
+    recorded = {key: attempt[key] for key in ("verdict", "answer", "scores") if key in attempt}
+    if regraded != recorded:
+        errors.append(f"{where}: recorded grade {recorded!r} differs from {regraded!r}")
 
 
 def main(argv=None):
@@ -145,7 +166,7 @@ def main(argv=None):
                     errors.append(message)
                 continue
         graded = check_eval(evaluation, tasks, eval_file.relative_to(ROOT), errors)
-        numeric = any(getattr(evaluation, name, None) is not None for name in ("score", "score_responses"))
+        numeric = any(getattr(evaluation, name, None) is not None for name in ("score", "score_responses", "score_with_calls"))
         outcome = "scored" if numeric else "pass"
         summary.append(f"{benchmark_dir.name}: {graded:,} reference solutions {outcome}")
     for run_dir in sorted(p for p in (ROOT / "data").glob("*/runs/*") if p.is_dir()):

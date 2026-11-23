@@ -408,6 +408,17 @@ Return `True` for tasks that can be scored and `False` for tasks to skip. The
 sweep and grader checks use this hook. The catalog retains the complete
 imported split.
 
+An evaluator that scores a single candidate reply with an external harness can
+define `score_with_calls(task, output, request)` and `scorer_request(body)`.
+Provide the candidate prompt through `messages(task)` and declare any
+benchmark-specific generation settings in `MODEL_OPTIONS`. The scorer sends
+JSON requests through the supplied callback. It keeps credentials out of
+request bodies and delegates network calls to `scorer_request`. The runner
+checkpoints each response and replays those responses when a run resumes or is
+checked. If the benchmark has reference solutions, `reference_calls(task)`
+must supply their complete candidate and scorer transcript for the offline
+check. Keep evaluator-specific setup instructions in `check_setup()`.
+
 Then check the grader against every eligible reference solution:
 
 ```sh
