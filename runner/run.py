@@ -93,16 +93,20 @@ def repository_url():
     return f"https://github.com/{match[1]}.git" if match else url
 
 
-def commands(commit, argv, attempts):
-    return [
+def commands(commit, argv, attempts, judge_model=None):
+    steps = [
         {"command": f"git clone {repository_url()} benchopedia && cd benchopedia && git checkout {commit}",
          "purpose": "Get the exact code and model definition this run used."},
         {"command": 'test -n "$OPENROUTER_API_KEY" || test -f .env',
          "purpose": "Configure an OpenRouter key outside the recorded run data."},
-        {"command": "python3 runner/run.py " + shlex.join(argv),
-         "purpose": f"Send every selected task to the model {attempts} times and grade each answer. "
-                    "Running the same command again resumes an interrupted run."},
     ]
+    if judge_model is not None:
+        steps.append({"command": 'test -n "$OPENAI_API_KEY"',
+                      "purpose": f"Configure API access to the pinned {judge_model} judge."})
+    steps.append({"command": "python3 runner/run.py " + shlex.join(argv),
+         "purpose": f"Send every selected task to the model {attempts} times and grade each answer. "
+                    "Running the same command again resumes an interrupted run."})
+    return steps
 
 
 def select_tasks(runs_dir, tasks, after_runs, task_keys=()):
@@ -182,6 +186,19 @@ def response_output(response):
     return response["choices"][0]["message"].get("content") or ""
 
 
+def attempt_output(evaluation, outputs):
+    return outputs[0] if getattr(evaluation, "JUDGE_MODEL", None) is not None else outputs[-1]
+
+
+def check_eval_setup(evaluation):
+    check_setup = getattr(evaluation, "check_setup", None)
+    error = check_setup() if check_setup is not None else None
+    if error or getattr(evaluation, "JUDGE_MODEL", None) is None:
+        return error
+    import simple_evals_judge
+    return simple_evals_judge.setup_error()
+
+
 def grade_responses(task, evaluation, outputs):
     score_responses = getattr(evaluation, "score_responses", None)
     if score_responses is not None:
@@ -193,6 +210,9 @@ def attempt_task(task, evaluation, model, profile, checkpoint):
     attempts = (json.loads(checkpoint.read_text(encoding="utf-8"))["attempts"]
                 if checkpoint.is_file() else [])
     seeds_used = 0
+    judge_model = getattr(evaluation, "JUDGE_MODEL", None)
+    if judge_model is not None:
+        import simple_evals_judge
     for number in range(1, evaluation.ATTEMPTS + 1):
         if number > len(attempts):
             attempts.append({"number": number, "started_at": now(), "model_calls": []})
@@ -202,12 +222,15 @@ def attempt_task(task, evaluation, model, profile, checkpoint):
             outputs = [response_output(call["response"]) for call in calls]
             while (messages := next_messages(evaluation, task, outputs)) is not None:
                 call_number = len(calls) + 1
-                request, response, latency_ms, output = openrouter_api.chat(
-                    model["provider_model"], messages, profile, seed=seeds_used + call_number)
+                if judge_model is not None and outputs:
+                    request, response, latency_ms, output = simple_evals_judge.chat(judge_model, messages)
+                else:
+                    request, response, latency_ms, output = openrouter_api.chat(
+                        model["provider_model"], messages, profile, seed=seeds_used + call_number)
                 calls.append({"number": call_number, "request": request,
                               "response": response, "latency_ms": latency_ms})
                 outputs.append(output)
-                attempt["output"] = output
+                attempt["output"] = attempt_output(evaluation, outputs)
                 write_json(checkpoint, {"key": task["key"], "attempts": attempts})
             if not outputs:
                 raise ValueError(f"{task['key']}: evaluator requested no model calls")
@@ -274,12 +297,18 @@ def main(argv=None):
         if not eval_file.is_relative_to(ROOT) or not eval_file.is_file():
             parser.error("--scratch-eval must name a file within this repository")
     evaluation = load_eval(eval_file)
+    judge_model = getattr(evaluation, "JUDGE_MODEL", None)
+    if judge_model is not None and (setup_error := check_eval_setup(evaluation)):
+        parser.error(f"cannot evaluate {args.benchmark} ({setup_error})")
     sources = {
         Path(__file__).resolve().relative_to(ROOT): Path(__file__).resolve(),
         Path("runner/openrouter_api.py"): Path(openrouter_api.__file__).resolve(),
         default_eval.relative_to(ROOT): eval_file,
         model_file.relative_to(ROOT): model_file,
     }
+    if judge_model is not None:
+        import simple_evals_judge
+        sources[Path("runner/simple_evals_judge.py")] = Path(simple_evals_judge.__file__).resolve()
     for name in getattr(evaluation, "CAPTURE_FILES", ()):
         if not isinstance(name, str):
             parser.error("CAPTURE_FILES must contain file paths")
@@ -299,6 +328,8 @@ def main(argv=None):
         sources[capture] = source
     commit = git("rev-parse", "HEAD").strip()
     env = environment()
+    if judge_model is not None:
+        env.update(judge_endpoint=simple_evals_judge.CHAT_URL, judge_model=judge_model)
 
     run_dir = runs_dir / args.run_id
     run_file = run_dir / "run.json"
@@ -323,7 +354,9 @@ def main(argv=None):
             snapshot = run_dir / "code" / path
             if not snapshot.is_file() or snapshot.read_bytes() != source.read_bytes():
                 changed.append(str(path))
-        changed += [k for k in ("provider", "endpoint") if run["environment"].get(k) != env[k]]
+        for key in ("provider", "endpoint", "judge_endpoint", "judge_model"):
+            if run["environment"].get(key) != env.get(key):
+                changed.append(key)
         if changed:
             raise SystemExit(f"Cannot resume {run_dir}: changed since it started: {', '.join(changed)}")
         print(f"Resuming {run_dir}")
@@ -333,7 +366,7 @@ def main(argv=None):
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(source.read_bytes())
         run = settings | {"commit_sha": commit, "environment": env,
-                          "commands": commands(commit, argv, evaluation.ATTEMPTS),
+                          "commands": commands(commit, argv, evaluation.ATTEMPTS, judge_model),
                           "started_at": now(), "finished_at": None, "stopped_at": None, "stop_reason": None}
         write_json(run_file, run)
 

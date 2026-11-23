@@ -2,7 +2,7 @@
 
 ## Scope
 
-The snapshot contains all 4,326 questions and reference answers in OpenAI's published SimpleQA test file, pinned by SHA-256 `feee3f7e7db3617e94e8fcf1977b756ec420ef8568f4e0fcbbe0e92e9d5fc032`. The file's metadata column, which holds topic tags and the annotators' supporting sources, is not included. Both the public repository and the website publish the questions and answers. No code or images are copied. [Test file](https://openaipublic.blob.core.windows.net/simple-evals/simple_qa_test_set.csv)
+The snapshot contains all 4,326 questions and reference answers in OpenAI's published SimpleQA test file, pinned by SHA-256 `feee3f7e7db3617e94e8fcf1977b756ec420ef8568f4e0fcbbe0e92e9d5fc032`. The file's metadata column, which holds topic tags and the annotators' supporting sources, is not included. Both the public repository and the website publish the questions and answers. The grader uses the upstream judge prompt. No images are copied. [Test file](https://openaipublic.blob.core.windows.net/simple-evals/simple_qa_test_set.csv)
 
 ## Terms
 
@@ -12,7 +12,7 @@ The test file itself carries no license statement; this review relies on the REA
 
 ## Changes
 
-Benchopedia converts each CSV row into a task record, assigns positional IDs, adds source links, and leaves out the metadata column. Question and answer text is unchanged.
+Benchopedia converts each CSV row into a task record, assigns positional IDs, adds source links, and leaves out the metadata column. Question and answer text is unchanged. The grader prompt is copied from the pinned evaluation code under the same MIT notice.
 
 ## Notices
 
