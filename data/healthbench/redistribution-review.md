@@ -14,7 +14,7 @@ A scan of the imported text for personal and clinical data found no real records
 
 ## Changes
 
-Benchopedia renders each conversation as the task prompt, one section per message under a heading naming the turn and the role, and lists the example's upstream tags in a final section. The physician-written ideal response becomes the reference solution, verbatim. Keys are the upstream prompt IDs. Source links point at the published file and the evaluation code, because the file has no per-record addresses. The conversation text, the responses, and the tags are unchanged, and the 794 examples without a physician response are published without a solution.
+Benchopedia renders each conversation as the task prompt, one section per message under a heading naming the turn and the role, and lists the example's upstream tags in a final section. The physician-written ideal response becomes the reference solution, verbatim. Keys are the upstream prompt IDs. Source links point at the published file and the evaluation code, because the file has no per-record addresses. Scoring reads rubrics from the pinned local download and copies the judge prompt from the MIT-licensed evaluation code. The conversation text, the responses, and the tags are unchanged, and the 794 examples without a physician response are published without a solution.
 
 ## Notices
 
