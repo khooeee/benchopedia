@@ -33,6 +33,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import openrouter_api
+import simple_evals_judge
 
 ROOT = Path(__file__).resolve().parent.parent
 RUN_ID = re.compile(r"[a-z0-9][a-z0-9.-]*")
@@ -182,6 +183,18 @@ def response_output(response):
     return response["choices"][0]["message"].get("content") or ""
 
 
+def attempt_output(evaluation, outputs):
+    return outputs[0] if getattr(evaluation, "JUDGE_MODEL", None) is not None else outputs[-1]
+
+
+def check_eval_setup(evaluation):
+    check_setup = getattr(evaluation, "check_setup", None)
+    error = check_setup() if check_setup is not None else None
+    if error or getattr(evaluation, "JUDGE_MODEL", None) is None:
+        return error
+    return simple_evals_judge.setup_error()
+
+
 def grade_responses(task, evaluation, outputs):
     score_responses = getattr(evaluation, "score_responses", None)
     if score_responses is not None:
@@ -193,6 +206,7 @@ def attempt_task(task, evaluation, model, profile, checkpoint):
     attempts = (json.loads(checkpoint.read_text(encoding="utf-8"))["attempts"]
                 if checkpoint.is_file() else [])
     seeds_used = 0
+    judge_model = getattr(evaluation, "JUDGE_MODEL", None)
     for number in range(1, evaluation.ATTEMPTS + 1):
         if number > len(attempts):
             attempts.append({"number": number, "started_at": now(), "model_calls": []})
@@ -202,12 +216,15 @@ def attempt_task(task, evaluation, model, profile, checkpoint):
             outputs = [response_output(call["response"]) for call in calls]
             while (messages := next_messages(evaluation, task, outputs)) is not None:
                 call_number = len(calls) + 1
-                request, response, latency_ms, output = openrouter_api.chat(
-                    model["provider_model"], messages, profile, seed=seeds_used + call_number)
+                if judge_model is not None and outputs:
+                    request, response, latency_ms, output = simple_evals_judge.chat(judge_model, messages)
+                else:
+                    request, response, latency_ms, output = openrouter_api.chat(
+                        model["provider_model"], messages, profile, seed=seeds_used + call_number)
                 calls.append({"number": call_number, "request": request,
                               "response": response, "latency_ms": latency_ms})
                 outputs.append(output)
-                attempt["output"] = output
+                attempt["output"] = attempt_output(evaluation, outputs)
                 write_json(checkpoint, {"key": task["key"], "attempts": attempts})
             if not outputs:
                 raise ValueError(f"{task['key']}: evaluator requested no model calls")
@@ -274,12 +291,17 @@ def main(argv=None):
         if not eval_file.is_relative_to(ROOT) or not eval_file.is_file():
             parser.error("--scratch-eval must name a file within this repository")
     evaluation = load_eval(eval_file)
+    judge_model = getattr(evaluation, "JUDGE_MODEL", None)
+    if judge_model is not None and (setup_error := check_eval_setup(evaluation)):
+        parser.error(f"cannot evaluate {args.benchmark} ({setup_error})")
     sources = {
         Path(__file__).resolve().relative_to(ROOT): Path(__file__).resolve(),
         Path("runner/openrouter_api.py"): Path(openrouter_api.__file__).resolve(),
         default_eval.relative_to(ROOT): eval_file,
         model_file.relative_to(ROOT): model_file,
     }
+    if judge_model is not None:
+        sources[Path("runner/simple_evals_judge.py")] = Path(simple_evals_judge.__file__).resolve()
     for name in getattr(evaluation, "CAPTURE_FILES", ()):
         if not isinstance(name, str):
             parser.error("CAPTURE_FILES must contain file paths")
@@ -299,6 +321,8 @@ def main(argv=None):
         sources[capture] = source
     commit = git("rev-parse", "HEAD").strip()
     env = environment()
+    if judge_model is not None:
+        env.update(judge_endpoint=simple_evals_judge.CHAT_URL, judge_model=judge_model)
 
     run_dir = runs_dir / args.run_id
     run_file = run_dir / "run.json"
@@ -323,7 +347,9 @@ def main(argv=None):
             snapshot = run_dir / "code" / path
             if not snapshot.is_file() or snapshot.read_bytes() != source.read_bytes():
                 changed.append(str(path))
-        changed += [k for k in ("provider", "endpoint") if run["environment"].get(k) != env[k]]
+        for key in ("provider", "endpoint", "judge_endpoint", "judge_model"):
+            if run["environment"].get(key) != env.get(key):
+                changed.append(key)
         if changed:
             raise SystemExit(f"Cannot resume {run_dir}: changed since it started: {', '.join(changed)}")
         print(f"Resuming {run_dir}")

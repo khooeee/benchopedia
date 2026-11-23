@@ -223,6 +223,45 @@ def grade(task, output):
         with self.assertRaisesRegex(SystemExit, "offsets.json"):
             run.main(args)
 
+    def test_judge_calls_resume_and_keep_the_candidate_output(self):
+        self.prepare_runner_fixture()
+        (self.benchmark_dir / "eval.py").write_text('''
+ATTEMPTS = 1
+JUDGE_MODEL = "gpt-4.1-2025-04-14"
+def next_messages(task, outputs):
+    if not outputs:
+        return [{"role": "user", "content": task["prompt"]}]
+    if len(outputs) == 1:
+        return [{"role": "user", "content": "Judge: " + outputs[0]}]
+def score_responses(task, outputs):
+    return {"correct": int(outputs[1] == "A")}
+''')
+        args = ["fixture", "--scratch", "--run-id", "judge", "--scratch-model", str(self.hosted_model),
+                "--profile", "scratch", "--task-key", "task-1"]
+        work = self.root / "build/scratch-runs/fixture/judge"
+        expected_model = "gpt-4.1-2025-04-14"
+
+        def judge(model, messages):
+            self.assertEqual(model, expected_model)
+            self.assertEqual(messages, [{"role": "user", "content": "Judge: #### 4"}])
+            response = {"model": model, "choices": [{"message": {"content": "A"}}]}
+            return run.simple_evals_judge.request_body(model, messages), response, 20, "A"
+
+        with patch.object(run.simple_evals_judge, "setup_error", return_value=None), \
+             patch.object(run.openrouter_api, "chat", side_effect=self.reply) as candidate, \
+             patch.object(run.simple_evals_judge, "chat", side_effect=RuntimeError("interrupted")), \
+             redirect_stdout(io.StringIO()):
+            with self.assertRaisesRegex(RuntimeError, "interrupted"):
+                run.main(args)
+            with patch.object(run.simple_evals_judge, "chat", side_effect=judge):
+                run.main(args)
+        candidate.assert_called_once()
+        result = build_sqlite.read_results(work)[0]["attempts"][0]
+        self.assertEqual(result["output"], "#### 4")
+        self.assertEqual(result["scores"], {"correct": 1})
+        self.assertEqual(result["model_calls"][1]["request"]["model"], expected_model)
+        self.assertTrue((work / "code/runner/simple_evals_judge.py").is_file())
+
     def test_multiple_calls_resume_and_score_saved_replies(self):
         self.prepare_runner_fixture()
         (self.benchmark_dir / "eval.py").write_text("""

@@ -15,7 +15,7 @@ from helpers.build_sqlite import read_results
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "runner"))
-from run import grade_output, grade_responses, next_messages, response_output
+from run import attempt_output, grade_output, grade_responses, next_messages, response_output, simple_evals_judge
 
 
 def read_jsonl(path):
@@ -97,6 +97,9 @@ def check_run(run_dir, tasks, errors):
                 expected = next_messages(evaluation, task, outputs)
                 if call["request"].get("messages") != expected or expected is None:
                     errors.append(f"{where}: call {call['number']} does not carry the prompt eval.py builds")
+                judge = getattr(evaluation, "JUDGE_MODEL", None)
+                if outputs and judge is not None and call["request"] != simple_evals_judge.request_body(judge, expected):
+                    errors.append(f"{where}: call {call['number']} does not use the pinned judge request")
                 try:
                     outputs.append(response_output(call["response"]))
                 except (IndexError, KeyError, TypeError, AttributeError):
@@ -104,8 +107,8 @@ def check_run(run_dir, tasks, errors):
                     break
             if not outputs or len(outputs) != len(calls):
                 continue
-            if outputs[-1] != attempt["output"]:
-                errors.append(f"{where}: output differs from the model's final response")
+            if attempt_output(evaluation, outputs) != attempt["output"]:
+                errors.append(f"{where}: output differs from the recorded candidate response")
             if next_messages(evaluation, task, outputs) is not None:
                 errors.append(f"{where}: recorded attempt is missing model calls")
                 continue
