@@ -14,6 +14,7 @@ import unicodedata
 
 
 ATTEMPTS = 1
+CAPTURE_FILES = ("setup_eval.py", "import.py")
 MAX_EVIDENCE = 5
 WIKI_SHA256 = "4b06d95da6adf7fe02d2796176c670dacccb21348da89cba4c50676ab99665f2"
 LABELS = {"SUPPORTS", "REFUTES", "NOT ENOUGH INFO"}
