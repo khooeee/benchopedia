@@ -67,3 +67,11 @@ For each task, write a JSON object mapping every ID from `sample_0` to `sample_7
 python evaluate_generations.py --generations_path generations_input.json --scored_results_path scored_input.json --mode input
 python evaluate_generations.py --generations_path generations_output.json --scored_results_path scored_output.json --mode output
 ```
+
+### Verify with the Benchopedia sweep
+
+Start Docker, run `python3 runner/python_sandbox.py`, and run
+`python3 runner/sweep.py cruxeval --verify-grader`. Each sample gets two calls,
+one for the output and one for the input. The grader records pass@1 separately
+for each mode and runs each assertion in its own network-isolated container
+with a three-second deadline. Use the full procedure above for pass@5.
