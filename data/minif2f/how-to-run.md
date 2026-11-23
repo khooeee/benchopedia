@@ -76,3 +76,12 @@ for n in names:
     solved += any(proved(preamble, statement, generate(statement)) for _ in range(8))
 print("test Pass@8:", solved / len(names))
 ```
+
+### Verify with the Benchopedia sweep
+
+Build the local grader image with
+`docker build -f data/minif2f/Dockerfile.eval -t benchopedia-minif2f:e4f1130 data/minif2f`
+and run `python3 runner/sweep.py minif2f --verify-grader`. The grader uses the
+pinned Lean 3 executable, mathlib revision, and split preambles. It runs each
+proof in a new network-isolated container and checks for incomplete proofs.
+The sweep checks one proof per task for pass@1.

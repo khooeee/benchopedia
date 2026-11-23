@@ -16,6 +16,8 @@ The repository's `informal` directory, which pairs every problem with a natural-
 
 Benchopedia does not publish a modified copy of the Lean files. It extracts each `theorem` declaration and splits it at `begin`: the statement becomes the task prompt, shown under a heading naming the split and problem and inside a fenced block, and the declaration with its proof becomes the reference solution. Lean text is copied verbatim; nothing is reformatted, renamed, or corrected. IDs combine the split and the upstream problem name. Source links point at the declaration's lines in its split file at the pinned commit, and the environment link points at `leanpkg.toml`. The file preamble of imports and notation, the helper lemma `sum_pairs`, the scripts, and the material for the other proof assistants are not imported, and declarations whose proof contains `sorry` are published without a reference solution.
 
+The grader also incorporates the upstream test file's standalone `sum_pairs` helper lemma under Apache 2.0. The lemma's text is unchanged and the benchmark's license remains alongside the grader. [Helper source](https://github.com/facebookresearch/miniF2F/blob/e4f113090ad82d64f8ce064d2f55b613a9b6bded/lean/src/test.lean#L1613)
+
 ## Notices
 
 miniF2F is from "miniF2F: a cross-system benchmark for formal Olympiad-level mathematics" by Kunhao Zheng, Jesse Michael Han, and Stanislas Polu. The Lean statements and proofs are used under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0), kept in full beside this review as `LICENSE`.
