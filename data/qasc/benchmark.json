@@ -1,0 +1,21 @@
+{
+  "id": "qasc",
+  "name": "QASC Development Questions Only",
+  "summary": "Answer eight-choice grade-school science questions designed around composing two facts.",
+  "homepage_url": "https://github.com/allenai/qasc",
+  "dataset_url": "https://huggingface.co/datasets/allenai/qasc/tree/a34ba204eb9a33b919c10cc08f4f1c8dae5ec070",
+  "dataset_revision": "a34ba204eb9a33b919c10cc08f4f1c8dae5ec070",
+  "released_on": "2019-10-25",
+  "task_count": 926,
+  "has_solutions": true,
+  "overview": "Question Answering via Sentence Composition (QASC) asks grade-school science questions designed to require combining two facts. The authors used crowd-written stems and selected additional distractors to create eight answer choices for each question. [Original paper](https://arxiv.org/html/1910.11473)",
+  "methodology": "This snapshot includes all 926 questions in the final development split, published as validation by AllenAI. The prompts follow the released question-only setting and contain the published stem and eight choices in their original order. Keys are the original example IDs. Some stems recur with different option sets, and all 926 complete prompts are distinct. The catalog date is the first dated paper release. [Pinned development file](https://huggingface.co/datasets/allenai/qasc/blob/a34ba204eb9a33b919c10cc08f4f1c8dae5ec070/data/validation-00000-of-00001.parquet) [Question-only baseline](https://github.com/allenai/qasc/blob/c44a320c2bb682d614a675d2ba4be072150db4eb/README.md#no-knowledge-baseline) [Dated preprint](https://arxiv.org/abs/1910.11473v1)",
+  "scoring": "Give one point when the selected A–H label matches the published answer key. Report the fraction correct across the development split. Each reference displays the label and the corresponding choice text. [Original paper, Sections 6–7](https://arxiv.org/html/1910.11473)",
+  "limitations": "Development results use the publicly released development labels. The original leaderboard separately scores the test split. The question-only setting measures what the model can answer from the stem and choices. The paper’s retrieval settings supply supporting knowledge from a corpus. [Original release instructions](https://github.com/allenai/qasc/blob/c44a320c2bb682d614a675d2ba4be072150db4eb/README.md) [Original paper](https://arxiv.org/html/1910.11473)",
+  "sources": [
+    {"title": "QASC original paper", "url": "https://arxiv.org/html/1910.11473"},
+    {"title": "First dated QASC preprint", "url": "https://arxiv.org/abs/1910.11473v1"},
+    {"title": "Pinned AllenAI dataset card", "url": "https://huggingface.co/datasets/allenai/qasc/blob/a34ba204eb9a33b919c10cc08f4f1c8dae5ec070/README.md"},
+    {"title": "Official question-only baseline", "url": "https://github.com/allenai/qasc/blob/c44a320c2bb682d614a675d2ba4be072150db4eb/README.md#no-knowledge-baseline"}
+  ]
+}
