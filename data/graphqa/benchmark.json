@@ -1,0 +1,29 @@
+{
+  "id": "graphqa",
+  "name": "GraphQA Basic Zero-Shot",
+  "summary": "3,500 questions about graph structure, including counts, adjacency, and cycles.",
+  "homepage_url": "https://openreview.net/forum?id=IuXR1CCrSi",
+  "dataset_url": "https://huggingface.co/datasets/baharef/GraphQA/tree/ca8b67f4961e4110c949e81d20b829b6af59cad1",
+  "dataset_revision": "ca8b67f4961e4110c949e81d20b829b6af59cad1",
+  "released_on": "2024-09-16",
+  "task_count": 3500,
+  "has_solutions": true,
+  "overview": "GraphQA tests graph reasoning from text. Its basic tasks ask whether an edge or cycle exists, count nodes or edges, find the degree of a node, or list its neighbors or non-neighbors. [Original study, Appendix A.2.1](https://openreview.net/pdf?id=IuXR1CCrSi)",
+  "methodology": "This snapshot includes the complete `zero_shot_test` split for each of the seven basic task types in the release. Each type has 500 prompts describing undirected Erdős–Rényi graphs in the adjacency encoding. The task text and answers come from the original records. Keys combine the task type with the one-based row number and preserve distinct upstream records that share a prompt. [Pinned configurations](https://huggingface.co/datasets/baharef/GraphQA/blob/ca8b67f4961e4110c949e81d20b829b6af59cad1/README.md), [Original task generator](https://github.com/google-research/google-research/blob/5b09c22d73a9d35eb6c5d2a99b95677a45053466/graphqa/graph_task.py)",
+  "scoring": "Report accuracy by task type. A reply matches when it gives the same boolean, integer, or complete node set as the reference. The chat adapter accepts equivalent ordering for node lists. [Original study, Section 3 and Appendix A.2.1](https://openreview.net/pdf?id=IuXR1CCrSi)",
+  "limitations": "This snapshot covers one graph family and one text encoding. The paper compares several graph families, prompt styles, and encodings, and also reports a separate set of more complex tasks. The published maximum-flow zero-shot file lists edges without capacities, so those prompts do not specify the weighted flow computation. The basic files include 25 additional occurrences across 19 groups of identical prompts with matching labels. [Original study, Sections 3 and 4](https://openreview.net/pdf?id=IuXR1CCrSi), [Pinned maximum-flow file](https://huggingface.co/datasets/baharef/GraphQA/blob/ca8b67f4961e4110c949e81d20b829b6af59cad1/maximum_flow/maximum_flow_zero_shot_test.json)",
+  "sources": [
+    {
+      "title": "Talk Like a Graph: Encoding Graphs for Large Language Models",
+      "url": "https://openreview.net/forum?id=IuXR1CCrSi"
+    },
+    {
+      "title": "Pinned GraphQA release",
+      "url": "https://huggingface.co/datasets/baharef/GraphQA/tree/ca8b67f4961e4110c949e81d20b829b6af59cad1"
+    },
+    {
+      "title": "Original task generation code",
+      "url": "https://github.com/google-research/google-research/blob/5b09c22d73a9d35eb6c5d2a99b95677a45053466/graphqa/graph_task.py"
+    }
+  ]
+}
