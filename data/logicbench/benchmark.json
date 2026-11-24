@@ -1,0 +1,21 @@
+{
+  "id": "logicbench",
+  "name": "LogicBench Binary Question Answering",
+  "summary": "Decide whether a conclusion follows from a narrative under one of 25 inference rules.",
+  "homepage_url": "https://github.com/Mihir3009/LogicBench",
+  "dataset_url": "https://github.com/Mihir3009/LogicBench/tree/c014153303c98de4d5f09d41c3a235cd869be5c8/data/LogicBench%28Eval%29/BQA",
+  "dataset_revision": "c014153303c98de4d5f09d41c3a235cd869be5c8",
+  "released_on": "2024-05-02",
+  "task_count": 1520,
+  "has_solutions": true,
+  "overview": "LogicBench probes individual inference rules in natural-language narratives. The binary question-answering evaluation spans propositional logic, first-order logic, and non-monotonic reasoning about defaults and exceptions. Each question asks whether a conclusion follows from the supplied context. [LogicBench paper](https://aclanthology.org/2024.acl-long.739/)",
+  "methodology": "This snapshot contains the complete LogicBench(Eval) binary question-answering release, with 1,520 questions from 500 source samples across 25 inference rules. Each variant gets its own key in the form `family.rule.sample.variant`. The family and rule come from the source directories, the two-digit sample number is the released ID, and the variant number is the one-based position in that sample. The model receives the original context and question in three independent zero-shot calls with different reasoning instructions. The original files were released on May 2, 2024. [Pinned BQA directory](https://github.com/Mihir3009/LogicBench/tree/c014153303c98de4d5f09d41c3a235cd869be5c8/data/LogicBench%28Eval%29/BQA) [Source release commit](https://github.com/Mihir3009/LogicBench/commit/ef0de0447bf135d1e7605ae1b40228b8ca69cceb) [Paper statistics](https://arxiv.org/html/2404.15522v2#S3.SS3)",
+  "scoring": "A final answer is correct when its yes or no label matches the released reference. The per-task score is the share of the three replies that match. Following the paper, aggregate those scores within each inference rule and reference label to compute A(Yes) and A(No). Average the corresponding rule scores for each logic family. [Paper metrics](https://arxiv.org/html/2404.15522v2#S4.SS1)",
+  "limitations": "The texts were generated from templates and model-written narratives that the authors reviewed. The evaluation isolates one inference rule at a time. It evaluates the final label, while the reasoning text remains ungraded. Benchopedia uses its own wording for the three reasoning instructions, so results can vary from the paper's zero-shot runs. [Data validation](https://arxiv.org/html/2404.15522v2#S3.SS3) [Original prompt designs](https://arxiv.org/html/2404.15522v2#A8.SS2)",
+  "sources": [
+    {"title": "LogicBench paper", "url": "https://aclanthology.org/2024.acl-long.739/"},
+    {"title": "Pinned binary QA data", "url": "https://github.com/Mihir3009/LogicBench/tree/c014153303c98de4d5f09d41c3a235cd869be5c8/data/LogicBench%28Eval%29/BQA"},
+    {"title": "Metric definitions", "url": "https://arxiv.org/html/2404.15522v2#S4.SS1"},
+    {"title": "Zero-shot prompting protocol", "url": "https://arxiv.org/html/2404.15522v2#A8.SS2"}
+  ]
+}
