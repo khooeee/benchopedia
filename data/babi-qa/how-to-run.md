@@ -52,22 +52,22 @@ Send the preceding story statements and the selected question. Supporting-fact I
 def generate(prompt: str) -> str:
     raise NotImplementedError("Call your model and return its answer text.")
 
-instruction = "Reply with only the answer. Separate multiple answer parts with commas."
+instruction = "Reply with just the answer label. Separate multiple answer parts with commas."
 prediction = generate(f"{prompt}\n\n{instruction}")
 ```
 
 ### 4. Score it
 
-Compare the complete label after lowercasing and trimming spaces around each comma-separated part. Preserve the order of parts, including the directions in a path-finding answer.
+Compare the complete label after lowercasing and trimming spaces around each comma-separated part. The chat adapter accepts a final period and a leading `the` before a part. The order of parts remains significant, including directions in a path-finding answer.
 
 ```python
 import re
 
 def correct(prediction, reference):
-    response = prediction.strip().lower()
-    if not re.fullmatch(r"[a-z0-9'-]+(?:\s*,\s*[a-z0-9'-]+)*", response):
+    response = prediction.strip().lower().removesuffix(".")
+    label = ",".join(part.strip().removeprefix("the ") for part in response.split(","))
+    if not re.fullmatch(r"[a-z0-9'-]+(?:\s*,\s*[a-z0-9'-]+)*", label):
         return False
-    label = ",".join(part.strip() for part in response.split(","))
     return label == reference.lower()
 
 print(correct(prediction, reference))
