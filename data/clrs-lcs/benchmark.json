@@ -1,0 +1,21 @@
+{
+  "id": "clrs-lcs",
+  "name": "CLRS-Text LCS Traceback",
+  "summary": "Compute the longest common subsequence traceback matrix from two sequences.",
+  "homepage_url": "https://github.com/google-deepmind/clrs/tree/d1c2ad7af8437c7536cf329d9cef8fdf93184d9d/clrs/_src/clrs_text",
+  "dataset_url": "https://huggingface.co/datasets/smcleish/CLRS-Text-test/tree/83205bf85c630749da410e784226364cf4a2d7eb",
+  "dataset_revision": "83205bf85c630749da410e784226364cf4a2d7eb",
+  "released_on": "2024-07-10",
+  "task_count": 6000,
+  "has_solutions": true,
+  "overview": "CLRS-Text expresses inputs and outputs of classical algorithms as text. This entry covers its longest common subsequence task. The model returns the final traceback matrix, which records the decisions used to reconstruct a subsequence from the dynamic programming table. [Original paper](https://arxiv.org/html/2406.04229) [Pinned LCS implementation](https://github.com/google-deepmind/clrs/blob/d1c2ad7af8437c7536cf329d9cef8fdf93184d9d/clrs/_src/algorithms/dynamic_programming.py#L95-L163)",
+  "methodology": "The snapshot includes all 6,000 lcs_length records from the authors’ five public test shards. Each shard has 100 records per total sequence length from 4 through 15. The archive contains 5,585 distinct questions. Shared and repeated questions retain every occurrence. Keys combine the seed file and the original one-based Parquet row position. The input preserves the published question and initial trace. The reference retains the final matrix. The catalog date is the first upload date of the public test artifacts. [Pinned test artifacts](https://huggingface.co/datasets/smcleish/CLRS-Text-test/tree/83205bf85c630749da410e784226364cf4a2d7eb) [First dataset upload](https://huggingface.co/datasets/smcleish/CLRS-Text-test/commit/f5a3e3c38ee70d112dd5c15fca4f9d4bdbb5ce7d)",
+  "scoring": "Extract the final matrix and compare its text with the canonical target, following the paper’s exact-match rule. The traceback decisions occupy the upper-right block, and cells outside that block contain -1. Report accuracy per total length across the five seed files. Whitespace and punctuation inside the matrix affect exact matching. [Paper, Section 4](https://arxiv.org/html/2406.04229) [Pinned output formatter](https://github.com/google-deepmind/clrs/blob/d1c2ad7af8437c7536cf329d9cef8fdf93184d9d/clrs/_src/clrs_text/clrs_utils.py#L536-L571)",
+  "limitations": "The task uses generated sequences over a four-symbol alphabet and fixes the choice of traceback direction in ties. The archived test files determine the sample counts and lengths reported here. Benchopedia provides the output convention in a chat prompt. The paper evaluated models trained on CLRS-Text and also studied 29 other algorithms. [Original paper](https://arxiv.org/html/2406.04229)",
+  "sources": [
+    {"title": "CLRS-Text paper and final-answer evaluation", "url": "https://arxiv.org/html/2406.04229"},
+    {"title": "Pinned original test shard collection", "url": "https://huggingface.co/datasets/smcleish/CLRS-Text-test/tree/83205bf85c630749da410e784226364cf4a2d7eb"},
+    {"title": "Official CLRS-Text code and examples", "url": "https://github.com/google-deepmind/clrs/tree/d1c2ad7af8437c7536cf329d9cef8fdf93184d9d/clrs/_src/clrs_text"},
+    {"title": "Pinned traceback matrix implementation", "url": "https://github.com/google-deepmind/clrs/blob/d1c2ad7af8437c7536cf329d9cef8fdf93184d9d/clrs/_src/algorithms/dynamic_programming.py#L95-L163"}
+  ]
+}
