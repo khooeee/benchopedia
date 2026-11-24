@@ -1,0 +1,33 @@
+{
+  "id": "counterbench",
+  "name": "CounterBench",
+  "summary": "1,200 yes-or-no questions about counterfactual outcomes under synthetic causal rules.",
+  "homepage_url": "https://arxiv.org/abs/2502.11008",
+  "dataset_url": "https://huggingface.co/datasets/CounterBench/CounterBench/tree/c6225dfa00b7a89ccfeae67797b9a6d80e48e44c",
+  "dataset_revision": "c6225dfa00b7a89ccfeae67797b9a6d80e48e44c",
+  "released_on": "2025-08-04",
+  "task_count": 1200,
+  "has_solutions": true,
+  "overview": "CounterBench asks what would have happened if one or more events had changed. Each question supplies causal rules and asks for a yes-or-no prediction in the counterfactual setting. The authors generate artificial variable names to focus the task on the supplied rules. [Original study, Section 2](https://arxiv.org/html/2502.11008v2#S2)",
+  "methodology": "The snapshot includes all 1,000 basic, conditional, joint, and nested questions from Alpha V1 and all 200 questions from Backdoor V2. Each prompt presents the published background information followed by the original question. Task keys use the file name prefix and the released question ID. The Alpha file has five identical prompt pairs with distinct IDs and matching labels. All ten records remain in the snapshot. The date records the addition of the Backdoor V2 file. [Pinned release](https://huggingface.co/datasets/CounterBench/CounterBench/tree/c6225dfa00b7a89ccfeae67797b9a6d80e48e44c), [Backdoor upload](https://huggingface.co/datasets/CounterBench/CounterBench/commit/378645e8709df454902cadb83d0a38057d009112)",
+  "scoring": "A prediction is correct when its yes-or-no label matches the released answer. Empty or ambiguous replies count as errors. Report accuracy overall and by question type. The guide uses the study's standard prompting setting with a temperature of zero when supported. [Original study, Section 3](https://arxiv.org/html/2502.11008v2#S3)",
+  "limitations": "The tasks use synthetic rule systems and artificial event names. They measure inference under the supplied assumptions. The study also reports results with specialized reasoning strategies. In the pinned release, the Alpha file has 500 yes and 500 no labels. Backdoor V2 has 95 yes and 105 no labels, while the study describes a balanced backdoor set. [Pinned release](https://huggingface.co/datasets/CounterBench/CounterBench/tree/c6225dfa00b7a89ccfeae67797b9a6d80e48e44c), [Original study, Sections 2 and 3](https://arxiv.org/html/2502.11008v2)",
+  "sources": [
+    {
+      "title": "CounterBench: Evaluating and Improving Counterfactual Reasoning in Large Language Models",
+      "url": "https://arxiv.org/abs/2502.11008"
+    },
+    {
+      "title": "Pinned CounterBench dataset card",
+      "url": "https://huggingface.co/datasets/CounterBench/CounterBench/blob/c6225dfa00b7a89ccfeae67797b9a6d80e48e44c/README.md"
+    },
+    {
+      "title": "Alpha V1 question file",
+      "url": "https://huggingface.co/datasets/CounterBench/CounterBench/blob/c6225dfa00b7a89ccfeae67797b9a6d80e48e44c/data_balanced_alpha_V1.json"
+    },
+    {
+      "title": "Backdoor V2 question file",
+      "url": "https://huggingface.co/datasets/CounterBench/CounterBench/blob/c6225dfa00b7a89ccfeae67797b9a6d80e48e44c/data_balanced_backdoor_V2.json"
+    }
+  ]
+}
