@@ -1,0 +1,21 @@
+{
+  "id": "moral-stories",
+  "name": "Moral Stories Consequence Plausibility",
+  "summary": "Decide whether a proposed consequence plausibly follows from an action in short social scenarios.",
+  "homepage_url": "https://github.com/demelin/moral_stories",
+  "dataset_url": "https://huggingface.co/datasets/demelin/moral_stories/tree/b830cf56eb00bc4edd1860dd544a192216eb3587",
+  "dataset_revision": "b830cf56eb00bc4edd1860dd544a192216eb3587",
+  "released_on": "2020-12-31",
+  "task_count": 4000,
+  "has_solutions": true,
+  "overview": "Moral Stories pairs actions with candidate consequences drawn from branching, crowd-written narratives. In this classification task, a model decides whether the candidate consequence could plausibly follow from the action. The minimal-pairs split favors stories whose alternative consequences are close in wording. [Original paper, Section 3](https://arxiv.org/html/2012.15738#S3)",
+  "methodology": "This snapshot contains the full 4,000-row minimal-pairs test split for the action-only consequence-classification setting. Each of the 1,000 source stories contributes two original action–consequence pairs and two pairs with exchanged consequences. The chat input contains the released action and candidate consequence, and the task key preserves the original row ID. The catalog date is the first dated paper release. [Pinned test split](https://huggingface.co/datasets/demelin/moral_stories/blob/b830cf56eb00bc4edd1860dd544a192216eb3587/data/classification/consequence%2Baction/minimal_pairs/test.jsonl) [Dated preprint](https://arxiv.org/abs/2012.15738v1)",
+  "scoring": "Compare the predicted plausible or implausible label with the released binary reference. Report exact-label accuracy and binary F1 with plausible as the positive class. [Original classification metrics](https://github.com/demelin/moral_stories/blob/76ec822f267a621eb7e7420e78c8199ada8df5bc/experiments/utils.py#L668-L684) [Paper, Section 3.3](https://arxiv.org/html/2012.15738#S3.SS3)",
+  "limitations": "Labels reflect the authors’ narrative pairing procedure and crowd-written situations. This setting provides the action and consequence alone, so real-world context can affect plausibility beyond the evidence in a prompt. The study separately evaluates a setting with explicit situation, intention, and norm. [Original paper, Section 3.3](https://arxiv.org/html/2012.15738#S3.SS3)",
+  "sources": [
+    {"title": "Moral Stories paper", "url": "https://aclanthology.org/2021.emnlp-main.54/"},
+    {"title": "First dated Moral Stories preprint", "url": "https://arxiv.org/abs/2012.15738v1"},
+    {"title": "Pinned authors’ test release", "url": "https://huggingface.co/datasets/demelin/moral_stories/tree/b830cf56eb00bc4edd1860dd544a192216eb3587"},
+    {"title": "Pinned minimal-pairs construction", "url": "https://github.com/demelin/moral_stories/blob/76ec822f267a621eb7e7420e78c8199ada8df5bc/split_creation/create_minimal_consequence_pairs_splits.py"}
+  ]
+}
