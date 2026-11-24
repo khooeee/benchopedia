@@ -1,0 +1,22 @@
+{
+  "id": "cfq",
+  "name": "CFQ Maximum Compound Divergence",
+  "summary": "Translate compositional questions into Freebase SPARQL across three held-out combinations of grammar rules.",
+  "homepage_url": "https://github.com/google-research/google-research/tree/675101293d39a5b88996e58475a026e039a0bdae/cfq",
+  "dataset_url": "https://storage.googleapis.com/cfq_dataset/cfq1.1.tar.gz?generation=1584526486399149",
+  "dataset_revision": "gcs-generation-1584526486399149",
+  "released_on": "2020-03-18",
+  "task_count": 35904,
+  "has_solutions": true,
+  "overview": "Compositional Freebase Questions (CFQ) tests whether a semantic parser can combine familiar grammar rules in unfamiliar ways. The authors generated English questions and corresponding Freebase queries, then constructed maximum compound divergence (MCD) splits to keep individual rules similarly distributed while separating combinations of rules. [Original paper](https://arxiv.org/abs/1912.09713)",
+  "methodology": "This snapshot contains all 11,968 test records from each of the official MCD1, MCD2, and MCD3 splits in CFQ v1.1. The catalog date is the creation date of the public v1.1 archive. Each key combines the split and the original zero-based dataset index. The 35,904 test occurrences come from 19,110 distinct source records. Records shared across splits retain the same question and query in each split. The model sees the anonymized English question with the original baseline’s punctuation tokenization and produces a SPARQL query using the anonymized entities. [Official release and leaderboard](https://github.com/google-research/google-research/tree/675101293d39a5b88996e58475a026e039a0bdae/cfq) [Archive metadata](https://storage.googleapis.com/storage/v1/b/cfq_dataset/o/cfq1.1.tar.gz?generation=1584526486399149)",
+  "scoring": "Apply the baseline’s query preprocessing and compare the predicted query text with the released canonical target. The scorer checks the full ordered query, so rearranging equivalent clauses can change the result. Report exact-match accuracy separately for MCD1, MCD2, and MCD3, and their unweighted mean (MCD-MEAN). [Original preprocessing](https://github.com/google-research/google-research/blob/675101293d39a5b88996e58475a026e039a0bdae/cfq/preprocess.py) [Original evaluator](https://github.com/google-research/google-research/blob/675101293d39a5b88996e58475a026e039a0bdae/cfq/evaluate.py) [Leaderboard metric](https://github.com/google-research/google-research/tree/675101293d39a5b88996e58475a026e039a0bdae/cfq#leaderboard)",
+  "limitations": "The questions are generated from a grammar and use anonymized entities. The score depends on the released query form, including variable naming and clause order. Benchopedia prompts a model directly with the test question. Comparisons with the paper’s baselines also reflect their separate training on each MCD split. [Original paper](https://arxiv.org/html/1912.09713)",
+  "sources": [
+    {"title": "CFQ original paper", "url": "https://arxiv.org/abs/1912.09713"},
+    {"title": "CFQ official release and leaderboard", "url": "https://github.com/google-research/google-research/tree/675101293d39a5b88996e58475a026e039a0bdae/cfq"},
+    {"title": "CFQ v1.1 pinned archive metadata", "url": "https://storage.googleapis.com/storage/v1/b/cfq_dataset/o/cfq1.1.tar.gz?generation=1584526486399149"},
+    {"title": "Original CFQ preprocessing", "url": "https://github.com/google-research/google-research/blob/675101293d39a5b88996e58475a026e039a0bdae/cfq/preprocess.py"},
+    {"title": "Original CFQ evaluator", "url": "https://github.com/google-research/google-research/blob/675101293d39a5b88996e58475a026e039a0bdae/cfq/evaluate.py"}
+  ]
+}
