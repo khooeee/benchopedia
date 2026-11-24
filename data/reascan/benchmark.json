@@ -1,0 +1,33 @@
+{
+  "id": "reascan",
+  "name": "ReaSCAN Syntax Generalization",
+  "summary": "16,378 commands to ground in grid worlds and translate into action sequences.",
+  "homepage_url": "https://reascan.github.io/",
+  "dataset_url": "https://drive.google.com/file/d/1foVr1MPqPqBQgoOqVgVFWUIwXERPMM4I/view",
+  "dataset_revision": "sha256:3957e2115e47c8aea9a63bc1321167918955e3991590d532a818c041c6423943",
+  "released_on": "2021-11-28",
+  "task_count": 16378,
+  "has_solutions": true,
+  "overview": "ReaSCAN asks a model to identify an object described by an instruction and produce the actions to reach or move it in a grid world. The syntax conditions test longer conjunctions and nested relative clauses. [Original study, Sections 4 and 6.4](https://datasets-benchmarks-proceedings.neurips.cc/paper_files/paper/2021/file/2838023a778dfaecdc212708f721b788-Paper-round1.pdf)",
+  "methodology": "The snapshot contains both complete Category C test sets from ReaSCAN v1.1. C1 has 8,375 examples with longer conjunctive clauses, and C2 has 8,003 examples with recursive relative clauses. Each prompt shows the original command words and a text rendering of the six-by-six grid, including the agent's starting position and facing and the placed objects. Each key combines the condition and the one-based row number. The revision is the SHA-256 of the C1 and C2 archive members concatenated in that order. [Release and data format](https://github.com/frankaging/Reason-SCAN/blob/1e6726aab70c915a3d3068bed77ae255feeaf6f1/README.md), [Original study, Table 3](https://datasets-benchmarks-proceedings.neurips.cc/paper_files/paper/2021/file/2838023a778dfaecdc212708f721b788-Paper-round1.pdf)",
+  "scoring": "A prediction earns one point when its ordered action sequence exactly matches the release. The evaluator ignores letter case, separating whitespace, and a final period. Report accuracy separately for C1 and C2. [Original predictor](https://github.com/frankaging/Reason-SCAN/blob/1e6726aab70c915a3d3068bed77ae255feeaf6f1/code/models/seq2seq/predict.py#L37-L50)",
+  "limitations": "The grid worlds and command grammar are synthetic. The score measures agreement with the simulator's canonical route, so alternative routes to the same goal can receive a zero. The paper trained models on data from the benchmark, while the chat prompt describes the simulator's movement rules. [Original study, Sections 4–6](https://datasets-benchmarks-proceedings.neurips.cc/paper_files/paper/2021/file/2838023a778dfaecdc212708f721b788-Paper-round1.pdf), [Simulator](https://github.com/frankaging/Reason-SCAN/blob/1e6726aab70c915a3d3068bed77ae255feeaf6f1/code/dataset/world.py)",
+  "sources": [
+    {
+      "title": "ReaSCAN: Compositional Reasoning in Language Grounding",
+      "url": "https://openreview.net/forum?id=Rtquf4Jk0jN"
+    },
+    {
+      "title": "Official release and data format",
+      "url": "https://github.com/frankaging/Reason-SCAN/blob/1e6726aab70c915a3d3068bed77ae255feeaf6f1/README.md"
+    },
+    {
+      "title": "Primitives, direction changes, and movement manners",
+      "url": "https://github.com/frankaging/Reason-SCAN/blob/1e6726aab70c915a3d3068bed77ae255feeaf6f1/code/dataset/world.py#L608-L775"
+    },
+    {
+      "title": "Official exact-match metric",
+      "url": "https://github.com/frankaging/Reason-SCAN/blob/1e6726aab70c915a3d3068bed77ae255feeaf6f1/code/models/seq2seq/predict.py#L37-L50"
+    }
+  ]
+}
