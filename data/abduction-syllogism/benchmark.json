@@ -1,0 +1,21 @@
+{
+  "id": "abduction-syllogism",
+  "name": "Abductive Reasoning with Syllogistic Forms",
+  "summary": "Choose the best hypothesis or the valid conclusion in paired syllogistic reasoning tests.",
+  "homepage_url": "https://github.com/kmineshima/abduction-syllogism-llm",
+  "dataset_url": "https://github.com/kmineshima/abduction-syllogism-llm/tree/ed0c05f97727449e01835bc4f1d40064880320c0/data",
+  "dataset_revision": "ed0c05f97727449e01835bc4f1d40064880320c0",
+  "released_on": "2024-09-15",
+  "task_count": 432,
+  "has_solutions": true,
+  "overview": "The benchmark compares abduction, which selects a hypothesis that could explain an observation, with deduction, which selects a conclusion that follows from given premises. It pairs both questions for the same text so the model must apply the requested kind of inference. [Dataset construction](https://arxiv.org/html/2603.06428v1#S3) [Original publication](https://doi.org/10.1007/978-3-031-84595-6_1)",
+  "methodology": "This snapshot includes both complete English test files and uses the paper's zero-shot setting. Each condition has 216 questions from 27 term triples combined with eight inference patterns. A model sees two statements and three choices, including the option that neither proposed statement is appropriate. The key combines the three-digit source index and test condition. The original files were released on September 15, 2024. [Pinned files](https://github.com/kmineshima/abduction-syllogism-llm/tree/ed0c05f97727449e01835bc4f1d40064880320c0/data) [Release commit](https://github.com/kmineshima/abduction-syllogism-llm/commit/be1a4feea8abdd485786b29e2504874b0c3d9164) [Zero-shot format](https://arxiv.org/html/2603.06428v1#S4.T4)",
+  "scoring": "An answer is correct when its choice number matches the source label. Report the proportion of correct answers separately for abduction and deduction. Within each condition, also break down accuracy by correct choice and by the authors' consistent, inconsistent, and neutral categories. [Experiment and accuracy tables](https://arxiv.org/html/2603.06428v1#S4.SS3)",
+  "limitations": "The tasks focus on a fixed set of syllogistic patterns. The three content categories use the authors' judgments about whether the rule aligns with common beliefs. Benchopedia uses its own wording for the zero-shot directions. Prompt wording can affect which type of reasoning models apply. [Data categories](https://arxiv.org/html/2603.06428v1#S3) [Discussion](https://arxiv.org/html/2603.06428v1#S4.SS4)",
+  "sources": [
+    {"title": "Original publication", "url": "https://doi.org/10.1007/978-3-031-84595-6_1"},
+    {"title": "Public paper and discussion", "url": "https://arxiv.org/html/2603.06428v1"},
+    {"title": "Pinned abduction and deduction tests", "url": "https://github.com/kmineshima/abduction-syllogism-llm/tree/ed0c05f97727449e01835bc4f1d40064880320c0/data"},
+    {"title": "Original evaluation format", "url": "https://arxiv.org/html/2603.06428v1#S4.T4"}
+  ]
+}
