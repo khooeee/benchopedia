@@ -1,0 +1,29 @@
+{
+  "id": "prontoqa-ood",
+  "name": "PrOntoQA-OOD Rule Generalization",
+  "summary": "600 natural-language proofs that require deduction rules absent from the supplied demonstrations.",
+  "homepage_url": "https://arxiv.org/abs/2305.15269",
+  "dataset_url": "https://github.com/asaparov/prontoqa/blob/0a6412b6fddf46324a1cb96e066dd7b3d89b87d6/generated_ood_data.zip",
+  "dataset_revision": "0a6412b6fddf46324a1cb96e066dd7b3d89b87d6",
+  "released_on": "2024-10-17",
+  "task_count": 600,
+  "has_solutions": true,
+  "overview": "PrOntoQA-OOD measures how well models apply deduction rules to formal worlds expressed in natural language. The rule-generalization experiment supplies demonstrations using other rules and asks the model to construct a proof for a new conclusion. [Original study, Section 5.1](https://proceedings.neurips.cc/paper_files/paper/2023/file/09425891e393e64b0535194a81ba15b7-Paper-Conference.pdf)",
+  "methodology": "This snapshot includes all 100 examples from each of the six out-of-distribution rule conditions in Figures 4 and 11. They cover implication elimination, conjunction introduction and elimination, disjunction introduction and elimination, and proof by contradiction. Each task presents the released eight demonstrations, test premises, and conclusion in the authors' question-and-answer format. The key identifies the rule condition and original example number. The date records the regenerated archive release. [Pinned archive](https://github.com/asaparov/prontoqa/blob/0a6412b6fddf46324a1cb96e066dd7b3d89b87d6/generated_ood_data.zip), [Figure configuration](https://github.com/asaparov/prontoqa/blob/0a6412b6fddf46324a1cb96e066dd7b3d89b87d6/make_plots.py#L390-L413), [Archive update](https://github.com/asaparov/prontoqa/commit/f0145b867b3c106285ec9ea1941a3f6eb7c6162d)",
+  "scoring": "The authors' checker parses the predicted proof and marks it correct when it finds a derivation of the target through valid atomic steps. It can accept other valid derivations of the same conclusion. Report proof accuracy for each held-out rule. [Pinned proof checker](https://github.com/asaparov/prontoqa/blob/0a6412b6fddf46324a1cb96e066dd7b3d89b87d6/run_experiment.py#L1108-L1310), [Original study, Section 4](https://proceedings.neurips.cc/paper_files/paper/2023/file/09425891e393e64b0535194a81ba15b7-Paper-Conference.pdf)",
+  "limitations": "The checker expects the controlled natural-language syntax used in the demonstrations, so phrasing outside that grammar can prevent a proof from being recognized. The published experiments also vary proof depth, width, composition, and distractors. This release focuses on the six rule-generalization conditions. [Original study, Sections 4 and 5](https://proceedings.neurips.cc/paper_files/paper/2023/file/09425891e393e64b0535194a81ba15b7-Paper-Conference.pdf)",
+  "sources": [
+    {
+      "title": "Testing the General Deductive Reasoning Capacity of Large Language Models Using OOD Examples",
+      "url": "https://proceedings.neurips.cc/paper_files/paper/2023/file/09425891e393e64b0535194a81ba15b7-Paper-Conference.pdf"
+    },
+    {
+      "title": "Pinned PrOntoQA-OOD repository",
+      "url": "https://github.com/asaparov/prontoqa/tree/0a6412b6fddf46324a1cb96e066dd7b3d89b87d6"
+    },
+    {
+      "title": "Official result analysis",
+      "url": "https://github.com/asaparov/prontoqa/blob/0a6412b6fddf46324a1cb96e066dd7b3d89b87d6/analyze_results.py#L187-L217"
+    }
+  ]
+}
