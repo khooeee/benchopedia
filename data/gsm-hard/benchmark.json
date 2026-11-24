@@ -1,0 +1,20 @@
+{
+  "id": "gsm-hard",
+  "name": "GSM-Hard",
+  "summary": "1,319 grade-school math problems with larger quantities.",
+  "homepage_url": "https://proceedings.mlr.press/v202/gao23f.html",
+  "dataset_url": "https://huggingface.co/datasets/reasoning-machines/gsm-hard/tree/960448f73503112d4226baeb8eb41d3fb5ae2506",
+  "dataset_revision": "960448f73503112d4226baeb8eb41d3fb5ae2506",
+  "released_on": "2023-01-16",
+  "task_count": 1319,
+  "has_solutions": true,
+  "overview": "GSM-Hard changes quantities in GSM8K problems to make arithmetic more demanding while keeping the word-problem format. The PAL paper introduced the variant to study how model accuracy changes when some numbers become much larger. [PAL paper](https://proceedings.mlr.press/v202/gao23f.html)",
+  "methodology": "This snapshot includes all 1,319 problems in the authors' `gsmhardv2.jsonl` release. Each task presents the original `input` field and stores its numeric `target`. Keys are one-based line numbers. Benchopedia uses direct numeric responses with the paper's answer comparison. [Pinned dataset](https://huggingface.co/datasets/reasoning-machines/gsm-hard/blob/960448f73503112d4226baeb8eb41d3fb5ae2506/gsmhardv2.jsonl), [Original release commit](https://github.com/reasoning-machines/pal/commit/9a51009fc45ab99b35955b49d89ba6091a904036)",
+  "scoring": "A numeric answer is correct when its absolute difference from the target is less than 0.001. Accuracy is the fraction of all questions answered correctly. [PAL evaluation script](https://github.com/reasoning-machines/pal/blob/f81ca2a9777f002f98a6b4d0f10b61bd5c8feb02/scripts/gsm_eval.py)",
+  "limitations": "The examples inherit the language and subjects of GSM8K. The paper compares multiple methods, including generated programs evaluated by a Python runtime. Direct numeric predictions use a different generation method. [PAL paper](https://proceedings.mlr.press/v202/gao23f.html)",
+  "sources": [
+    {"title": "PAL: Program-aided Language Models", "url": "https://proceedings.mlr.press/v202/gao23f.html"},
+    {"title": "GSM-Hard dataset card", "url": "https://huggingface.co/datasets/reasoning-machines/gsm-hard/blob/960448f73503112d4226baeb8eb41d3fb5ae2506/README.md"},
+    {"title": "GSM-Hard announcement", "url": "https://github.com/reasoning-machines/pal/issues/9"}
+  ]
+}
