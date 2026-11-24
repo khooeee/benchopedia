@@ -1,0 +1,21 @@
+{
+  "id": "nlgraph-flow",
+  "name": "NLGraph Maximum Flow",
+  "summary": "Find the maximum flow between two nodes in a directed graph with integer edge capacities.",
+  "homepage_url": "https://github.com/Arthur-Heng/NLGraph",
+  "dataset_url": "https://github.com/Arthur-Heng/NLGraph/tree/a369f32341c16aaad9d84e7ab835aa3376df1cc3/NLGraph/flow/graph",
+  "dataset_revision": "a369f32341c16aaad9d84e7ab835aa3376df1cc3",
+  "released_on": "2023-05-17",
+  "task_count": 350,
+  "has_solutions": true,
+  "overview": "NLGraph evaluates graph problem solving from descriptions in natural language. This entry covers maximum flow. Each problem specifies a directed network, the capacity of each edge, a source and a sink. The task is to find the largest possible flow from the source to the sink. [Original paper](https://papers.nips.cc/paper_files/paper/2023/hash/622afc4edf2824a1b6aaf5afe153fa93-Abstract-Conference.html)",
+  "methodology": "This snapshot includes the original standard test cases used by the maximum-flow evaluation script, with all 150 Easy and 200 Hard cases. Easy graphs have 5 to 10 vertices and Hard graphs have 11 to 20. The importer renders the directed edges and query in the original zero-shot format. Keys combine difficulty and the original graph file number. The catalog date is the first dated paper release. [Pinned standard cases](https://github.com/Arthur-Heng/NLGraph/tree/a369f32341c16aaad9d84e7ab835aa3376df1cc3/NLGraph/flow/graph) [Original evaluator](https://github.com/Arthur-Heng/NLGraph/blob/a369f32341c16aaad9d84e7ab835aa3376df1cc3/evaluation/flow.py) [Dated preprint](https://arxiv.org/abs/2305.10037v1)",
+  "scoring": "Credit a predicted nonnegative integer when it equals the published maximum-flow value. Report exact-answer accuracy separately for Easy and Hard. The model receives one graph description and is asked for the flow value. [Pinned evaluator](https://github.com/Arthur-Heng/NLGraph/blob/a369f32341c16aaad9d84e7ab835aa3376df1cc3/evaluation/flow.py#L106-L175) [Paper and evaluation](https://papers.nips.cc/paper_files/paper/2023/file/622afc4edf2824a1b6aaf5afe153fa93-Paper-Conference.pdf)",
+  "limitations": "The standard cases use procedurally generated graphs, bounded integer capacities and positive reference flows. The score covers the final value. The paper also investigates several few-shot and chain-of-thought prompt settings, and the authors provide a separate supervised training format. [Original paper](https://papers.nips.cc/paper_files/paper/2023/file/622afc4edf2824a1b6aaf5afe153fa93-Paper-Conference.pdf) [Pinned release instructions](https://github.com/Arthur-Heng/NLGraph/blob/a369f32341c16aaad9d84e7ab835aa3376df1cc3/README.md)",
+  "sources": [
+    {"title": "NLGraph paper", "url": "https://papers.nips.cc/paper_files/paper/2023/hash/622afc4edf2824a1b6aaf5afe153fa93-Abstract-Conference.html"},
+    {"title": "First dated NLGraph preprint", "url": "https://arxiv.org/abs/2305.10037v1"},
+    {"title": "Pinned standard maximum-flow task files", "url": "https://github.com/Arthur-Heng/NLGraph/tree/a369f32341c16aaad9d84e7ab835aa3376df1cc3/NLGraph/flow/graph"},
+    {"title": "Pinned NLGraph maximum-flow evaluator", "url": "https://github.com/Arthur-Heng/NLGraph/blob/a369f32341c16aaad9d84e7ab835aa3376df1cc3/evaluation/flow.py"}
+  ]
+}
