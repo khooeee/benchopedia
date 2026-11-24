@@ -1,0 +1,21 @@
+{
+  "id": "pcfgset",
+  "name": "PCFG SET Systematicity and Productivity",
+  "summary": "Execute nested string-edit programs in tests of held-out operation pairs and longer expressions.",
+  "homepage_url": "https://github.com/i-machine-think/am-i-compositional/tree/4f75bdd78889150dd78e90bbb7ddec840204c159",
+  "dataset_url": "https://github.com/i-machine-think/am-i-compositional/tree/4f75bdd78889150dd78e90bbb7ddec840204c159/data/pcfgset",
+  "dataset_revision": "4f75bdd78889150dd78e90bbb7ddec840204c159",
+  "released_on": "2019-08-22",
+  "task_count": 21508,
+  "has_solutions": true,
+  "overview": "PCFG String Edit Tasks (PCFG SET) asks models to execute expressions with nested operations on symbol sequences. The systematicity test probes combinations of two operations held out together during training. The productivity test probes extrapolation to expressions with more operations. [Original paper](https://arxiv.org/abs/1908.08351)",
+  "methodology": "This snapshot includes all 10,175 systematicity test pairs and all 11,333 productivity test pairs from the authors’ release. Systematicity expressions contain one or more of four held-out adjacent operator pairs. Productivity expressions contain 9 to 35 operations, compared with at most eight in that split’s training set. The two tests share 2,891 expressions and their targets. They retain those occurrences under separate keys formed from the split name and the one-based line number. The catalog date is the first dated paper release describing both tests. [Pinned systematicity files](https://github.com/i-machine-think/am-i-compositional/tree/4f75bdd78889150dd78e90bbb7ddec840204c159/data/pcfgset/systematicity) [Pinned productivity files](https://github.com/i-machine-think/am-i-compositional/tree/4f75bdd78889150dd78e90bbb7ddec840204c159/data/pcfgset/productivity) [Dated preprint](https://arxiv.org/abs/1908.08351v1)",
+  "scoring": "Compare the whole output sequence with its released target. Every token must match in order. Report exact-match accuracy separately for systematicity and productivity. The model receives the original prefix expression and instructions defining each operation. [Authors’ accuracy definition](https://github.com/i-machine-think/am-i-compositional/blob/4f75bdd78889150dd78e90bbb7ddec840204c159/data/pcfgset/pcfgset/README.md#data-format) [Operation definitions](https://github.com/MathijsMul/pcfg-set/blob/99098bd97150671003de60526d884d7c24949944/tasks/default.py)",
+  "limitations": "The two tests use a synthetic grammar and a fixed operator vocabulary. Benchopedia supplies the operation definitions as text and evaluates direct responses to the test expressions. The paper studied models trained on the corresponding training splits. The broader PCFG SET release also studies localism, substitutivity, and overgeneralisation. [Original paper](https://arxiv.org/abs/1908.08351)",
+  "sources": [
+    {"title": "PCFG SET original paper", "url": "https://arxiv.org/abs/1908.08351"},
+    {"title": "First dated PCFG SET preprint", "url": "https://arxiv.org/abs/1908.08351v1"},
+    {"title": "Pinned test release and descriptions", "url": "https://github.com/i-machine-think/am-i-compositional/tree/4f75bdd78889150dd78e90bbb7ddec840204c159/data/pcfgset"},
+    {"title": "Pinned string-edit semantics", "url": "https://github.com/MathijsMul/pcfg-set/blob/99098bd97150671003de60526d884d7c24949944/tasks/default.py"}
+  ]
+}
