@@ -1,0 +1,21 @@
+{
+  "id": "big-bench-mistake",
+  "name": "BIG-Bench Mistake Direct Trace",
+  "summary": "Find the first logical error in a model-generated reasoning trace, or answer No if the trace is correct.",
+  "homepage_url": "https://github.com/WHGTyen/BIG-Bench-Mistake",
+  "dataset_url": "https://github.com/WHGTyen/BIG-Bench-Mistake/tree/9b010ce17150b79411dc31659779d7524c03f436",
+  "dataset_revision": "9b010ce17150b79411dc31659779d7524c03f436",
+  "released_on": "2023-11-16",
+  "task_count": 2186,
+  "has_solutions": true,
+  "overview": "BIG-Bench Mistake measures whether a model can locate the first logical error in a supplied reasoning trace. PaLM 2 generated the traces on five BIG-bench tasks. Human annotators labeled four task families, and most bracket-completion traces received automatic annotations. A trace can contain a logical mistake and still reach the correct final answer. [Dataset and annotation protocol](https://arxiv.org/html/2311.08516#S2)",
+  "methodology": "This snapshot contains all 2,186 published traces across Dyck languages, logical deduction, multistep arithmetic, tracking shuffled objects, and word sorting. The key combines the original filename stem and a four-digit one-based row number. The model gets the original input and numbered trace in the released direct template, preceded by three demonstrations for that task family. [Pinned dataset](https://github.com/WHGTyen/BIG-Bench-Mistake/tree/9b010ce17150b79411dc31659779d7524c03f436) [Direct trace-level evaluation](https://arxiv.org/html/2311.08516#S3.SS1)",
+  "scoring": "Compare the final reply with the released first-mistake annotation. Use the one-based step number when a mistake is marked and No when the annotation is null. Accuracy is the fraction of traces with the exact location or no-mistake label. Report it by task family and separately for traces with and without mistakes. [Mistake location metrics](https://arxiv.org/html/2311.08516#S3) [Paper Appendix E](https://arxiv.org/html/2311.08516#A5)",
+  "limitations": "This setting gives the model the whole trace in one call and grades the first-error location. The underlying trace source is one model, and the distribution of errors depends on how the original traces were selected. The full release includes all 986 Dyck languages traces. The paper used a 592-trace Dyck sample for some reported comparisons. [Paper Table 2](https://arxiv.org/html/2311.08516#S2.T2) [Prompting comparisons](https://arxiv.org/html/2311.08516#S3.SS2)",
+  "sources": [
+    {"title": "BIG-Bench Mistake paper", "url": "https://aclanthology.org/2024.findings-acl.826/"},
+    {"title": "Pinned trace release", "url": "https://github.com/WHGTyen/BIG-Bench-Mistake/tree/9b010ce17150b79411dc31659779d7524c03f436"},
+    {"title": "Pinned task-specific prompt modules", "url": "https://github.com/WHGTyen/BIG-Bench-Mistake/tree/9b010ce17150b79411dc31659779d7524c03f436/mistake_finding_prompts"},
+    {"title": "Direct prompting and exact location scoring", "url": "https://arxiv.org/html/2311.08516#S3.SS1"}
+  ]
+}
