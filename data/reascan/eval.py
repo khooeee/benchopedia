@@ -1,9 +1,11 @@
 """Prompt for actions and score ReaSCAN's exact sequence match."""
 
 ATTEMPTS = 2
+MODEL_OPTIONS = {"reasoning": {"enabled": False}}
 ACTIONS = {"walk", "push", "pull", "turn left", "turn right", "stay"}
 INSTRUCTION = (
     "Rows increase south and columns increase east. The position of a box is its upper-left corner. "
+    "Big and small compare objects matching the other named attributes. "
     "Walk to the described object's cell, even when another object is on the route. "
     "Move along columns first and then rows. For zigzagging, alternate a column step and a row step "
     "toward the goal, starting with a column step. Once aligned with the goal, walk straight. "
@@ -12,7 +14,8 @@ INSTRUCTION = (
     "without turning. Move it until the next cell is outside the grid or occupied. A box by itself "
     "allows entry. Moving a size-1 or size-2 object one cell takes one push or pull, and sizes 3 "
     "and 4 take two. For walking, pushing, or pulling hesitantly, add stay after each action. "
-    "For spinning, make four left turns before each action, before turning to a new walking direction. "
+    "For spinning, make four left turns before each walk, push, or pull. For a spinning walk, "
+    "make those turns before turning toward the walking direction. "
     "For cautious movement, face the walking direction first, then turn left, right, right, left "
     "before each walk, push, or pull. A pull retains the agent's facing.\n\n"
     "Return only a comma-separated action sequence using walk, push, pull, turn left, turn right, or stay."

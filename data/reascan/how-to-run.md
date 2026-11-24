@@ -30,14 +30,15 @@ spec.loader.exec_module(evaluation)
 
 Send the command, the text grid state, and the movement rules. The
 message describes the [authors' simulator](https://github.com/frankaging/Reason-SCAN/blob/1e6726aab70c915a3d3068bed77ae255feeaf6f1/code/dataset/world.py#L608-L775),
-including the preferred route, object movement, and adverbs. Return
-the actions separated by commas.
+including the preferred route, object movement, and adverbs. The hosted
+configuration asks for direct action text with the model's reasoning
+mode disabled. Return the actions separated by commas.
 
 ```python
-def generate(messages):
+def generate(messages, **options):
     raise NotImplementedError("Call your model and return its actions as text.")
 
-prediction = generate(evaluation.messages(task))
+prediction = generate(evaluation.messages(task), **evaluation.MODEL_OPTIONS)
 ```
 
 ### 3. Score the sequence
@@ -62,7 +63,7 @@ from collections import Counter
 total, hits = Counter(), Counter()
 for task in tasks:
     condition = task["key"].split("-")[1]
-    prediction = generate(evaluation.messages(task))
+    prediction = generate(evaluation.messages(task), **evaluation.MODEL_OPTIONS)
     verdict, actions = evaluation.grade(task, prediction)
     total[condition] += 1
     hits[condition] += verdict == "pass"
