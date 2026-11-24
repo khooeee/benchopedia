@@ -1,0 +1,21 @@
+{
+  "id": "quartz",
+  "name": "QuaRTz Questions Only",
+  "summary": "Answer two-choice questions about how quantities change together, using the question and choices.",
+  "homepage_url": "https://allenai.org/data/quartz",
+  "dataset_url": "https://huggingface.co/datasets/allenai/quartz/tree/28c1dbb56caf81799296cb17892fa73402e23464",
+  "dataset_revision": "28c1dbb56caf81799296cb17892fa73402e23464",
+  "released_on": "2019-09-08",
+  "task_count": 784,
+  "has_solutions": true,
+  "overview": "QuaRTz asks how a change in one property affects another in a particular situation, such as how a change in mass affects acceleration. Crowdworkers wrote two-choice questions and flipped variants that reverse the expected answer by altering a comparison, value, or other detail. [Original paper, Section 4](https://aclanthology.org/D19-1608.pdf#page=3)",
+  "methodology": "This is the question-only setting evaluated in the paper. The snapshot contains the complete test split of 784 questions, with 392 original questions and 392 flipped variants. Each prompt displays the released question, both answer choices in order, and their A/B labels. The model receives no retrieved knowledge or gold supporting passage. Task keys retain the published IDs, including the flip suffix. The catalog date reflects the first dated preprint describing this setting. [Published test data](https://huggingface.co/datasets/allenai/quartz/blob/28c1dbb56caf81799296cb17892fa73402e23464/data/test-00000-of-00001.parquet) [Original paper, Section 5](https://aclanthology.org/D19-1608.pdf#page=3) [Dated preprint](https://arxiv.org/abs/1909.03553v1)",
+  "scoring": "A prediction receives one point for matching the published answer letter and zero otherwise. Report accuracy across the test split and separately for original and flipped questions, as in the paper. Each reference shows the answer letter and the corresponding choice text. [Original paper, Table 3](https://aclanthology.org/D19-1608.pdf#page=4)",
+  "limitations": "The question-only scores measure answering from the prompt and the model’s existing knowledge. The paper’s retrieval and gold-knowledge settings supply additional evidence and measure a different input condition. Two original/flipped pairs in the test file have identical question text and choices but opposite published labels. A deterministic model given the same prompt cannot satisfy both labels in either pair. The catalog preserves all four records. [Published test data](https://huggingface.co/datasets/allenai/quartz/blob/28c1dbb56caf81799296cb17892fa73402e23464/data/test-00000-of-00001.parquet) [Original paper, Section 5](https://aclanthology.org/D19-1608.pdf#page=3)",
+  "sources": [
+    {"title": "QuaRTz paper", "url": "https://aclanthology.org/D19-1608/"},
+    {"title": "First dated QuaRTz preprint", "url": "https://arxiv.org/abs/1909.03553v1"},
+    {"title": "AllenAI pinned dataset card", "url": "https://huggingface.co/datasets/allenai/quartz/blob/28c1dbb56caf81799296cb17892fa73402e23464/README.md"},
+    {"title": "Complete pinned test shard", "url": "https://huggingface.co/datasets/allenai/quartz/blob/28c1dbb56caf81799296cb17892fa73402e23464/data/test-00000-of-00001.parquet"}
+  ]
+}
