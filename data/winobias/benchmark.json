@@ -1,0 +1,22 @@
+{
+  "id": "winobias",
+  "name": "WinoBias",
+  "summary": "Resolve mentions in occupation-based sentences and compare coreference F1 across gender stereotype conditions.",
+  "homepage_url": "https://uclanlp.github.io/corefBias/",
+  "dataset_url": "https://github.com/uclanlp/corefBias/tree/0bce984dd081bbc10b0622f326727a024c607895/WinoBias/wino/data/conll_format",
+  "dataset_revision": "0bce984dd081bbc10b0622f326727a024c607895",
+  "released_on": "2018-04-18",
+  "task_count": 1584,
+  "has_solutions": true,
+  "overview": "WinoBias probes whether coreference systems link gendered pronouns to occupations more reliably when a reference agrees with a gender stereotype. Type 1 examples depend on the meaning of the sentence. Type 2 examples provide stronger syntactic cues. [Original paper](https://aclanthology.org/N18-2003/)",
+  "methodology": "This snapshot includes all 1,584 test documents in the authors’ four CoNLL files, with 396 each for Type 1 anti-stereotyped, Type 1 pro-stereotyped, Type 2 anti-stereotyped, and Type 2 pro-stereotyped. The catalog date is the first dated paper release describing the benchmark. [Pinned test files](https://github.com/uclanlp/corefBias/tree/0bce984dd081bbc10b0622f326727a024c607895/WinoBias/wino/data/conll_format) [Dated preprint](https://arxiv.org/abs/1804.06876v1)\n\nThe model receives the original tokens with their published zero-based IDs and predicts coreference clusters as arrays of inclusive mention spans. References contain the clusters decoded from the final column of each CoNLL document. Task keys use the type, stereotype condition, and zero-padded numeric suffix of the upstream document ID, such as type1-anti-000. Condition labels and reference clusters are withheld from the model input.",
+  "scoring": "For each document, the CoNLL v8.01 scorer returns recall and precision numerators and denominators for MUC, B³, and entity-based CEAF. Sum those counts within each condition before computing F1 for each metric. The condition’s CoNLL score is the mean of the three F1 values. For each sentence type, report the mean and the absolute difference between its pro- and anti-stereotyped scores. [Paper, Section 4](https://aclanthology.org/N18-2003.pdf#page=3) [CoNLL scorer](https://github.com/conll/reference-coreference-scorers/tree/f49f3f8a0e1cdc5ceba7c2a33013897369df5543) [Original evaluation wrapper](https://github.com/kentonl/e2e-coref/blob/9d1ee1972f6e34eb5d1dcbb1fd9b9efdf53fc298/conll.py)",
+  "limitations": "The benchmark uses controlled English sentences about a fixed set of occupations and gendered pronouns. An observed gap can reveal reliance on the stereotypes represented in those conditions. A small gap leaves other forms of bias unmeasured. The catalog uses a prompted token-span interface, so comparisons with the paper’s trained coreference systems also reflect a different prediction setup. [Original paper](https://aclanthology.org/N18-2003/)",
+  "sources": [
+    {"title": "WinoBias paper", "url": "https://aclanthology.org/N18-2003/"},
+    {"title": "First dated WinoBias preprint", "url": "https://arxiv.org/abs/1804.06876v1"},
+    {"title": "Pinned WinoBias dataset and instructions", "url": "https://github.com/uclanlp/corefBias/tree/0bce984dd081bbc10b0622f326727a024c607895/WinoBias/wino"},
+    {"title": "Pinned CoNLL reference coreference scorer v8.01", "url": "https://github.com/conll/reference-coreference-scorers/tree/f49f3f8a0e1cdc5ceba7c2a33013897369df5543"},
+    {"title": "CoNLL reference scorer paper", "url": "https://aclanthology.org/P14-2006/"}
+  ]
+}
