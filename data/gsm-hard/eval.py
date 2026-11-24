@@ -12,7 +12,7 @@ NUMBER = re.compile(
 
 
 def messages(task):
-    return [{"role": "user", "content": task["prompt"] + "\n\nReply with only the number."}]
+    return [{"role": "user", "content": task["prompt"] + "\n\nUse the quantities as given. Reply with only the final number, including a minus sign if needed."}]
 
 
 def grade(task, output):

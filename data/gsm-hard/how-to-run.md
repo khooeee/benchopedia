@@ -29,7 +29,7 @@ def generate(prompt):
     raise NotImplementedError("Call your model and return its numeric answer as text.")
 
 def prompt_for(problem):
-    return problem["input"] + "\n\nReply with only the number."
+    return problem["input"] + "\n\nUse the quantities as given. Reply with only the final number, including a minus sign if needed."
 
 prediction = generate(prompt_for(problem))
 ```
