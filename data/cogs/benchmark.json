@@ -1,0 +1,33 @@
+{
+  "id": "cogs",
+  "name": "COGS Generalization",
+  "summary": "21,000 English sentences to translate into logical forms across 21 compositional generalization cases.",
+  "homepage_url": "https://aclanthology.org/2020.emnlp-main.731/",
+  "dataset_url": "https://github.com/najoungkim/COGS/blob/165a7b669eade971fa47bf568a2e51925360fed8/data/gen.tsv",
+  "dataset_revision": "165a7b669eade971fa47bf568a2e51925360fed8",
+  "released_on": "2022-09-13",
+  "task_count": 21000,
+  "has_solutions": true,
+  "overview": "COGS tests whether a semantic parser can interpret sentences with new combinations of familiar words and constructions. Each sentence is paired with a logical form that represents its entities, events, and semantic roles. [Original study](https://aclanthology.org/2020.emnlp-main.731/)",
+  "methodology": "The snapshot contains all examples in the out-of-distribution `gen.tsv` split, with 1,000 sentences in each of 21 cases. Each task uses the original tokenized sentence and the released logical form. Keys use the one-based TSV line number. The date identifies the corrected release, which updates semantic roles in 50 items. The chat prompt describes the output notation and supplies a formatting example. [Pinned dataset](https://github.com/najoungkim/COGS/blob/165a7b669eade971fa47bf568a2e51925360fed8/data/gen.tsv), [Correction changelog](https://github.com/najoungkim/COGS/blob/165a7b669eade971fa47bf568a2e51925360fed8/README.md#changelog)",
+  "scoring": "A reply is correct when its logical-form tokens match the reference in order. The chat adapter ignores spacing while preserving role names, indices, punctuation, and case. Report accuracy overall and by generalization case. The authors also group three of the cases under structural generalization and the other 18 under lexical generalization. [Original study, Sections 5.2 and 6](https://aclanthology.org/2020.emnlp-main.731.pdf), [Case labels](https://github.com/najoungkim/COGS/blob/165a7b669eade971fa47bf568a2e51925360fed8/README.md#types-of-generalization)",
+  "limitations": "The generated sentences cover a controlled fragment of English, with lexical choices that can produce unusual readings. The score measures agreement with one canonical representation. The paper trained sequence-to-sequence models using COGS training examples, and its reported accuracies come from that training setup. [Original study, Section 5 and Appendix H](https://aclanthology.org/2020.emnlp-main.731.pdf)",
+  "sources": [
+    {
+      "title": "COGS: A Compositional Generalization Challenge Based on Semantic Interpretation",
+      "url": "https://aclanthology.org/2020.emnlp-main.731/"
+    },
+    {
+      "title": "Pinned COGS release and changelog",
+      "url": "https://github.com/najoungkim/COGS/tree/165a7b669eade971fa47bf568a2e51925360fed8"
+    },
+    {
+      "title": "Original generalization case definitions",
+      "url": "https://github.com/najoungkim/COGS/blob/165a7b669eade971fa47bf568a2e51925360fed8/data/gen_cases_to_paper_sections.json"
+    },
+    {
+      "title": "Original sequence preparation",
+      "url": "https://github.com/najoungkim/COGS/blob/165a7b669eade971fa47bf568a2e51925360fed8/scripts/reformat_data_for_opennmt.py"
+    }
+  ]
+}
